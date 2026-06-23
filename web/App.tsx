@@ -29,7 +29,6 @@ function Sidebar() {
           <small>Gestión de socios</small>
         </div>
       </div>
-      <div className="dentiles" />
       <NavLink to="/" end className="nav-link">
         <span className="ico">▦</span> Panel
       </NavLink>
