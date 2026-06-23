@@ -66,6 +66,7 @@ export function SocioDetalle() {
               ‹ Socios
             </Link>
           </div>
+          <div className="eyebrow">Ficha de socio</div>
           <h1 style={{ display: "flex", alignItems: "center", gap: 12 }}>
             {socio.nombre} <EstadoBadge estado={socio.estadoResumen} />
             {socio.estado === "baja" && <span className="badge gris">Baja</span>}

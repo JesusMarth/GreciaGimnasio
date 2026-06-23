@@ -24,6 +24,7 @@ export function Tarifas() {
     <>
       <div className="page-head">
         <div>
+          <div className="eyebrow">Precios</div>
           <h1>Tarifas</h1>
           <div className="sub">Plantillas de precio para no reescribir importes al dar de alta cuotas.</div>
         </div>

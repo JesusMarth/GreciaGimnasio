@@ -25,6 +25,7 @@ export function Socios() {
     <>
       <div className="page-head">
         <div>
+          <div className="eyebrow">Miembros</div>
           <h1>Socios</h1>
           <div className="sub">{socios.length} socios</div>
         </div>

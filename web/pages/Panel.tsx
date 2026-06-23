@@ -22,10 +22,19 @@ export function Panel() {
 
   return (
     <>
-      <div className="page-head">
-        <div>
-          <h1>Panel</h1>
-          <div className="sub">Hoy es {fecha(data.hoy)} · {resumen.totalActivos} socios activos</div>
+      <div className="hero">
+        <svg className="templo" viewBox="0 0 800 230" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+          <path d="M400 12 L624 88 L176 88 Z" strokeWidth="6" />
+          <path d="M180 98 H620" strokeWidth="11" />
+          <path d="M210 106 V198 M258 106 V198 M306 106 V198 M354 106 V198 M402 106 V198 M450 106 V198 M498 106 V198 M546 106 V198 M594 106 V198" strokeWidth="7" />
+          <path d="M168 202 H632" strokeWidth="11" />
+          <path d="M156 216 H644" strokeWidth="8" opacity="0.6" />
+        </svg>
+        <div className="eyebrow">Bienvenido a tu templo</div>
+        <h1 className="wordmark">GymGrecia</h1>
+        <div className="lema">Cada socio y cada cuota, en su sitio. Esto es lo que hay hoy.</div>
+        <div className="hero-fecha">
+          {fecha(data.hoy)} · {resumen.totalActivos} socios activos
         </div>
       </div>
 
