@@ -147,13 +147,13 @@ body {
 }
 .sidebar .foot svg { color: var(--azul-400); flex-shrink: 0; }
 
-.main { padding: 0 40px 70px; max-width: 1240px; width: 100%; }
+.main { padding: 0 48px 70px; max-width: 1720px; width: 100%; margin-inline: auto; }
 
 /* ---------- Hero "entrada al templo" ---------- */
 .hero {
   position: relative;
-  margin: 0 -40px 30px;
-  padding: 48px 40px 40px;
+  margin: 0 -48px 30px;
+  padding: 48px 48px 40px;
   background: var(--crema-2);
   border-bottom: 1.5px solid var(--linea-fuerte);
   overflow: hidden;
