@@ -147,12 +147,14 @@ body {
 }
 .sidebar .foot svg { color: var(--azul-400); flex-shrink: 0; }
 
-.main { padding: 0 48px 70px; max-width: 1720px; width: 100%; margin-inline: auto; }
+.main { padding: 0 0 70px; width: 100%; }
+/* Lienzo centrado para el contenido (el héroe queda fuera, a todo lo ancho) */
+.lienzo { max-width: 1720px; margin-inline: auto; padding: 0 48px; }
 
 /* ---------- Hero "entrada al templo" ---------- */
 .hero {
   position: relative;
-  margin: 0 -48px 30px;
+  margin: 0 0 30px;
   padding: 48px 48px 40px;
   background: var(--crema-2);
   border-bottom: 1.5px solid var(--linea-fuerte);
@@ -206,6 +208,12 @@ body {
 .stat.ambar .bar { background: var(--ambar); } .stat.ambar .value { color: var(--ambar); }
 .stat.verde .bar { background: var(--verde); } .stat.verde .value { color: var(--verde); }
 .stat.azul .bar { background: var(--azul-500); } .stat.azul .value { color: var(--azul-500); }
+
+/* Importes sensibles: difuminados por privacidad; nítidos al pasar el ratón. */
+.stat.azul { cursor: default; }
+.stat.azul .value, .ingresos-card .tag-list { filter: blur(9px); transition: filter 0.18s ease; user-select: none; }
+.stat.azul:hover .value, .ingresos-card:hover .tag-list { filter: blur(0); user-select: auto; }
+.stat.azul .label::after { content: " · pasa el ratón"; color: var(--tinta-faint); font-weight: 600; }
 
 /* ---------- Columnas del panel ---------- */
 .cols { display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; align-items: start; margin-top: 26px; }
@@ -332,8 +340,9 @@ td .nombre { font-weight: 700; }
   .sidebar .spacer, .sidebar .foot { display: none; }
   .nav-link { border-left: none; border-bottom: 3px solid transparent; }
   .nav-link.active { border-left: none; border-bottom-color: var(--azul-900); }
-  .main { padding: 0 22px 50px; }
-  .hero { margin: 0 -22px 24px; padding: 34px 22px 30px; }
+  .main { padding: 0 0 50px; }
+  .lienzo { padding: 0 22px; }
+  .hero { margin: 0 0 24px; padding: 34px 22px 30px; }
   .stat-grid { grid-template-columns: repeat(2, 1fr); }
   .cols { grid-template-columns: 1fr; }
   .grid-2 { grid-template-columns: 1fr; }

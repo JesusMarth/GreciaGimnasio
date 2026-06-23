@@ -21,7 +21,7 @@ export function Tarifas() {
   }
 
   return (
-    <>
+    <div className="lienzo">
       <div className="page-head">
         <div>
           <div className="eyebrow">Precios</div>
@@ -79,7 +79,7 @@ export function Tarifas() {
       </div>
 
       {form && <TarifaForm tarifa={form.t} onCerrar={() => setForm(null)} onHecho={() => { setForm(null); recargar(); }} />}
-    </>
+    </div>
   );
 }
 

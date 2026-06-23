@@ -22,7 +22,7 @@ export function Socios() {
   }, [buscar]);
 
   return (
-    <>
+    <div className="lienzo">
       <div className="page-head">
         <div>
           <div className="eyebrow">Miembros</div>
@@ -101,6 +101,6 @@ export function Socios() {
           }}
         />
       )}
-    </>
+    </div>
   );
 }

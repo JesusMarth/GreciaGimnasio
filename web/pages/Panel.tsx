@@ -38,6 +38,7 @@ export function Panel() {
         </div>
       </div>
 
+      <div className="lienzo">
       <div className="stat-grid">
         <div className="stat rojo">
           <div className="bar" />
@@ -68,7 +69,7 @@ export function Panel() {
       </div>
 
       {ingresosMes.porActividad.length > 0 && (
-        <div className="card card-pad" style={{ marginTop: 22 }}>
+        <div className="card card-pad ingresos-card" style={{ marginTop: 22 }}>
           <div className="section-title">Ingresos de este mes por actividad</div>
           <div className="tag-list">
             {ingresosMes.porActividad.map((a) => (
@@ -79,6 +80,7 @@ export function Panel() {
           </div>
         </div>
       )}
+      </div>
 
       {cobrar && (
         <PagoModal

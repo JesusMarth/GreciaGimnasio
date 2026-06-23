@@ -58,7 +58,7 @@ export function SocioDetalle() {
   const inactivas = socio.suscripciones.filter((x) => !x.activa);
 
   return (
-    <>
+    <div className="lienzo">
       <div className="page-head">
         <div>
           <div className="sub">
@@ -207,7 +207,7 @@ export function SocioDetalle() {
           }}
         />
       )}
-    </>
+    </div>
   );
 }
 
