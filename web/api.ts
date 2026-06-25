@@ -1,4 +1,4 @@
-import type { Dashboard, Pago, Socio, Tarifa } from "./types.ts";
+import type { ConfigEmail, CopiaInfo, DatosRecibo, Dashboard, Pago, Socio, Tarifa } from "./types.ts";
 
 async function req<T>(path: string, opts?: RequestInit): Promise<T> {
   const r = await fetch("/api" + path, {
@@ -48,6 +48,25 @@ export const api = {
   editarTarifa: (id: number, data: Record<string, unknown>) =>
     req<Tarifa>(`/tarifas/${id}`, { method: "PUT", body: body(data) }),
   borrarTarifa: (id: number) => req(`/tarifas/${id}`, { method: "DELETE" }),
+
+  backups: () => req<{ dbPath: string; carpeta: string; copias: CopiaInfo[] }>("/backups"),
+  hacerCopia: () => req<CopiaInfo>("/backup", { method: "POST" }),
+  restaurarCopia: (archivo: string) => req("/backup/restaurar", { method: "POST", body: body({ archivo }) }),
+
+  configEmail: () => req<ConfigEmail>("/config/email"),
+  guardarConfigEmail: (data: Record<string, unknown>) => req("/config/email", { method: "POST", body: body(data) }),
+  probarEmail: () => req<{ ok: true }>("/config/email/probar", { method: "POST" }),
+  avisarEmail: (socioId: number) => req<{ ok: true; email: string }>("/avisos/email", { method: "POST", body: body({ socioId }) }),
+
+  datosRecibo: () => req<DatosRecibo>("/config/datos"),
+  guardarDatosRecibo: (data: Record<string, unknown>) => req("/config/datos", { method: "POST", body: body(data) }),
+  enviarRecibo: (pagoId: number) => req<{ ok: true; email: string }>(`/pagos/${pagoId}/recibo/email`, { method: "POST" }),
+  // URL directa al PDF (para abrir/descargar en el navegador, no es fetch).
+  reciboUrl: (pagoId: number, descargar = false) => `/api/pagos/${pagoId}/recibo.pdf${descargar ? "?dl=1" : ""}`,
+
+  // URLs de exportación a Excel (el servidor las sirve como descarga .xlsx).
+  exportSociosUrl: (ids?: number[]) => `/api/export/socios${ids && ids.length ? `?ids=${ids.join(",")}` : ""}`,
+  exportSocioUrl: (id: number) => `/api/export/socio/${id}`,
 };
 
 export const ACTIVIDADES = ["gimnasio", "karate", "pilates"];

@@ -2,6 +2,9 @@ import { Router } from "express";
 import { db } from "../db.ts";
 import { addMeses, hoyISO } from "../util.ts";
 import type { SuscripcionRow } from "../queries.ts";
+import { generarReciboPDF, datosDelRecibo, eur, ddmmaaaa } from "../recibo.ts";
+import { enviarCorreo } from "../correo.ts";
+import { emailConfigurado, leerConfigEmail, leerDatosRecibo } from "../config.ts";
 
 export const pagosRouter = Router();
 
@@ -25,6 +28,19 @@ pagosRouter.post("/", (req, res) => {
   if (!Array.isArray(lineas) || lineas.length === 0)
     return res.status(400).json({ error: "El pago necesita al menos una linea" });
 
+  // Validar fechas: una fecha no-ISO corrompe el estado de cuota y el agrupado del
+  // dashboard, y se colaría en la cabecera del recibo. Rechazamos de entrada.
+  const ISO = /^\d{4}-\d{2}-\d{2}$/;
+  if (fecha != null && fecha !== "" && !ISO.test(String(fecha)))
+    return res.status(400).json({ error: "Fecha no válida" });
+  for (const l of lineas as LineaEntrada[]) {
+    if (l.periodoDesde != null && l.periodoDesde !== "" && !ISO.test(String(l.periodoDesde)))
+      return res.status(400).json({ error: "Periodo (desde) no válido" });
+    if (l.periodoHasta != null && l.periodoHasta !== "" && !ISO.test(String(l.periodoHasta)))
+      return res.status(400).json({ error: "Periodo (hasta) no válido" });
+  }
+  const metodoOk = ["efectivo", "transferencia", "bizum", "tarjeta"].includes(String(metodo)) ? String(metodo) : "efectivo";
+
   const fechaPago = fecha || hoyISO();
 
   // Normalizar lineas y resolver la suscripcion de cada una.
@@ -44,7 +60,7 @@ pagosRouter.post("/", (req, res) => {
       // Por defecto: extiende desde la cobertura vigente; si caduco, desde la fecha del pago.
       const base = sub.pagado_hasta && sub.pagado_hasta > fechaPago ? sub.pagado_hasta : fechaPago;
       if (!desde) desde = base;
-      if (!hasta) hasta = addMeses(base, l.meses && l.meses > 0 ? l.meses : 1);
+      if (!hasta) hasta = addMeses(base, l.meses && l.meses > 0 ? Math.min(l.meses, 120) : 1);
     }
     return { suscripcionId: l.suscripcionId ?? null, actividad, concepto, importe, desde, hasta, sub };
   });
@@ -55,7 +71,7 @@ pagosRouter.post("/", (req, res) => {
   const tx = db.transaction(() => {
     const pago = db
       .prepare("INSERT INTO pagos (socio_id, fecha, metodo, total, notas, creado_en) VALUES (?,?,?,?,?,?)")
-      .run(socioId, fechaPago, metodo || "efectivo", total, notas || null, ahora);
+      .run(socioId, fechaPago, metodoOk, total, notas || null, ahora);
     const insLinea = db.prepare(
       `INSERT INTO pago_lineas (pago_id, suscripcion_id, actividad, concepto, importe, periodo_desde, periodo_hasta)
        VALUES (?,?,?,?,?,?,?)`
@@ -104,20 +120,67 @@ pagosRouter.get("/de-socio/:id", (req, res) => {
   );
 });
 
-// Borrar un pago y recalcular la cobertura de las suscripciones afectadas.
+// Borrar un pago y recalcular la cobertura de las suscripciones afectadas (atómico).
 pagosRouter.delete("/:id", (req, res) => {
-  const lineas = db.prepare("SELECT DISTINCT suscripcion_id FROM pago_lineas WHERE pago_id = ?").all(req.params.id) as {
+  const id = req.params.id;
+  const subs = db.prepare("SELECT DISTINCT suscripcion_id FROM pago_lineas WHERE pago_id = ?").all(id) as {
     suscripcion_id: number | null;
   }[];
-  const info = db.prepare("DELETE FROM pagos WHERE id = ?").run(req.params.id);
-  if (info.changes === 0) return res.status(404).json({ error: "Pago no encontrado" });
-  // Recalcular pagado_hasta = ultima cobertura que quede de cada suscripcion (o null).
-  const maxStmt = db.prepare("SELECT MAX(periodo_hasta) AS m FROM pago_lineas WHERE suscripcion_id = ?");
-  const updStmt = db.prepare("UPDATE suscripciones SET pagado_hasta = ? WHERE id = ?");
-  for (const { suscripcion_id } of lineas) {
-    if (!suscripcion_id) continue;
-    const r = maxStmt.get(suscripcion_id) as { m: string | null };
-    updStmt.run(r.m ?? null, suscripcion_id);
-  }
+  const tx = db.transaction(() => {
+    const info = db.prepare("DELETE FROM pagos WHERE id = ?").run(id);
+    if (info.changes === 0) return 0;
+    // Recalcular pagado_hasta = ultima cobertura que quede de cada suscripcion (o null).
+    const maxStmt = db.prepare("SELECT MAX(periodo_hasta) AS m FROM pago_lineas WHERE suscripcion_id = ?");
+    const updStmt = db.prepare("UPDATE suscripciones SET pagado_hasta = ? WHERE id = ?");
+    for (const { suscripcion_id } of subs) {
+      if (!suscripcion_id) continue;
+      const r = maxStmt.get(suscripcion_id) as { m: string | null };
+      updStmt.run(r.m ?? null, suscripcion_id);
+    }
+    return info.changes;
+  });
+  if (tx() === 0) return res.status(404).json({ error: "Pago no encontrado" });
   res.json({ ok: true });
+});
+
+// --- Recibo en PDF ----------------------------------------------------------
+
+// Ver / descargar el recibo de un pago. ?dl=1 fuerza la descarga.
+pagosRouter.get("/:id/recibo.pdf", async (req, res) => {
+  const datos = datosDelRecibo(Number(req.params.id));
+  if (!datos) return res.status(404).json({ error: "Pago no encontrado" });
+  try {
+    const pdf = await generarReciboPDF(Number(req.params.id));
+    const disp = req.query.dl ? "attachment" : "inline";
+    res.setHeader("Content-Type", "application/pdf");
+    res.setHeader("Content-Disposition", `${disp}; filename="${datos.numero}.pdf"`);
+    res.send(pdf);
+  } catch (e: any) {
+    res.status(500).json({ error: "No se pudo generar el recibo: " + (e?.message ?? e) });
+  }
+});
+
+// Enviar el recibo en PDF al email del socio (adjunto).
+pagosRouter.post("/:id/recibo/email", async (req, res) => {
+  const datos = datosDelRecibo(Number(req.params.id));
+  if (!datos) return res.status(404).json({ error: "Pago no encontrado" });
+  if (!datos.socio.email) return res.status(400).json({ error: `${datos.socio.nombre} no tiene email guardado.` });
+  if (!emailConfigurado()) return res.status(400).json({ error: "Configura primero el correo en Ajustes." });
+  try {
+    const pdf = await generarReciboPDF(Number(req.params.id));
+    const f = leerDatosRecibo();
+    const firma = f.nombre || leerConfigEmail().remitente || "El gimnasio";
+    const doc = (f.tipoDoc || "Recibo").toLowerCase();
+    await enviarCorreo(
+      datos.socio.email,
+      `${f.tipoDoc || "Recibo"} ${datos.numero} · ${firma}`,
+      `Hola ${datos.socio.nombre}:\n\nAdjuntamos tu ${doc} ${datos.numero} por el pago de ${eur(datos.pago.total)} del ${ddmmaaaa(
+        datos.pago.fecha
+      )}.\n\nUn saludo,\n${firma}`,
+      [{ filename: `${datos.numero}.pdf`, content: pdf }]
+    );
+    res.json({ ok: true, email: datos.socio.email });
+  } catch (e: any) {
+    res.status(500).json({ error: "No se pudo enviar: " + (e?.message ?? e) });
+  }
 });

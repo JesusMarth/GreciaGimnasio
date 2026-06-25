@@ -2,12 +2,15 @@ import { useEffect, useState } from "react";
 import { api, ACTIVIDADES } from "../api.ts";
 import { euros, capitalizar } from "../format.ts";
 import { Modal } from "../components/Modal.tsx";
+import { useConfirm } from "../components/Confirmar.tsx";
+import { AyudaTarifas } from "../components/Ayuda.tsx";
 import type { Tarifa } from "../types.ts";
 
 export function Tarifas() {
   const [tarifas, setTarifas] = useState<Tarifa[]>([]);
   const [error, setError] = useState("");
   const [form, setForm] = useState<{ t?: Tarifa } | null>(null);
+  const confirmar = useConfirm();
 
   function recargar() {
     api.tarifas().then(setTarifas).catch((e) => setError(e.message));
@@ -15,7 +18,13 @@ export function Tarifas() {
   useEffect(recargar, []);
 
   async function borrar(t: Tarifa) {
-    if (!confirm(`¿Borrar la tarifa "${t.nombre}"?`)) return;
+    const ok = await confirmar({
+      titulo: "Borrar tarifa",
+      mensaje: `¿Borrar la tarifa "${t.nombre}"?`,
+      confirmar: "Borrar",
+      peligro: true,
+    });
+    if (!ok) return;
     await api.borrarTarifa(t.id);
     recargar();
   }
@@ -28,9 +37,12 @@ export function Tarifas() {
           <h1>Tarifas</h1>
           <div className="sub">Plantillas de precio para no reescribir importes al dar de alta cuotas.</div>
         </div>
-        <button className="btn primary" onClick={() => setForm({})}>
-          + Nueva tarifa
-        </button>
+        <div className="btn-row">
+          <button className="btn primary" onClick={() => setForm({})}>
+            + Nueva tarifa
+          </button>
+          <AyudaTarifas />
+        </div>
       </div>
 
       {error && <div className="error-banner">{error}</div>}
@@ -109,6 +121,9 @@ function TarifaForm({ tarifa, onCerrar, onHecho }: { tarifa?: Tarifa; onCerrar: 
     }
   }
 
+  const opcionesActividad =
+    actividad && !ACTIVIDADES.includes(actividad) ? [...ACTIVIDADES, actividad] : ACTIVIDADES;
+
   return (
     <Modal
       titulo={tarifa ? "Editar tarifa" : "Nueva tarifa"}
@@ -133,12 +148,13 @@ function TarifaForm({ tarifa, onCerrar, onHecho }: { tarifa?: Tarifa; onCerrar: 
         <div className="row2">
           <div className="field">
             <label>Actividad *</label>
-            <input list="lista-actividades-t" value={actividad} onChange={(e) => setActividad(e.target.value)} />
-            <datalist id="lista-actividades-t">
-              {ACTIVIDADES.map((a) => (
-                <option key={a} value={a} />
+            <select value={actividad} onChange={(e) => setActividad(e.target.value)}>
+              {opcionesActividad.map((a) => (
+                <option key={a} value={a}>
+                  {capitalizar(a)}
+                </option>
               ))}
-            </datalist>
+            </select>
           </div>
           <div className="field">
             <label>Importe (€) *</label>

@@ -30,17 +30,18 @@ sociosRouter.get("/:id", (req, res) => {
 
 // Alta de socio.
 sociosRouter.post("/", (req, res) => {
-  const { nombre, telefono, email, fechaAlta, fechaNacimiento, notas } = req.body ?? {};
+  const { nombre, telefono, email, dni, fechaAlta, fechaNacimiento, notas } = req.body ?? {};
   if (!nombre || !String(nombre).trim()) return res.status(400).json({ error: "El nombre es obligatorio" });
   const info = db
     .prepare(
-      `INSERT INTO socios (nombre, telefono, email, fecha_alta, fecha_nacimiento, estado, notas, creado_en)
-       VALUES (?,?,?,?,?,?,?,?)`
+      `INSERT INTO socios (nombre, telefono, email, dni, fecha_alta, fecha_nacimiento, estado, notas, creado_en)
+       VALUES (?,?,?,?,?,?,?,?,?)`
     )
     .run(
       String(nombre).trim(),
       telefono || null,
       email || null,
+      dni || null,
       fechaAlta || hoyISO(),
       fechaNacimiento || null,
       "activo",
@@ -55,16 +56,17 @@ sociosRouter.post("/", (req, res) => {
 sociosRouter.put("/:id", (req, res) => {
   const s = db.prepare("SELECT * FROM socios WHERE id = ?").get(req.params.id) as SocioRow | undefined;
   if (!s) return res.status(404).json({ error: "Socio no encontrado" });
-  const { nombre, telefono, email, fechaAlta, fechaNacimiento, estado, notas } = req.body ?? {};
+  const { nombre, telefono, email, dni, fechaAlta, fechaNacimiento, estado, notas } = req.body ?? {};
   db.prepare(
-    `UPDATE socios SET nombre=?, telefono=?, email=?, fecha_alta=?, fecha_nacimiento=?, estado=?, notas=? WHERE id=?`
+    `UPDATE socios SET nombre=?, telefono=?, email=?, dni=?, fecha_alta=?, fecha_nacimiento=?, estado=?, notas=? WHERE id=?`
   ).run(
     nombre?.trim() || s.nombre,
     telefono ?? s.telefono,
     email ?? s.email,
+    dni ?? s.dni,
     fechaAlta || s.fecha_alta,
     fechaNacimiento ?? s.fecha_nacimiento,
-    estado || s.estado,
+    estado === "activo" || estado === "baja" ? estado : s.estado,
     notas ?? s.notas,
     s.id
   );

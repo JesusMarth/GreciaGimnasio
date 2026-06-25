@@ -19,6 +19,7 @@ export interface Socio {
   nombre: string;
   telefono: string | null;
   email: string | null;
+  dni: string | null;
   fechaAlta: string;
   fechaNacimiento: string | null;
   estado: string; // activo | baja
@@ -83,4 +84,30 @@ export interface Dashboard {
   porCobrar: DashItem[];
   pronto: DashItem[];
   aldia: DashItem[];
+}
+
+export interface CopiaInfo {
+  archivo: string;
+  tipo: string; // auto | manual | pre-restore
+  creado: string; // ISO
+  bytes: number;
+}
+
+export interface ConfigEmail {
+  host: string;
+  port: number;
+  secure: boolean;
+  usuario: string;
+  remitente: string;
+  tienePass: boolean; // si ya hay una contraseña guardada (nunca se devuelve la real)
+}
+
+export interface DatosRecibo {
+  nombre: string;
+  nif: string;
+  direccion: string;
+  tipoDoc: string; // "Recibo" | "Factura" | …
+  iva: string; // "no" | "incluido" | "exento"
+  ivaTipo: number;
+  pie: string;
 }

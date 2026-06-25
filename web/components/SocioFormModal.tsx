@@ -14,6 +14,7 @@ export function SocioFormModal({ socio, onCerrar, onHecho }: Props) {
   const [nombre, setNombre] = useState(socio?.nombre ?? "");
   const [telefono, setTelefono] = useState(socio?.telefono ?? "");
   const [email, setEmail] = useState(socio?.email ?? "");
+  const [dni, setDni] = useState(socio?.dni ?? "");
   const [fechaAlta, setFechaAlta] = useState(socio?.fechaAlta ?? hoyISO());
   const [fechaNacimiento, setFechaNacimiento] = useState(socio?.fechaNacimiento ?? "");
   const [estado, setEstado] = useState(socio?.estado ?? "activo");
@@ -28,7 +29,7 @@ export function SocioFormModal({ socio, onCerrar, onHecho }: Props) {
     }
     setGuardando(true);
     setError("");
-    const datos = { nombre, telefono, email, fechaAlta, fechaNacimiento: fechaNacimiento || null, estado, notas };
+    const datos = { nombre, telefono, email, dni, fechaAlta, fechaNacimiento: fechaNacimiento || null, estado, notas };
     try {
       const s = socio ? await api.editarSocio(socio.id, datos) : await api.crearSocio(datos);
       onHecho(s);
@@ -68,6 +69,10 @@ export function SocioFormModal({ socio, onCerrar, onHecho }: Props) {
             <label>Email</label>
             <input value={email} onChange={(e) => setEmail(e.target.value)} placeholder="opcional" />
           </div>
+        </div>
+        <div className="field">
+          <label>DNI / NIF</label>
+          <input value={dni} onChange={(e) => setDni(e.target.value)} placeholder="opcional — necesario para recibos con validez fiscal" />
         </div>
         <div className="row2">
           <div className="field">

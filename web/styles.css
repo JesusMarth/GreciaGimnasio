@@ -154,8 +154,8 @@ body {
 /* ---------- Hero "entrada al templo" ---------- */
 .hero {
   position: relative;
-  margin: 0 0 30px;
-  padding: 48px 48px 40px;
+  margin: 0 0 22px;
+  padding: 26px 48px 22px;
   background: var(--crema-2);
   border-bottom: 1.5px solid var(--linea-fuerte);
   overflow: hidden;
@@ -174,9 +174,9 @@ body {
   text-transform: uppercase;
   letter-spacing: 0.06em;
   color: var(--azul-900);
-  font-size: clamp(40px, 7vw, 76px);
+  font-size: clamp(30px, 5vw, 52px);
   line-height: 1;
-  margin: 14px 0 12px;
+  margin: 8px 0 8px;
 }
 .hero .lema { position: relative; color: var(--tinta-soft); font-size: 15px; max-width: 520px; margin: 0 auto; }
 .hero .hero-fecha {
@@ -209,11 +209,8 @@ body {
 .stat.verde .bar { background: var(--verde); } .stat.verde .value { color: var(--verde); }
 .stat.azul .bar { background: var(--azul-500); } .stat.azul .value { color: var(--azul-500); }
 
-/* Importes sensibles: difuminados por privacidad; nítidos al pasar el ratón. */
+/* Ingresos: visibilidad controlada con el botón de ojo (sin desenfoque). */
 .stat.azul { cursor: default; }
-.stat.azul .value, .ingresos-card .tag-list { filter: blur(9px); transition: filter 0.18s ease; user-select: none; }
-.stat.azul:hover .value, .ingresos-card:hover .tag-list { filter: blur(0); user-select: auto; }
-.stat.azul .label::after { content: " · pasa el ratón"; color: var(--tinta-faint); font-weight: 600; }
 
 /* ---------- Columnas del panel ---------- */
 .cols { display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; align-items: start; margin-top: 26px; }
@@ -324,6 +321,7 @@ td .nombre { font-weight: 700; }
 .spacer { flex: 1; }
 .center-box { display: grid; place-items: center; padding: 60px 20px; color: var(--tinta-faint); }
 .error-banner { background: var(--rojo-soft); color: var(--rojo); border: 1.5px solid var(--rojo); padding: 11px 15px; margin-bottom: 15px; font-weight: 600; font-size: 13px; }
+.ok-banner { background: var(--verde-soft); color: var(--verde); border: 1.5px solid var(--verde); padding: 11px 15px; margin-bottom: 15px; font-weight: 600; font-size: 13px; }
 .grid-2 { display: grid; grid-template-columns: 1.5fr 1fr; gap: 20px; align-items: start; }
 .kv { display: flex; gap: 8px; padding: 9px 0; border-bottom: 1px solid var(--linea); font-size: 13.5px; }
 .kv:last-child { border-bottom: none; }
@@ -347,3 +345,109 @@ td .nombre { font-weight: 700; }
   .cols { grid-template-columns: 1fr; }
   .grid-2 { grid-template-columns: 1fr; }
 }
+
+/* ============================================================
+   Pase de UX: scroll a juego, ayuda, filtros, paginación, ingresos
+   ============================================================ */
+
+/* ---------- Barra de desplazamiento (de piedra, plana) ---------- */
+* { scrollbar-width: thin; scrollbar-color: var(--linea-fuerte) transparent; }
+::-webkit-scrollbar { width: 12px; height: 12px; }
+::-webkit-scrollbar-track { background: var(--crema-2); }
+::-webkit-scrollbar-thumb { background: var(--linea-fuerte); border: 3px solid var(--crema-2); }
+::-webkit-scrollbar-thumb:hover { background: var(--tinta-soft); }
+::-webkit-scrollbar-corner { background: var(--crema-2); }
+
+/* ---------- Botón de ayuda "?" ---------- */
+.ayuda-btn {
+  width: 41px; height: 41px; flex-shrink: 0; padding: 0;
+  border: 1.5px solid var(--linea-fuerte); background: var(--marfil);
+  color: var(--azul-700); cursor: pointer;
+  display: inline-grid; place-items: center;
+  transition: background 0.12s, color 0.12s, border-color 0.12s;
+}
+.ayuda-btn svg { width: 19px; height: 19px; display: block; }
+.ayuda-btn:hover { background: var(--azul-500); color: #fff; border-color: var(--azul-500); }
+.ayuda-contenido h4 { font-size: 12.5px; text-transform: uppercase; letter-spacing: 0.05em; color: var(--azul-700); margin: 18px 0 6px; }
+.ayuda-contenido h4:first-child { margin-top: 0; }
+.ayuda-contenido p { margin: 0 0 9px; line-height: 1.6; }
+.ayuda-contenido ul { margin: 0 0 9px; padding-left: 18px; line-height: 1.7; }
+.ayuda-contenido li { margin-bottom: 3px; }
+
+/* ---------- Chips de filtro rápido ---------- */
+.chips { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+.chip-label { color: var(--tinta-faint); font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; margin-right: 2px; }
+.chip {
+  border: 1.5px solid var(--linea-fuerte); background: var(--marfil); color: var(--tinta-soft);
+  padding: 6px 13px; font-weight: 700; font-size: 11.5px; text-transform: uppercase; letter-spacing: 0.04em;
+  cursor: pointer; transition: background 0.12s, color 0.12s, border-color 0.12s;
+}
+.chip:hover { border-color: var(--tinta-soft); color: var(--tinta); }
+.chip.on { background: var(--azul-500); border-color: var(--azul-500); color: #fff; }
+.filtros { display: flex; flex-direction: column; gap: 11px; }
+.filtros-fila { display: flex; flex-wrap: wrap; gap: 11px 20px; align-items: center; min-height: 35px; }
+.filtros-fila .limpiar { margin-left: auto; }
+
+/* ---------- Paginación ---------- */
+.paginacion { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 13px 16px; border-top: 1.5px solid var(--linea-fuerte); flex-wrap: wrap; }
+.paginacion .info { color: var(--tinta-soft); font-size: 12.5px; }
+.paginacion .controles { display: flex; gap: 6px; align-items: center; }
+.paginacion .pag-num { color: var(--tinta-soft); font-size: 12.5px; font-weight: 700; padding: 0 6px; }
+
+/* ---------- Ingresos: botón de ojo y valor oculto ---------- */
+.ojo-btn { border: none; background: transparent; cursor: pointer; color: var(--tinta-faint); padding: 0; margin-left: 7px; display: inline-flex; vertical-align: middle; }
+.ojo-btn:hover { color: var(--azul-500); }
+.valor-oculto { letter-spacing: 0.14em; color: var(--tinta-faint); }
+
+/* ---------- "+ N más" en el panel ---------- */
+.panel-mas {
+  display: block; text-align: center; padding: 9px; margin-top: 2px;
+  border: 1.5px dashed var(--linea-fuerte); color: var(--azul-700);
+  font-weight: 700; font-size: 11.5px; text-transform: uppercase; letter-spacing: 0.04em; text-decoration: none;
+}
+.panel-mas:hover { background: var(--crema-2); border-color: var(--tinta-soft); }
+
+/* ---------- Estado "sin pagar" (pendiente): morado, distinto del rojo de "atrasado" ---------- */
+:root { --morado: #6d4aa0; --morado-soft: #e7e0f3; }
+.badge.morado { background: var(--morado-soft); color: var(--morado); }
+.dot.morado { background: var(--morado); }
+.item.morado { border-left-color: var(--morado); }
+.sub-card.morado { border-left-color: var(--morado); }
+
+/* Reserva siempre el hueco de la barra de scroll: evita que la página "salte" a la
+   derecha cuando el contenido cambia de alto (al filtrar, etc.). */
+html { scrollbar-gutter: stable; }
+
+/* Tarjetas-resumen del panel: pinchables para ir a Socios ya filtrado. */
+.stat.clic { cursor: pointer; transition: background 0.12s; }
+.stat.clic:hover { background: var(--crema-2); }
+
+/* Botón "volver" (cómodo y claro) en las fichas. */
+.volver {
+  display: inline-flex; align-items: center; gap: 5px;
+  color: var(--tinta-soft); text-decoration: none;
+  font-weight: 700; font-size: 12px; text-transform: uppercase; letter-spacing: 0.05em;
+  padding: 7px 13px 7px 9px; border: 1.5px solid var(--linea-fuerte); background: var(--marfil);
+  cursor: pointer; transition: background 0.12s, color 0.12s, border-color 0.12s;
+  margin: 22px 0 0; align-self: flex-start;
+}
+.volver:hover { background: var(--azul-500); color: #fff; border-color: var(--azul-500); }
+.volver svg { display: block; }
+.volver + .page-head { margin-top: 14px; }
+
+/* Historial de pagos: scroll dentro de la tarjeta (muestra ~2 y se desplaza). */
+.historial-scroll { max-height: 300px; overflow-y: auto; padding-right: 4px; }
+
+/* Ficha de socio que se ajusta a la pantalla: sin scroll de página; cada columna
+   con su propio scroll interno cuando hace falta. */
+.ficha { height: calc(100vh - 70px); display: flex; flex-direction: column; overflow: hidden; }
+.ficha .grid-2 { flex: 1; min-height: 0; align-items: stretch; }
+.ficha .grid-2 > .card { display: flex; flex-direction: column; min-height: 0; }
+.ficha .grid-2 > .card .section-title { flex-shrink: 0; }
+.ficha-scroll { flex: 1; min-height: 0; overflow-y: auto; padding-right: 4px; }
+/* Columna derecha: Datos (fijo) + Historial (rellena). Un solo scroll: el del historial. */
+.ficha-col-der { display: flex; flex-direction: column; min-height: 0; }
+.ficha-col-der > .card:first-child { flex-shrink: 0; }
+.ficha-col-der > .card:last-child { flex: 1; min-height: 0; display: flex; flex-direction: column; }
+.ficha-col-der > .card:last-child .section-title { flex-shrink: 0; }
+.ficha .historial-scroll { flex: 1; max-height: none; }

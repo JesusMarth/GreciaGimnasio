@@ -1,7 +1,8 @@
 import type { EstadoCuota } from "./types.ts";
 
 export function euros(n: number): string {
-  return new Intl.NumberFormat("es-ES", { style: "currency", currency: "EUR" }).format(n ?? 0);
+  const v = Number(n);
+  return new Intl.NumberFormat("es-ES", { style: "currency", currency: "EUR" }).format(Number.isFinite(v) ? v : 0);
 }
 
 /** "2026-06-23" -> "23/06/2026". Vacio si no hay fecha. */
@@ -25,6 +26,14 @@ export const ESTADO_LABEL: Record<EstadoCuota, string> = {
   pendiente: "Sin pagar",
 };
 
+/** Qué significa cada estado de cuota (para tooltips y ayuda). */
+export const EXPLICA_ESTADO: Record<EstadoCuota, string> = {
+  pendiente: "Nunca ha pagado esta cuota (socio nuevo o aún sin cobrar).",
+  atrasado: "Pagó antes, pero su cuota ya venció. Toca renovar.",
+  pronto: "Su cuota vence en 7 días o menos.",
+  aldia: "Cuota pagada y al corriente.",
+};
+
 /** Texto humano del estado segun dias restantes. */
 export function estadoTexto(estado: EstadoCuota, dias: number | null): string {
   if (estado === "pendiente") return "Sin pagar todavía";
@@ -40,9 +49,20 @@ export function capitalizar(s: string): string {
   return s ? s.charAt(0).toUpperCase() + s.slice(1) : s;
 }
 
+/** Dispara la descarga de una URL (p. ej. un .xlsx que el servidor sirve como adjunto). */
+export function descargar(url: string) {
+  const a = document.createElement("a");
+  a.href = url;
+  a.rel = "noopener";
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+}
+
 /** Color semantico de un estado (clase CSS: rojo/ambar/verde/gris). */
-export function colorEstado(e: EstadoCuota | null): "rojo" | "ambar" | "verde" | "gris" {
-  if (e === "atrasado" || e === "pendiente") return "rojo";
+export function colorEstado(e: EstadoCuota | null): "rojo" | "morado" | "ambar" | "verde" | "gris" {
+  if (e === "atrasado") return "rojo";
+  if (e === "pendiente") return "morado"; // sin pagar (nunca pagó) — distinto del atrasado
   if (e === "pronto") return "ambar";
   if (e === "aldia") return "verde";
   return "gris";

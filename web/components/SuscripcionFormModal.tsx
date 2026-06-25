@@ -64,6 +64,11 @@ export function SuscripcionFormModal({ socioId, suscripcion, onCerrar, onHecho }
     }
   }
 
+  // La actividad es un conjunto conocido (ACTIVIDADES). Si se edita una con un
+  // valor antiguo fuera de la lista, lo añadimos para no perderlo en el select.
+  const opcionesActividad =
+    actividad && !ACTIVIDADES.includes(actividad) ? [...ACTIVIDADES, actividad] : ACTIVIDADES;
+
   return (
     <Modal
       titulo={suscripcion ? "Editar actividad" : "Añadir actividad"}
@@ -99,17 +104,13 @@ export function SuscripcionFormModal({ socioId, suscripcion, onCerrar, onHecho }
         <div className="row2">
           <div className="field">
             <label>Actividad *</label>
-            <input
-              list="lista-actividades"
-              value={actividad}
-              onChange={(e) => setActividad(e.target.value)}
-              placeholder="gimnasio, karate, pilates…"
-            />
-            <datalist id="lista-actividades">
-              {ACTIVIDADES.map((a) => (
-                <option key={a} value={a} />
+            <select value={actividad} onChange={(e) => setActividad(e.target.value)}>
+              {opcionesActividad.map((a) => (
+                <option key={a} value={a}>
+                  {capitalizar(a)}
+                </option>
               ))}
-            </datalist>
+            </select>
           </div>
           <div className="field">
             <label>Importe (€) *</label>

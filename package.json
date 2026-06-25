@@ -10,16 +10,23 @@
     "dev:web": "vite",
     "build": "vite build",
     "start": "tsx server/index.ts",
-    "typecheck": "tsc -p web/tsconfig.json --noEmit"
+    "typecheck": "tsc -p web/tsconfig.json --noEmit",
+    "test:filtros": "tsx web/filtros.pruebas.ts",
+    "seed:mock": "tsx server/seed-mock.ts"
   },
   "dependencies": {
-    "better-sqlite3": "^11.8.1",
-    "express": "^4.21.2"
+    "better-sqlite3": "^12.11.1",
+    "exceljs": "^4.4.0",
+    "express": "^4.21.2",
+    "nodemailer": "^9.0.1",
+    "pdfkit": "^0.19.1"
   },
   "devDependencies": {
     "@types/better-sqlite3": "^7.6.12",
     "@types/express": "^4.17.21",
     "@types/node": "^22.10.6",
+    "@types/nodemailer": "^8.0.1",
+    "@types/pdfkit": "^0.17.6",
     "@types/react": "^18.3.18",
     "@types/react-dom": "^18.3.5",
     "@vitejs/plugin-react": "^4.3.4",

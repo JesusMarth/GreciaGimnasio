@@ -3,6 +3,8 @@ import { Panel } from "./pages/Panel.tsx";
 import { Socios } from "./pages/Socios.tsx";
 import { SocioDetalle } from "./pages/SocioDetalle.tsx";
 import { Tarifas } from "./pages/Tarifas.tsx";
+import { Copias } from "./pages/Copias.tsx";
+import { Ajustes } from "./pages/Ajustes.tsx";
 
 /** Glifo de templo griego: frontón + columnas + basamento. */
 export function TemploGlifo() {
@@ -38,6 +40,12 @@ function Sidebar() {
       <NavLink to="/tarifas" className="nav-link">
         <span className="ico">€</span> Tarifas
       </NavLink>
+      <NavLink to="/copias" className="nav-link">
+        <span className="ico">▤</span> Copias
+      </NavLink>
+      <NavLink to="/ajustes" className="nav-link">
+        <span className="ico">⚙</span> Ajustes
+      </NavLink>
       <div className="spacer" />
       <div className="foot">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
@@ -59,6 +67,8 @@ export function App() {
           <Route path="/socios" element={<Socios />} />
           <Route path="/socios/:id" element={<SocioDetalle />} />
           <Route path="/tarifas" element={<Tarifas />} />
+          <Route path="/copias" element={<Copias />} />
+          <Route path="/ajustes" element={<Ajustes />} />
         </Routes>
       </main>
     </div>
