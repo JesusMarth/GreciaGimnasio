@@ -1,7 +1,9 @@
 node_modules/
 dist/
 data/
-data-mock/
+# El entorno mock se versiona SOLO la BD (no WAL, ni backups) para tener siempre datos de prueba.
+data-mock/*
+!data-mock/gymgrecia.db
 *.log
 .DS_Store
 .vite/
