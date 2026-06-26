@@ -12,7 +12,8 @@
     "start": "tsx server/index.ts",
     "typecheck": "tsc -p web/tsconfig.json --noEmit",
     "test:filtros": "tsx web/filtros.pruebas.ts",
-    "seed:mock": "tsx server/seed-mock.ts"
+    "seed:mock": "tsx server/seed-mock.ts",
+    "dist": "node scripts/dist.mjs"
   },
   "dependencies": {
     "better-sqlite3": "^12.11.1",
