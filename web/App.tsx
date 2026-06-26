@@ -53,6 +53,7 @@ function Sidebar() {
         </svg>
         Datos guardados en este equipo.
       </div>
+      <div className="foot-version" title="Versión instalada">v{__APP_VERSION__}</div>
     </aside>
   );
 }

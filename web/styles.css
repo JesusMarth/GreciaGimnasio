@@ -146,6 +146,10 @@ body {
   display: flex; align-items: center; gap: 8px; text-transform: uppercase;
 }
 .sidebar .foot svg { color: var(--azul-400); flex-shrink: 0; }
+.sidebar .foot-version {
+  color: var(--tinta-faint); font-size: 10px; letter-spacing: 0.06em;
+  padding: 6px 8px 0; font-variant-numeric: tabular-nums; opacity: 0.7;
+}
 
 .main { padding: 0 0 70px; width: 100%; }
 /* Lienzo centrado para el contenido (el héroe queda fuera, a todo lo ancho) */
@@ -335,7 +339,7 @@ td .nombre { font-weight: 700; }
   .app { grid-template-columns: 1fr; }
   .sidebar { position: static; height: auto; flex-direction: row; flex-wrap: wrap; align-items: center; border-right: none; border-bottom: 1.5px solid var(--linea-fuerte); }
   .sidebar .brand { border-bottom: none; margin-bottom: 0; padding-bottom: 4px; }
-  .sidebar .spacer, .sidebar .foot { display: none; }
+  .sidebar .spacer, .sidebar .foot, .sidebar .foot-version { display: none; }
   .nav-link { border-left: none; border-bottom: 3px solid transparent; }
   .nav-link.active { border-left: none; border-bottom-color: var(--azul-900); }
   .main { padding: 0 0 50px; }
