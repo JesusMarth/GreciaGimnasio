@@ -13,7 +13,10 @@
     "typecheck": "tsc -p web/tsconfig.json --noEmit",
     "test:filtros": "tsx web/filtros.pruebas.ts",
     "seed:mock": "tsx server/seed-mock.ts",
-    "dist": "node scripts/dist.mjs"
+    "dist": "node scripts/dist.mjs",
+    "preversion": "npm run typecheck && tsc -p tsconfig.json --noEmit && npm run test:filtros",
+    "version": "git add CHANGELOG.md",
+    "postversion": "git push --follow-tags"
   },
   "dependencies": {
     "better-sqlite3": "^12.11.1",
