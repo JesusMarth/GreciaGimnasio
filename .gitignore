@@ -7,3 +7,6 @@ data-mock/*
 *.log
 .DS_Store
 .vite/
+# Token de actualizacion (Actualizar.bat). NUNCA se sube: es un secreto y
+# GitHub revoca cualquier token que se commitee. Vive solo en el PC del local.
+update-token.txt
