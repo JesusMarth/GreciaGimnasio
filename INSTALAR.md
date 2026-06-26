@@ -56,6 +56,20 @@ Si quieres trastear con datos de mentira sin riesgo, haz doble clic en **`GymGre
 
 ---
 
+## Actualizar cuando haya novedades
+
+Cuando te avisen de que hay una **versión nueva**:
+
+1. Si la aplicación está abierta, **cierra la ventana negra** de GymGrecia.
+2. Haz **doble clic en `Actualizar.bat`** y sigue lo que dice (te pedirá pulsar una tecla).
+3. Espera a que ponga **"Actualización COMPLETA"**. Tus **datos no se tocan** (socios, pagos y copias siguen igual).
+4. Abre **`GymGrecia.bat`** como siempre.
+
+> La versión que tienes instalada se ve abajo del todo en la barra lateral de la app (p. ej. `v1.0.0`).
+> Si `Actualizar.bat` dice que falta `update-token.txt`, avisa a quien instaló la app: es un ajuste que se pone una sola vez.
+
+---
+
 ## Si algo va mal
 
 | Problema | Solución |

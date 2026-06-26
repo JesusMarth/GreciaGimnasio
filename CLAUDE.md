@@ -38,6 +38,18 @@ El **estado de cuota se CALCULA** (no se guarda) desde `pagado_hasta` vs hoy (`u
 - ⚠️ **Registro npm**: hay un **`.npmrc` de proyecto** que fuerza el npm público (`registry.npmjs.org`). Es necesario porque el `.npmrc` GLOBAL de este equipo apunta al Artifactory de Inditex; sin el de proyecto, `npm install` grabaría URLs privadas en `package-lock.json` y la instalación fallaría en otros PC con `E401`. La 12.x de better-sqlite3 trae binario precompilado, así que `npm install` no necesita compilador (Visual Studio). Si reaparecen URLs `inditex` en el lock: `sed -i 's|https://inditex.jfrog.io/artifactory/api/npm/node-public/|https://registry.npmjs.org/|g' package-lock.json`.
 - Libs JS puras añadidas: `nodemailer` (email), `pdfkit` (recibos).
 
+## Versionado y publicación
+- **SemVer** en `package.json` (arrancó en `1.0.0` por estar ya en producción). El número se ve en el **pie del sidebar** (inyectado en build con `define` de Vite → `__APP_VERSION__`; **recuerda que es build-time**: tras `npm version` hay que `npm run build` para que la UI lo refleje — el `Actualizar.bat` ya reconstruye).
+- **Subir versión (un comando)**: `npm version patch|minor|major`.
+  - `preversion` corre typecheck (web + server) y `test:filtros`; si algo falla, no se taggea.
+  - `version` añade `CHANGELOG.md` al commit (edítalo ANTES, moviendo lo de `[Sin publicar]` a la nueva versión).
+  - Crea el commit `vX.Y.Z` + tag, y `postversion` hace `git push --follow-tags`.
+  - **Flujo típico de release**: 1) editar `CHANGELOG.md`; 2) `npm version minor` (sube, taggea y publica solo).
+- **`npm run dist`**: genera `../GreciaGimnasio.zip` (build + `git archive`) como respaldo offline para USB. No es el canal habitual.
+- **Actualizar el PC del gimnasio**: el dueño hace doble clic en **`Actualizar.bat`** → descarga la última `main` desde GitHub y la aplica **sin tocar `data/`**, luego reconstruye.
+  - El repo es **privado**: `Actualizar.bat` usa un **token de solo lectura** que lee de **`update-token.txt`** (en `.gitignore`, nunca se sube).
+  - **Bootstrap (una vez, lo hace el dev en el PC del local)**: crear un *fine-grained PAT* en GitHub → *Settings → Developer settings → Fine-grained tokens*, acceso **solo** a `GreciaGimnasio`, permiso **Contents: Read-only**, con caducidad; pegar ese token (solo el token, sin nada más) en un fichero `update-token.txt` junto a `Actualizar.bat`. A partir de ahí, el dueño solo da doble clic. Cuando el token caduque, repetir.
+
 ## Funcionalidades implementadas
 Panel · Socios (CRUD + búsqueda) · SocioDetalle (actividades, pagos, baja/reactivar, recibos) · Tarifas · **Copias de seguridad** (auto + manual + restaurar; `db.backup()` consistente con WAL) · **Avisos por email** (SMTP en Ajustes) · **Recibos PDF** (descargar / enviar; datos fiscales configurables; recibo↔factura + IVA opcional).
 

@@ -12,19 +12,17 @@ Bitácora para **retomar el proyecto en un chat nuevo sin tener que re-explicar 
 - La app **ya está instalada y funcionando en el PC del gimnasio** (se abre con `GymGrecia.bat`). ZIP de distribución verificado en `C:\Users\JesusMartin\GreciaGimnasio.zip` (incluye mock; lock 100% público; probado con subagentes: instala en un PC con solo **Node 22 LTS**).
 - Funcionalidades completas: **Panel** (montones + ingresos del mes con ojo + tarjetas que llevan a Socios filtrado) · **Socios** (CRUD, búsqueda, filtros actividad/estado/cuota/fecha-de-alta, paginación que se ajusta a la pantalla, export Excel adaptado a la selección/filtro) · **Ficha de socio** (actividades, baja/reactivar, pausar actividad, historial de pagos con scroll interno, recibos) · **Tarifas** · **Copias** (auto + manual + restaurar) · **avisos por email** (SMTP) · **recibos PDF** · **export Excel** · **ayuda "?"** por pantalla · **entorno MOCK** (`GymGrecia-MOCK.bat`, ~60 socios en `data-mock`, puerto 4712).
 - Dependencias (todas JS puro): `better-sqlite3` 12.x, `nodemailer`, `pdfkit`, `exceljs`. Hay un **`.npmrc` de proyecto** que fuerza el npm público (mantiene el lock portable).
-- **Versión en `package.json`: `0.1.0`** (todavía sin esquema de versionado real → ver abajo).
+- **Versionado SemVer en marcha** (arrancado en **`1.0.0`**): `npm version` sube+commitea+taggea+pushea en un comando; la versión se ve en el pie del sidebar; `Actualizar.bat` actualiza el PC del local en un clic. Ver el registro de hoy y `CLAUDE.md` → "Versionado y publicación".
 
 ## 🎯 Para la PRÓXIMA sesión
 
-### A) Versionado correcto + automatizarlo
-Plan propuesto (a confirmar e implementar):
-- **SemVer en `package.json`**. Como ya está en producción, saltar a **`1.0.0`**.
-- **Subir versión con un comando**: `npm version patch|minor|major` → actualiza `package.json`, hace commit y crea tag git (`v1.0.1`). (Git está instalado en la máquina de dev: hay `.git`.)
-- **Mostrar la versión dentro de la app** (p. ej. en el pie de la barra lateral) para saber qué corre el gimnasio. Inyectarla con un `define` de Vite (`__APP_VERSION__` desde `package.json`) o exponer `GET /api/version`.
-- **Automatizar el "release"**: convertir los pasos manuales de empaquetado (build + sembrar mock + comprimir el ZIP) en un script `npm run dist` que genere `GreciaGimnasio.zip` solo. Cada versión nueva → ZIP listo para llevar al local.
-- (Opcional) `CHANGELOG.md`. Para empezar basta este registro; si se quiere automático: `standard-version`/`changesets` con commits convencionales.
+### A) Versionado correcto + automatizarlo ✅ HECHO (2026-06-26)
+Implementado tal cual (ver registro de hoy). SemVer desde `1.0.0`, `npm version`
+con push automático, versión en el sidebar (Vite `define`), `npm run dist` (ZIP de
+respaldo) y **`Actualizar.bat`** (canal real de actualización del PC del local, con
+token de solo lectura en `update-token.txt`). `CHANGELOG.md` manual.
 
-### B) Sexo del socio (hombre/mujer) + nuevo filtro
+### B) Sexo del socio (hombre/mujer) + nuevo filtro  ← SIGUIENTE
 Replica el patrón con el que se añadió `dni` y el de los filtros existentes. Checklist:
 1. **`server/db.ts`**: migración suave `ALTER TABLE socios ADD COLUMN sexo TEXT` (junto a la de `dni`). Valores: `hombre` | `mujer` | null.
 2. **`server/queries.ts`**: `SocioRow` y `socioConResumen` → añadir `sexo`.
@@ -53,6 +51,17 @@ Replica el patrón con el que se añadió `dni` y el de los filtros existentes. 
   `sed -i 's|https://inditex.jfrog.io/artifactory/api/npm/node-public/|https://registry.npmjs.org/|g' package-lock.json`
 
 ## 📋 Registro (más reciente arriba)
+
+### 2026-06-26 · Versionado + actualización automática
+- **SemVer** arrancando en **`1.0.0`** (la app ya estaba en producción).
+- **`npm version patch|minor|major`** = bump + commit + tag + push en un comando:
+  `preversion` (typecheck web/server + tests), `version` (mete `CHANGELOG.md` en el commit), `postversion` (`git push --follow-tags`).
+- **Versión visible** en el pie del sidebar: `__APP_VERSION__` inyectado por Vite (`define`) desde `package.json` (build-time → la UI lo refleja tras `build`).
+- **`CHANGELOG.md`** (Keep a Changelog) con `[Sin publicar]` + `[1.0.0]`.
+- **`npm run dist`** (`scripts/dist.mjs`): build + `git archive` → `../GreciaGimnasio.zip` (respaldo offline; solo ficheros versionados, sin `data/` real).
+- **`Actualizar.bat`** (lo nuevo de verdad): el dueño da un clic y la app se actualiza desde GitHub **sin tocar `data/`** (robocopy excluye `data`/`node_modules`/el propio bat; luego `npm install` + `build`). Descarga a carpeta temporal primero: si falla, no toca nada.
+  - El repo es **PRIVADO** → el bat usa un **token de solo lectura** leído de **`update-token.txt`** (en `.gitignore`; PowerShell lo lee del fichero, no aparece en línea de comandos). Bootstrap del token (una vez) documentado en `CLAUDE.md`.
+  - Validado por partes: forma de la petición (401 con token falso), detección de la carpeta interna, robocopy preserva `data` y no se autopisa, lectura de versión con `node -p`. **Pendiente**: una prueba real con el token de verdad sobre una copia.
 
 ### 2026-06-25 · Handoff + .npmrc
 - Creada esta bitácora completa para arrancar en otro chat (objetivos: versionado automático + campo/filtro "sexo").
