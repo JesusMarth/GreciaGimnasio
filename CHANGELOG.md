@@ -12,6 +12,23 @@ y el proyecto usa [Versionado Semántico](https://semver.org/lang/es/) (SemVer):
 
 ## [Sin publicar]
 
+## [1.1.0] - 2026-06-29
+
+### Added
+- **Rediseño visual** (sistema "Claude Design"): nueva paleta (azul Egeo profundo,
+  oro olímpico, terracota, mármoles), tipografía (Cinzel para títulos y las cifras
+  del panel, Archivo para cuerpo, **Space Mono** local para micro-etiquetas, fechas
+  y chips), forma (radio, pastillas, sombra retro), **logo sólido** y **favicon**,
+  iconos del panel lateral, y tarjetas del panel con desglose ("Sin pagar / Atrasado").
+- **Columna "Vence"** en Socios: fecha de la cuota activa que expira antes,
+  **ordenable** al pulsar la cabecera.
+- **Sexo del socio** (hombre/mujer): selector rápido **♂ / ♀** al crear o editar,
+  **filtro** en Socios (chips + `?sexo=` en la URL) y columna **Sexo** en el export
+  a Excel. Migración suave: los socios existentes quedan sin asignar hasta editarlos.
+
+### Changed
+- Números del panel y nombres/importes ajustados a la jerarquía del nuevo diseño.
+
 ## [1.0.0] - 2026-06-26
 
 Primera versión con **versionado formal**. La aplicación ya estaba en producción
@@ -38,5 +55,6 @@ SemVer.
   email** (SMTP), **recibos PDF** y **ayuda contextual** por pantalla.
 - **Entorno MOCK** (`GymGrecia-MOCK.bat`, ~60 socios de prueba, puerto 4712).
 
-[Sin publicar]: https://github.com/JesusMarth/GreciaGimnasio/compare/v1.0.0...HEAD
+[Sin publicar]: https://github.com/JesusMarth/GreciaGimnasio/compare/v1.1.0...HEAD
+[1.1.0]: https://github.com/JesusMarth/GreciaGimnasio/compare/v1.0.0...v1.1.0
 [1.0.0]: https://github.com/JesusMarth/GreciaGimnasio/releases/tag/v1.0.0
