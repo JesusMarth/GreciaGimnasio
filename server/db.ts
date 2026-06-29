@@ -90,8 +90,14 @@ CREATE INDEX IF NOT EXISTS idx_lineas_pago ON pago_lineas(pago_id);
 CREATE INDEX IF NOT EXISTS idx_lineas_suscripcion ON pago_lineas(suscripcion_id);
 `);
   // Migración suave para BDs anteriores (CREATE TABLE IF NOT EXISTS no añade columnas nuevas).
+  // Los socios ya existentes quedan con la columna a NULL; se rellena al editarlos.
   try {
     conn.exec("ALTER TABLE socios ADD COLUMN dni TEXT");
+  } catch {
+    /* la columna ya existe */
+  }
+  try {
+    conn.exec("ALTER TABLE socios ADD COLUMN sexo TEXT"); // hombre | mujer | null
   } catch {
     /* la columna ya existe */
   }

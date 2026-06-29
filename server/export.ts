@@ -11,6 +11,7 @@ const ESTADO_TXT: Record<string, string> = {
   pendiente: "Sin pagar",
 };
 const cap = (s: string) => (s ? s.charAt(0).toUpperCase() + s.slice(1) : s);
+const sexoTxt = (s: string | null) => (s === "hombre" ? "Hombre" : s === "mujer" ? "Mujer" : "");
 const EUR = '#,##0.00" €"';
 
 function estilaCabecera(ws: ExcelJS.Worksheet) {
@@ -43,6 +44,7 @@ export async function libroSocios(ids?: number[]): Promise<Buffer> {
   ws.columns = [
     { header: "Nombre", key: "nombre", width: 28 },
     { header: "DNI/NIF", key: "dni", width: 14 },
+    { header: "Sexo", key: "sexo", width: 10 },
     { header: "Teléfono", key: "tel", width: 14 },
     { header: "Email", key: "email", width: 26 },
     { header: "Estado", key: "estado", width: 10 },
@@ -56,6 +58,7 @@ export async function libroSocios(ids?: number[]): Promise<Buffer> {
     ws.addRow({
       nombre: s.nombre,
       dni: s.dni ?? "",
+      sexo: sexoTxt(s.sexo),
       tel: s.telefono ?? "",
       email: s.email ?? "",
       estado: s.estado === "baja" ? "Baja" : "Activo",
@@ -86,6 +89,7 @@ export async function libroSocio(id: number): Promise<Buffer> {
   const datos: [string, string][] = [
     ["Socio", socio.nombre],
     ["DNI/NIF", socio.dni ?? ""],
+    ["Sexo", sexoTxt(socio.sexo)],
     ["Teléfono", socio.telefono ?? ""],
     ["Email", socio.email ?? ""],
     ["Estado", socio.estado === "baja" ? "Baja" : "Activo"],

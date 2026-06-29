@@ -8,6 +8,7 @@ export interface SocioRow {
   telefono: string | null;
   email: string | null;
   dni: string | null;
+  sexo: string | null;
   fecha_alta: string;
   fecha_nacimiento: string | null;
   estado: string;
@@ -54,18 +55,26 @@ export function suscripcionConEstado(s: SuscripcionRow, hoy: string) {
 /** Socio con sus suscripciones y el estado-resumen (el mas urgente entre las activas). */
 export function socioConResumen(s: SocioRow, hoy = hoyISO()) {
   const subs = (db.prepare(SQL_SUBS_DE_SOCIO).all(s.id) as SuscripcionRow[]).map((x) => suscripcionConEstado(x, hoy));
-  const estadosActivos = subs.filter((x) => x.activa).map((x) => x.estado as EstadoCuota);
+  const activas = subs.filter((x) => x.activa);
+  const estadosActivos = activas.map((x) => x.estado as EstadoCuota);
+  // Fecha de expiración del socio = la más temprana entre sus cuotas activas que
+  // tienen pago (pagadoHasta). Las fechas ISO (YYYY-MM-DD) ordenan cronológicamente
+  // como texto. Si ninguna activa tiene fecha (sin activas o todas sin pagar): null.
+  const fechasActivas = activas.map((x) => x.pagadoHasta).filter((d): d is string => !!d);
+  const proximaExpiracion = fechasActivas.length ? fechasActivas.reduce((a, b) => (a < b ? a : b)) : null;
   return {
     id: s.id,
     nombre: s.nombre,
     telefono: s.telefono,
     email: s.email,
     dni: s.dni,
+    sexo: s.sexo,
     fechaAlta: s.fecha_alta,
     fechaNacimiento: s.fecha_nacimiento,
     estado: s.estado,
     notas: s.notas,
     suscripciones: subs,
     estadoResumen: peorEstado(estadosActivos),
+    proximaExpiracion,
   };
 }

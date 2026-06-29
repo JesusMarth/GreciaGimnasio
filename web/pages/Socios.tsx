@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState, type Dispatch, type SetStateAction } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { api, ACTIVIDADES } from "../api.ts";
-import { capitalizar, descargar } from "../format.ts";
+import { capitalizar, descargar, fecha } from "../format.ts";
 import { EstadoBadge } from "../components/Badges.tsx";
 import { SocioFormModal } from "../components/SocioFormModal.tsx";
 import { AyudaSocios } from "../components/Ayuda.tsx";
@@ -20,6 +20,10 @@ const OPC_CUOTA = [
   { k: "pronto", t: "Vencen pronto" },
   { k: "aldia", t: "Al día" },
   { k: "sin", t: "Sin cuotas" },
+];
+const OPC_SEXO = [
+  { k: "hombre", t: "Hombre" },
+  { k: "mujer", t: "Mujer" },
 ];
 
 function GrupoChips({ label, opciones, valor, onToggle }: { label: string; opciones: { k: string; t: string }[]; valor: Set<string>; onToggle: (k: string) => void }) {
@@ -44,7 +48,9 @@ export function Socios() {
   const [filtroAct, setFiltroAct] = useState<Set<string>>(() => desdeUrl("actividad"));
   const [filtroEstado, setFiltroEstado] = useState<Set<string>>(() => desdeUrl("estado"));
   const [filtroCuota, setFiltroCuota] = useState<Set<string>>(() => desdeUrl("cuota"));
+  const [filtroSexo, setFiltroSexo] = useState<Set<string>>(() => desdeUrl("sexo"));
   const [filtroFecha, setFiltroFecha] = useState<RangoFecha>({ desde: null, hasta: null });
+  const [ordenVence, setOrdenVence] = useState(false); // false = orden natural; true = quien vence antes primero
   const [pagina, setPagina] = useState(1);
   const [filasPorPagina, setFilasPorPagina] = useState(12);
   const [nuevo, setNuevo] = useState(false);
@@ -68,7 +74,7 @@ export function Socios() {
   }, [buscar]);
 
   // Filtrado cliente (lógica pura y testeada en web/filtros.pruebas.ts).
-  const filtros: FiltrosSocios = { actividades: [...filtroAct], estado: [...filtroEstado], cuota: [...filtroCuota], fecha: filtroFecha };
+  const filtros: FiltrosSocios = { actividades: [...filtroAct], estado: [...filtroEstado], cuota: [...filtroCuota], sexo: [...filtroSexo], fecha: filtroFecha };
   const sociosFiltrados = filtrarSocios(socios, filtros);
   const hayFiltro = buscar.trim() !== "" || hayFiltrosActivos(filtros);
 
@@ -92,9 +98,19 @@ export function Socios() {
     };
   }, [socios.length, sociosFiltrados.length]);
 
-  const totalPaginas = Math.max(1, Math.ceil(sociosFiltrados.length / filasPorPagina));
+  // Orden opcional por vencimiento (los que no tienen cuota con fecha van al final).
+  const sociosOrdenados = ordenVence
+    ? [...sociosFiltrados].sort((a, b) => {
+        if (a.proximaExpiracion === b.proximaExpiracion) return 0;
+        if (!a.proximaExpiracion) return 1;
+        if (!b.proximaExpiracion) return -1;
+        return a.proximaExpiracion < b.proximaExpiracion ? -1 : 1; // ISO asc = vence antes primero
+      })
+    : sociosFiltrados;
+
+  const totalPaginas = Math.max(1, Math.ceil(sociosOrdenados.length / filasPorPagina));
   const paginaActual = Math.min(pagina, totalPaginas);
-  const visibles = sociosFiltrados.slice((paginaActual - 1) * filasPorPagina, paginaActual * filasPorPagina);
+  const visibles = sociosOrdenados.slice((paginaActual - 1) * filasPorPagina, paginaActual * filasPorPagina);
 
   // El export se adapta: marcados → esos; si no, lo filtrado; sin filtro → todos.
   const idsExport = sel.size ? [...sel] : hayFiltro ? sociosFiltrados.map((s) => s.id) : undefined;
@@ -131,6 +147,7 @@ export function Socios() {
     setFiltroAct(new Set());
     setFiltroEstado(new Set());
     setFiltroCuota(new Set());
+    setFiltroSexo(new Set());
     setFiltroFecha({ desde: null, hasta: null });
     setPagina(1);
   }
@@ -169,6 +186,7 @@ export function Socios() {
               <GrupoChips label="Actividad" opciones={ACTIVIDADES.map((a) => ({ k: a, t: capitalizar(a) }))} valor={filtroAct} onToggle={(k) => alternaEn(setFiltroAct, k)} />
               <GrupoChips label="Estado" opciones={OPC_ESTADO} valor={filtroEstado} onToggle={(k) => alternaEn(setFiltroEstado, k)} />
               <GrupoChips label="Cuota" opciones={OPC_CUOTA} valor={filtroCuota} onToggle={(k) => alternaEn(setFiltroCuota, k)} />
+              <GrupoChips label="Sexo" opciones={OPC_SEXO} valor={filtroSexo} onToggle={(k) => alternaEn(setFiltroSexo, k)} />
             </div>
             <div className="filtros-fila">
               <FiltroFecha rango={filtroFecha} onChange={(r) => { setPagina(1); setFiltroFecha(r); }} />
@@ -197,6 +215,16 @@ export function Socios() {
                   <th>Teléfono</th>
                   <th>Actividades</th>
                   <th>Estado cuota</th>
+                  <th className="th-sort" onClick={() => { setOrdenVence((v) => !v); setPagina(1); }} title="Ordenar por quién vence antes">
+                    <span className="th-sort-inner">
+                      Vence
+                      <span className={"th-chevron" + (ordenVence ? " on" : "")} aria-hidden="true">
+                        <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3.2" strokeLinecap="round" strokeLinejoin="round">
+                          <path d="M6 9l6 6 6-6" />
+                        </svg>
+                      </span>
+                    </span>
+                  </th>
                   <th></th>
                 </tr>
               </thead>
@@ -224,6 +252,7 @@ export function Socios() {
                     <td>
                       <EstadoBadge estado={s.estadoResumen} />
                     </td>
+                    <td className="td-vence">{fecha(s.proximaExpiracion)}</td>
                     <td style={{ textAlign: "right", color: "var(--text-faint)" }}>›</td>
                   </tr>
                 ))}

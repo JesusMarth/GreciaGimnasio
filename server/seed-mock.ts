@@ -34,7 +34,7 @@ if (ya > 0) {
 
 const hoy = hoyISO();
 const insSocio = db.prepare(
-  "INSERT INTO socios (nombre, telefono, email, dni, fecha_alta, fecha_nacimiento, estado, notas, creado_en) VALUES (?,?,?,?,?,?,?,?,?)"
+  "INSERT INTO socios (nombre, telefono, email, dni, sexo, fecha_alta, fecha_nacimiento, estado, notas, creado_en) VALUES (?,?,?,?,?,?,?,?,?,?)"
 );
 const insSub = db.prepare(
   "INSERT INTO suscripciones (socio_id, actividad, etiqueta, importe, periodicidad, pagado_hasta, activa, notas, creado_en) VALUES (?,?,?,?,?,?,?,?,?)"
@@ -46,13 +46,15 @@ const insLinea = db.prepare(
 
 const sembrar = db.transaction(() => {
   for (let i = 0; i < 60; i++) {
-    const nombre = `${elige(NOMBRES)} ${elige(APELLIDOS)} ${elige(APELLIDOS)}`;
+    const fnIdx = r(NOMBRES.length); // los 15 primeros nombres son de mujer; el resto, de hombre
+    const nombre = `${NOMBRES[fnIdx]} ${elige(APELLIDOS)} ${elige(APELLIDOS)}`;
+    const sexo = r(12) === 0 ? null : fnIdx < 15 ? "mujer" : "hombre"; // ~8% sin asignar (como socios antiguos)
     const tel = "6" + String(20000000 + r(79999999));
     const email = r(10) < 7 ? `socio${i + 1}@ejemplo.com` : null;
     const dni = r(10) < 6 ? `${10000000 + r(89999999)}X` : null;
     const alta = addDias(addMeses(hoy, -r(36)), -r(28)); // hasta ~3 años atrás, día variado
     const estado = r(10) < 9 ? "activo" : "baja";
-    const socioId = insSocio.run(nombre, tel, email, dni, alta, null, estado, null, hoy).lastInsertRowid as number;
+    const socioId = insSocio.run(nombre, tel, email, dni, sexo, alta, null, estado, null, hoy).lastInsertRowid as number;
 
     // 1-3 actividades distintas
     const acts = [...ACTS].sort(() => Math.random() - 0.5).slice(0, 1 + r(3));

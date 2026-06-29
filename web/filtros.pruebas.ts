@@ -15,18 +15,18 @@ const igual = (a: number[], b: number[]) => a.length === b.length && a.every((x,
 function sub(over: Partial<Suscripcion>): Suscripcion {
   return { id: 1, socioId: 1, actividad: "gimnasio", etiqueta: null, importe: 30, periodicidad: "mensual", pagadoHasta: null, activa: true, notas: null, estado: "aldia", dias: 30, ...over };
 }
-function soc(id: number, fechaAlta: string, estado: string, estadoResumen: EstadoCuota | null, subs: Suscripcion[]): Socio {
-  return { id, nombre: "Socio " + id, telefono: null, email: null, dni: null, fechaAlta, fechaNacimiento: null, estado, notas: null, suscripciones: subs, estadoResumen };
+function soc(id: number, fechaAlta: string, estado: string, estadoResumen: EstadoCuota | null, subs: Suscripcion[], sexo: string | null = null): Socio {
+  return { id, nombre: "Socio " + id, telefono: null, email: null, dni: null, sexo, fechaAlta, fechaNacimiento: null, estado, notas: null, suscripciones: subs, estadoResumen, proximaExpiracion: null };
 }
 
 const HOY = "2026-06-24"; // miércoles
 const socios: Socio[] = [
-  soc(1, "2026-06-24", "activo", "aldia", [sub({ actividad: "gimnasio", activa: true })]),
-  soc(2, "2026-06-01", "activo", "atrasado", [sub({ actividad: "karate", activa: true })]),
-  soc(3, "2025-12-15", "activo", "pendiente", [sub({ actividad: "pilates", activa: true })]),
-  soc(4, "2026-06-23", "activo", "pronto", [sub({ actividad: "gimnasio", activa: true }), sub({ actividad: "karate", activa: true })]),
-  soc(5, "2024-03-10", "baja", null, [sub({ actividad: "gimnasio", activa: false })]),
-  soc(6, "2026-06-18", "activo", "aldia", [sub({ actividad: "gimnasio", activa: true })]),
+  soc(1, "2026-06-24", "activo", "aldia", [sub({ actividad: "gimnasio", activa: true })], "hombre"),
+  soc(2, "2026-06-01", "activo", "atrasado", [sub({ actividad: "karate", activa: true })], "mujer"),
+  soc(3, "2025-12-15", "activo", "pendiente", [sub({ actividad: "pilates", activa: true })], null),
+  soc(4, "2026-06-23", "activo", "pronto", [sub({ actividad: "gimnasio", activa: true }), sub({ actividad: "karate", activa: true })], "hombre"),
+  soc(5, "2024-03-10", "baja", null, [sub({ actividad: "gimnasio", activa: false })], "mujer"),
+  soc(6, "2026-06-18", "activo", "aldia", [sub({ actividad: "gimnasio", activa: true })], null),
 ];
 const F = (over: Partial<FiltrosSocios>): FiltrosSocios => ({ ...FILTROS_VACIOS, ...over });
 
@@ -51,6 +51,11 @@ check("pendientes (atrasado+pendiente) → [2,3]", igual(ids(filtrarSocios(socio
 check("al día → [1,6]", igual(ids(filtrarSocios(socios, F({ cuota: ["aldia"] }))), [1, 6]));
 check("vencen pronto → [4]", igual(ids(filtrarSocios(socios, F({ cuota: ["pronto"] }))), [4]));
 check("sin cuotas → [5]", igual(ids(filtrarSocios(socios, F({ cuota: ["sin"] }))), [5]));
+
+console.log("\n— filtrarSocios: sexo —");
+check("hombre → [1,4]", igual(ids(filtrarSocios(socios, F({ sexo: ["hombre"] }))), [1, 4]));
+check("mujer → [2,5]", igual(ids(filtrarSocios(socios, F({ sexo: ["mujer"] }))), [2, 5]));
+check("hombre+mujer → [1,2,4,5] (excluye sin sexo)", igual(ids(filtrarSocios(socios, F({ sexo: ["hombre", "mujer"] }))), [1, 2, 4, 5]));
 
 console.log("\n— filtrarSocios: fecha de alta (presets, hoy=2026-06-24) —");
 check("hoy → [1]", igual(ids(filtrarSocios(socios, F({ fecha: rangoDePreset("hoy", HOY) }))), [1]));
@@ -79,6 +84,7 @@ check("sin filtros → todos", igual(ids(filtrarSocios(socios, FILTROS_VACIOS)),
 console.log("\n— hayFiltrosActivos —");
 check("vacío → false", hayFiltrosActivos(FILTROS_VACIOS) === false);
 check("con actividad → true", hayFiltrosActivos(F({ actividades: ["karate"] })) === true);
+check("con sexo → true", hayFiltrosActivos(F({ sexo: ["hombre"] })) === true);
 check("con fecha → true", hayFiltrosActivos(F({ fecha: { desde: "2026-01-01", hasta: null } })) === true);
 
 console.log(fallos === 0 ? `\n✅ Todas las pruebas OK (${0} fallos)` : `\n❌ ${fallos} prueba(s) fallan`);

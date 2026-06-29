@@ -11,10 +11,11 @@ export interface FiltrosSocios {
   actividades: string[]; // OR sobre actividades activas; vacío = todas
   estado: string[]; // 'activo' | 'baja'; vacío = ambos
   cuota: string[]; // grupos: 'pendiente' | 'pronto' | 'aldia' | 'sin'; vacío = todos
+  sexo: string[]; // 'hombre' | 'mujer'; vacío = todos
   fecha: RangoFecha; // sobre la fecha de alta
 }
 
-export const FILTROS_VACIOS: FiltrosSocios = { actividades: [], estado: [], cuota: [], fecha: { desde: null, hasta: null } };
+export const FILTROS_VACIOS: FiltrosSocios = { actividades: [], estado: [], cuota: [], sexo: [], fecha: { desde: null, hasta: null } };
 
 /** Agrupa el estado de cuota del socio en categorías filtrables. */
 export function grupoCuota(e: EstadoCuota | null): string {
@@ -26,7 +27,7 @@ export function grupoCuota(e: EstadoCuota | null): string {
 
 /** ¿Hay algún filtro activo? (útil para el botón "Limpiar" y para el export). */
 export function hayFiltrosActivos(f: FiltrosSocios): boolean {
-  return f.actividades.length > 0 || f.estado.length > 0 || f.cuota.length > 0 || f.fecha.desde !== null || f.fecha.hasta !== null;
+  return f.actividades.length > 0 || f.estado.length > 0 || f.cuota.length > 0 || f.sexo.length > 0 || f.fecha.desde !== null || f.fecha.hasta !== null;
 }
 
 export function filtrarSocios(socios: Socio[], f: FiltrosSocios): Socio[] {
@@ -34,6 +35,7 @@ export function filtrarSocios(socios: Socio[], f: FiltrosSocios): Socio[] {
     if (f.actividades.length && !s.suscripciones.some((x) => x.activa && f.actividades.includes(x.actividad))) return false;
     if (f.estado.length && !f.estado.includes(s.estado)) return false;
     if (f.cuota.length && !f.cuota.includes(grupoCuota(s.estadoResumen))) return false;
+    if (f.sexo.length && !(s.sexo && f.sexo.includes(s.sexo))) return false; // sin sexo: excluido al filtrar
     if (f.fecha.desde && s.fechaAlta < f.fecha.desde) return false;
     if (f.fecha.hasta && s.fechaAlta > f.fecha.hasta) return false;
     return true;

@@ -20,12 +20,14 @@ export interface Socio {
   telefono: string | null;
   email: string | null;
   dni: string | null;
+  sexo: string | null; // hombre | mujer | null
   fechaAlta: string;
   fechaNacimiento: string | null;
   estado: string; // activo | baja
   notas: string | null;
   suscripciones: Suscripcion[];
   estadoResumen: EstadoCuota | null;
+  proximaExpiracion: string | null; // ISO; la cuota activa que vence antes (null si no hay)
 }
 
 export interface PagoLinea {
@@ -63,6 +65,7 @@ export interface DashItem {
   importe: number;
   periodicidad: string;
   pagadoHasta: string | null;
+  fechaAlta: string;
   estado: EstadoCuota;
   dias: number | null;
 }
