@@ -60,16 +60,26 @@ export function Panel() {
   if (!data) return <div className="center-box">Cargando…</div>;
 
   const { resumen, ingresosMes } = data;
+  // Desglose presentacional de "Por cobrar" (sin pagar vs. atrasado), calculado en cliente.
+  const sinPagar = data.porCobrar.filter((i) => i.estado === "pendiente").length;
+  const atrasado = data.porCobrar.filter((i) => i.estado === "atrasado").length;
 
   return (
     <>
       <div className="hero">
-        <svg className="templo" viewBox="0 0 800 230" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-          <path d="M400 12 L624 88 L176 88 Z" strokeWidth="6" />
-          <path d="M180 98 H620" strokeWidth="11" />
-          <path d="M210 106 V198 M258 106 V198 M306 106 V198 M354 106 V198 M402 106 V198 M450 106 V198 M498 106 V198 M546 106 V198 M594 106 V198" strokeWidth="7" />
-          <path d="M168 202 H632" strokeWidth="11" />
-          <path d="M156 216 H644" strokeWidth="8" opacity="0.6" />
+        <svg className="templo" viewBox="0 0 800 244" fill="currentColor" aria-hidden="true">
+          <path d="M400 16 L648 100 H152 Z" />
+          <rect x="152" y="106" width="496" height="16" />
+          <rect x="179" y="128" width="22" height="82" />
+          <rect x="239" y="128" width="22" height="82" />
+          <rect x="299" y="128" width="22" height="82" />
+          <rect x="359" y="128" width="22" height="82" />
+          <rect x="419" y="128" width="22" height="82" />
+          <rect x="479" y="128" width="22" height="82" />
+          <rect x="539" y="128" width="22" height="82" />
+          <rect x="599" y="128" width="22" height="82" />
+          <rect x="150" y="214" width="500" height="16" />
+          <rect x="138" y="233" width="524" height="8" opacity="0.5" />
         </svg>
         <div className="eyebrow">Bienvenido a tu templo</div>
         <h1 className="wordmark">GymGrecia</h1>
@@ -90,26 +100,33 @@ export function Panel() {
           <div className="bar" />
           <div className="label">Por cobrar</div>
           <div className="value">{resumen.porCobrar}</div>
+          {resumen.porCobrar > 0 && (
+            <div className="desglose">
+              <span className="badge morado">Sin pagar {sinPagar}</span>
+              <span className="badge rojo">Atrasado {atrasado}</span>
+            </div>
+          )}
         </div>
         <div className="stat ambar clic" onClick={() => nav("/socios?cuota=pronto")} title="Ver estos socios">
           <div className="bar" />
           <div className="label">Vencen pronto</div>
           <div className="value">{resumen.pronto}</div>
+          <div className="nota">En 7 días o menos</div>
         </div>
         <div className="stat verde clic" onClick={() => nav("/socios?cuota=aldia")} title="Ver estos socios">
           <div className="bar" />
           <div className="label">Al día</div>
           <div className="value">{resumen.aldia}</div>
+          <div className="nota">Cuotas en regla</div>
         </div>
-        <div className="stat azul">
+        <div className="stat oro">
           <div className="bar" />
-          <div className="label">
-            Ingresos del mes
-            <button className="ojo-btn" onClick={toggleIngresos} title={verIngresos ? "Ocultar" : "Mostrar"} aria-label={verIngresos ? "Ocultar ingresos" : "Mostrar ingresos"}>
-              {verIngresos ? OJO_ABIERTO : OJO_CERRADO}
-            </button>
-          </div>
+          <div className="label">Ingresos del mes</div>
           <div className="value">{verIngresos ? euros(ingresosMes.total) : <span className="valor-oculto">••••• €</span>}</div>
+          <button className="btn sm ghost ingresos-toggle" onClick={toggleIngresos}>
+            {verIngresos ? OJO_ABIERTO : OJO_CERRADO}
+            {verIngresos ? "Ocultar" : "Mostrar"}
+          </button>
         </div>
       </div>
 
@@ -131,7 +148,7 @@ export function Panel() {
             <div className="tag-list">
               {ingresosMes.porActividad.map((a) => (
                 <span key={a.actividad} className="pill-act" style={{ fontSize: 13, padding: "5px 12px" }}>
-                  {capitalizar(a.actividad)}: <strong>{euros(a.total)}</strong>
+                  {capitalizar(a.actividad)}: <strong className="cifra">{euros(a.total)}</strong>
                 </span>
               ))}
             </div>
@@ -191,15 +208,15 @@ function Columna({
             <Link to={`/socios/${i.socioId}`} className="nombre">
               {i.socioNombre}
             </Link>
-            <strong>{euros(i.importe)}</strong>
+            <strong className="cifra">{euros(i.importe)}</strong>
           </div>
           <div className="meta">
             <span className="pill-act">{capitalizar(i.actividad)}</span>
-            {i.etiqueta && <span>{i.etiqueta}</span>}
-          </div>
-          <div className="estado-linea">
-            <span className="muted">{estadoTexto(i.estado, i.dias)}</span>
-            <span className="muted">{i.pagadoHasta ? `hasta ${fecha(i.pagadoHasta)}` : ""}</span>
+            <span className={"badge " + colorEstado(i.estado)}>
+              <i className="bdot" />
+              {estadoTexto(i.estado, i.dias)}
+            </span>
+            {i.etiqueta && <span className="muted">{i.etiqueta}</span>}
           </div>
           <div className="acciones">
             <button className="btn primary sm" onClick={() => onCobrar(i)}>
@@ -210,6 +227,7 @@ function Columna({
                 Avisar
               </button>
             )}
+            <span className="item-fecha">{i.pagadoHasta ? `hasta ${fecha(i.pagadoHasta)}` : `alta ${fecha(i.fechaAlta)}`}</span>
           </div>
         </div>
       ))}

@@ -250,7 +250,7 @@ export function SocioDetalle() {
             {pagos.map((p) => (
               <div key={p.id} className="sub-card verde" style={{ borderLeftColor: "var(--border)" }}>
                 <div className="top" style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                  <strong>{euros(p.total)}</strong>
+                  <strong className="cifra">{euros(p.total)}</strong>
                   <span className="muted" style={{ fontSize: 12.5 }}>
                     {fecha(p.fecha)} · {capitalizar(p.metodo)}
                   </span>
@@ -259,7 +259,7 @@ export function SocioDetalle() {
                   {p.lineas.map((l, i) => (
                     <div key={i}>
                       {capitalizar(l.actividad)}
-                      {l.concepto ? ` · ${l.concepto}` : ""}: {euros(l.importe)}
+                      {l.concepto ? ` · ${l.concepto}` : ""}: <span className="cifra">{euros(l.importe)}</span>
                       {l.periodoHasta ? ` (hasta ${fecha(l.periodoHasta)})` : ""}
                     </div>
                   ))}
@@ -340,7 +340,7 @@ function SubCard({
           <span className="pill-act">{capitalizar(sub.actividad)}</span>
           {sub.etiqueta && <span style={{ marginLeft: 8, fontWeight: 600 }}>{sub.etiqueta}</span>}
         </div>
-        <strong>{euros(sub.importe)}</strong>
+        <strong className="cifra">{euros(sub.importe)}</strong>
       </div>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 8 }}>
         <EstadoBadge estado={sub.activa ? sub.estado : null} />

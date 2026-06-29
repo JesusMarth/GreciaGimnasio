@@ -68,7 +68,7 @@ export function Tarifas() {
                   <td>
                     <span className="pill-act">{capitalizar(t.actividad)}</span>
                   </td>
-                  <td>{euros(t.importe)}</td>
+                  <td className="cifra">{euros(t.importe)}</td>
                   <td className="muted">{t.periodicidad === "bono" ? "Bono" : "Mensual"}</td>
                   <td style={{ textAlign: "right" }}>
                     <button className="btn sm" onClick={() => setForm({ t })}>

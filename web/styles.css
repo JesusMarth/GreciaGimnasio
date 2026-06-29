@@ -17,36 +17,55 @@
   font-stretch: 75% 125%;
   font-display: swap;
 }
+/* Space Mono: micro-etiquetas, fechas y chips (look técnico / de plano). Local (offline). */
+@font-face {
+  font-family: "Space Mono";
+  src: url("./fonts/SpaceMono-400.woff2") format("woff2");
+  font-weight: 400;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Space Mono";
+  src: url("./fonts/SpaceMono-700.woff2") format("woff2");
+  font-weight: 700;
+  font-display: swap;
+}
 
 :root {
   /* Piedra / mármol */
-  --crema: #e9e3d3;
-  --crema-2: #f1ece0;
-  --marfil: #fbf8f1;
-  --linea: #d6cdb8;
-  --linea-fuerte: #c2b69a;
+  --crema: #f3ecdd;        /* fondo */
+  --crema-2: #ede5d2;      /* superficie secundaria / sidebar / hover */
+  --marfil: #fbf7ee;       /* tarjetas (mármol claro) */
+  --linea: #dad0bb;        /* borde 1px */
+  --linea-fuerte: #c9bc9e; /* borde fuerte */
 
-  /* Tinta */
-  --tinta: #16233a;
-  --tinta-soft: #46546c;
-  --tinta-faint: #8a92a0;
+  /* Tinta (Azul Egeo profundo) */
+  --tinta: #14314b;        /* texto / primario */
+  --tinta-soft: #45596b;   /* texto secundario */
+  --tinta-faint: #8b93a0;  /* texto tenue */
 
   /* Azul Egeo */
-  --azul-900: #14294a;
-  --azul-700: #1d4683;
-  --azul-500: #1f5bb8;
-  --azul-400: #3f78d4;
-  --azul-soft: #e1e9f5;
+  --azul-900: #14314b;     /* profundo = primario */
+  --azul-700: #184e78;     /* intermedio */
+  --azul-500: #1c5a89;     /* acento / hover */
+  --azul-400: #2e70a1;     /* acento claro */
+  --azul-soft: #e2eaf1;    /* tinte suave (focus / fondos) */
 
-  /* Estados (armonizados con la piedra) */
-  --rojo: #ad4029;
-  --rojo-soft: #f1ddd5;
-  --ambar: #a87c18;
-  --ambar-soft: #efe5ca;
-  --verde: #2c7355;
-  --verde-soft: #d7e9df;
+  /* Estados (significado intacto, hexes del nuevo sistema) */
+  --rojo: #bb3a3a;
+  --rojo-soft: #f2dbd5;
+  --ambar: #be8a16;
+  --ambar-soft: #f1e6c8;
+  --verde: #2e7b53;
+  --verde-soft: #d6e8de;
   --gris: #6b7280;
-  --gris-soft: #e6e0d1;
+  --gris-soft: #e7e0d1;
+
+  /* Acentos de marca */
+  --oro: #b5891f;          /* oro olímpico · detalle / cenefa */
+  --oro-soft: #efe4c7;
+  --terracota: #be5a3a;    /* acento cálido */
+  --terracota-soft: #f1ded5;
 
   /* Alias de compatibilidad (estilos en linea de los componentes) */
   --text: var(--tinta);
@@ -62,6 +81,13 @@
 
   --sans: "Archivo", "Segoe UI", system-ui, -apple-system, Roboto, sans-serif;
   --display: "Cinzel", "Trajan Pro", "Times New Roman", serif;
+  --mono: "Space Mono", "Consolas", "Courier New", monospace;
+
+  /* Forma & espaciado (sistema de diseño) */
+  --radio: 8px;
+  --radio-pill: 999px;
+  --barra-estado: 6px;
+  --sombra-retro: 4px 4px 0 rgba(20, 49, 75, 0.05);
 }
 
 * { box-sizing: border-box; }
@@ -82,12 +108,12 @@ body {
 
 /* Inscripcion / antetitulo */
 .eyebrow {
-  font-family: var(--display);
-  font-weight: 600;
+  font-family: var(--mono);
+  font-weight: 700;
   text-transform: uppercase;
-  letter-spacing: 0.22em;
+  letter-spacing: 0.2em;
   color: var(--azul-500);
-  font-size: 12px;
+  font-size: 11px;
 }
 
 /* ---------- Layout ---------- */
@@ -106,7 +132,7 @@ body {
   gap: 3px;
 }
 .brand { display: flex; align-items: center; gap: 12px; padding: 4px 8px 16px; margin-bottom: 8px; border-bottom: 1.5px solid var(--linea-fuerte); }
-.brand .logo { width: 40px; height: 40px; flex-shrink: 0; color: var(--azul-500); }
+.brand .logo { width: 40px; height: 40px; flex-shrink: 0; color: var(--azul-900); }
 .brand .logo svg { width: 100%; height: 100%; display: block; }
 .brand .name {
   font-family: var(--display);
@@ -129,16 +155,19 @@ body {
 }
 
 .nav-link {
-  display: flex; align-items: center; gap: 12px;
-  padding: 11px 13px;
+  display: flex; align-items: center; gap: 11px;
+  padding: 11px 12px;
   border-left: 3px solid transparent;
+  border-radius: 7px;
   color: var(--tinta-soft); text-decoration: none;
   font-weight: 600; font-size: 13px; letter-spacing: 0.04em; text-transform: uppercase;
   cursor: pointer; transition: background 0.12s, color 0.12s, border-color 0.12s;
 }
-.nav-link:hover { background: rgba(31, 91, 184, 0.08); color: var(--azul-700); }
-.nav-link.active { background: var(--azul-500); color: #fff; border-left-color: var(--azul-900); }
-.nav-link .ico { width: 18px; text-align: center; font-size: 15px; }
+.nav-link:hover { background: rgba(20, 49, 75, 0.06); color: var(--azul-500); }
+.nav-link.active { background: var(--azul-900); color: #fff; border-left-color: var(--oro); }
+.nav-link.active .ico { color: var(--oro); }
+.nav-link .ico { width: 20px; height: 20px; flex-shrink: 0; display: inline-flex; align-items: center; justify-content: center; }
+.nav-link .ico svg { width: 19px; height: 19px; display: block; }
 .sidebar .spacer { flex: 1; }
 .sidebar .foot {
   color: var(--tinta-faint); font-size: 10.5px; line-height: 1.5; letter-spacing: 0.02em;
@@ -185,7 +214,8 @@ body {
 .hero .lema { position: relative; color: var(--tinta-soft); font-size: 15px; max-width: 520px; margin: 0 auto; }
 .hero .hero-fecha {
   position: relative; display: inline-flex; align-items: center; gap: 8px;
-  margin-top: 18px; padding: 6px 14px; border: 1.5px solid var(--linea-fuerte);
+  margin-top: 18px; padding: 7px 18px; border: 1.5px solid var(--linea-fuerte);
+  border-radius: 999px; background: var(--marfil);
   font-size: 12px; color: var(--azul-700); font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em;
 }
 
@@ -201,24 +231,30 @@ body {
 /* Marcador de estadísticas (scoreboard de celdas unidas) */
 .stat-grid {
   display: grid; grid-template-columns: repeat(4, 1fr);
-  gap: 1.5px; background: var(--linea-fuerte);
-  border: 1.5px solid var(--linea-fuerte); margin-bottom: 16px;
+  gap: 14px; margin-bottom: 18px;
 }
-.stat { background: var(--marfil); padding: 20px 22px; position: relative; overflow: hidden; }
-.stat .label { color: var(--tinta-soft); font-size: 11px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; }
-.stat .value { font-size: 40px; font-weight: 800; margin-top: 8px; letter-spacing: -0.03em; color: var(--tinta); line-height: 1; }
-.stat .bar { position: absolute; left: 0; top: 0; bottom: 0; width: 5px; }
+.stat {
+  background: var(--marfil); border: 1px solid var(--linea);
+  border-radius: var(--radio); box-shadow: var(--sombra-retro);
+  padding: 22px 22px 18px; position: relative; overflow: hidden;
+}
+.stat .label { font-family: var(--display); color: var(--tinta-soft); font-size: 11.5px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; display: flex; align-items: center; }
+.stat .value { font-family: var(--display); font-size: 46px; font-weight: 700; margin-top: 6px; letter-spacing: 0.01em; color: var(--tinta); line-height: 1; }
+.stat .bar { position: absolute; left: 0; right: 0; top: 0; height: var(--barra-estado); }
+.stat .desglose { display: flex; gap: 7px; flex-wrap: wrap; margin-top: 13px; }
+.stat .nota { margin-top: 11px; color: var(--tinta-faint); font-size: 12px; font-family: var(--mono); letter-spacing: 0.01em; }
 .stat.rojo .bar { background: var(--rojo); } .stat.rojo .value { color: var(--rojo); }
 .stat.ambar .bar { background: var(--ambar); } .stat.ambar .value { color: var(--ambar); }
 .stat.verde .bar { background: var(--verde); } .stat.verde .value { color: var(--verde); }
 .stat.azul .bar { background: var(--azul-500); } .stat.azul .value { color: var(--azul-500); }
+.stat.oro .bar { background: var(--oro); }
 
 /* Ingresos: visibilidad controlada con el botón de ojo (sin desenfoque). */
 .stat.azul { cursor: default; }
 
 /* ---------- Columnas del panel ---------- */
 .cols { display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; align-items: start; margin-top: 26px; }
-.col-head { display: flex; align-items: center; gap: 9px; font-weight: 700; font-size: 12px; padding: 4px 2px 13px; letter-spacing: 0.06em; text-transform: uppercase; }
+.col-head { display: flex; align-items: center; gap: 8px; font-family: var(--display); font-weight: 700; font-size: 12px; padding: 4px 2px 12px; margin-bottom: 16px; letter-spacing: 0.05em; text-transform: uppercase; white-space: nowrap; border-bottom: 2px solid var(--tinta); }
 .col-head .dot { width: 9px; height: 9px; }
 .col-head .count { margin-left: auto; background: var(--crema-2); border: 1.5px solid var(--linea-fuerte); color: var(--tinta-soft); padding: 1px 9px; font-size: 12px; font-weight: 700; }
 .dot.rojo { background: var(--rojo); } .dot.ambar { background: var(--ambar); } .dot.verde { background: var(--verde); }
@@ -232,13 +268,13 @@ body {
 .item.ambar { border-left-color: var(--ambar); }
 .item.verde { border-left-color: var(--verde); }
 .item:hover { border-color: var(--tinta-soft); }
-.item.rojo:hover { border-left-color: var(--rojo); }
 .item .top { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
 .item .nombre { font-weight: 700; color: var(--tinta); cursor: pointer; text-decoration: none; }
 .item .nombre:hover { color: var(--azul-500); }
 .item .meta { color: var(--tinta-soft); font-size: 12.5px; margin-top: 5px; display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
 .item .estado-linea { font-size: 12px; margin-top: 9px; display: flex; align-items: center; justify-content: space-between; gap: 8px; }
-.item .acciones { margin-top: 11px; display: flex; gap: 8px; }
+.acciones { display: flex; gap: 12px; flex-wrap: wrap; align-items: center; }
+.item .acciones { margin-top: 11px; gap: 12px; }
 .empty-col { color: var(--tinta-faint); font-size: 12.5px; padding: 18px 6px; text-align: center; border: 1.5px dashed var(--linea-fuerte); }
 
 /* ---------- Insignias / etiquetas (cuadradas, estampadas) ---------- */
@@ -292,6 +328,13 @@ tr:last-child td { border-bottom: none; }
 tr.clickable { cursor: pointer; }
 tr.clickable:hover td { background: var(--crema-2); }
 td .nombre { font-weight: 700; }
+/* Cabecera ordenable (columna "Vence") */
+th.th-sort { cursor: pointer; user-select: none; white-space: nowrap; }
+th.th-sort:hover { color: var(--azul-500); }
+th.th-sort .th-sort-inner { display: inline-flex; align-items: center; gap: 4px; }
+th.th-sort .th-chevron { display: inline-flex; color: var(--tinta-faint); opacity: 0.4; transition: opacity 0.12s, color 0.12s; }
+th.th-sort:hover .th-chevron { opacity: 0.75; }
+th.th-sort .th-chevron.on { opacity: 1; color: var(--azul-500); }
 
 /* ---------- Busqueda ---------- */
 .search { position: relative; max-width: 340px; width: 100%; }
@@ -340,8 +383,8 @@ td .nombre { font-weight: 700; }
   .sidebar { position: static; height: auto; flex-direction: row; flex-wrap: wrap; align-items: center; border-right: none; border-bottom: 1.5px solid var(--linea-fuerte); }
   .sidebar .brand { border-bottom: none; margin-bottom: 0; padding-bottom: 4px; }
   .sidebar .spacer, .sidebar .foot, .sidebar .foot-version { display: none; }
-  .nav-link { border-left: none; border-bottom: 3px solid transparent; }
-  .nav-link.active { border-left: none; border-bottom-color: var(--azul-900); }
+  .nav-link { border-left: none; border-bottom: 3px solid transparent; border-radius: 0; }
+  .nav-link.active { border-left: none; border-bottom-color: var(--oro); }
   .main { padding: 0 0 50px; }
   .lienzo { padding: 0 22px; }
   .hero { margin: 0 0 24px; padding: 34px 22px 30px; }
@@ -412,7 +455,7 @@ td .nombre { font-weight: 700; }
 .panel-mas:hover { background: var(--crema-2); border-color: var(--tinta-soft); }
 
 /* ---------- Estado "sin pagar" (pendiente): morado, distinto del rojo de "atrasado" ---------- */
-:root { --morado: #6d4aa0; --morado-soft: #e7e0f3; }
+:root { --morado: #6b4da0; --morado-soft: #e5def0; }
 .badge.morado { background: var(--morado-soft); color: var(--morado); }
 .dot.morado { background: var(--morado); }
 .item.morado { border-left-color: var(--morado); }
@@ -453,5 +496,54 @@ html { scrollbar-gutter: stable; }
 .ficha-col-der { display: flex; flex-direction: column; min-height: 0; }
 .ficha-col-der > .card:first-child { flex-shrink: 0; }
 .ficha-col-der > .card:last-child { flex: 1; min-height: 0; display: flex; flex-direction: column; }
+
+/* ============================================================
+   Sistema de diseño 2026 · tipografía técnica (Space Mono), forma y sombra
+   ============================================================ */
+
+/* Micro-etiquetas, fechas y chips en Space Mono (look de plano) */
+th, .col-head .count, .badge, .pill-act,
+.chip, .chip-label, .field label, .kv .k, .hero-fecha, .section-title,
+.sidebar .foot, .sidebar .foot-version, .paginacion .info,
+.paginacion .pag-num, .td-vence {
+  font-family: var(--mono);
+}
+/* Space Mono es ancho: afinamos el tracking de estas etiquetas */
+th, .badge, .chip, .chip-label,
+.field label, .kv .k, .section-title { letter-spacing: 0.02em; }
+.td-vence { font-variant-numeric: tabular-nums; white-space: nowrap; font-size: 12.5px; color: var(--tinta-soft); }
+
+/* Forma: radio en superficies, pills totalmente redondeadas */
+.card, .modal, .item, .sub-card, .btn, .ayuda-btn, .volver,
+input, select, textarea, .search input, .linea-pago { border-radius: var(--radio); }
+.badge, .pill-act, .chip, .col-head .count { border-radius: var(--radio-pill); }
+
+/* Sombra retro (offset duro y muy sutil) en las tarjetas */
+.card, .sub-card { box-shadow: var(--sombra-retro); }
+
+/* Cifras (importes en €): Archivo con cifras tabulares (como el diseño) */
+.cifra { font-variant-numeric: tabular-nums; }
+
+/* Punto de color dentro de las pastillas de estado */
+.badge .bdot { width: 6px; height: 6px; border-radius: 999px; background: currentColor; flex-shrink: 0; }
+/* Fecha de vencimiento en las tarjetas del panel: oro, mono, a la derecha */
+.item .acciones { align-items: center; }
+.item-fecha { margin-left: auto; font-family: var(--mono); color: var(--oro); font-size: 11.5px; white-space: nowrap; letter-spacing: 0.01em; }
+/* Botón Mostrar/Ocultar de la tarjeta de ingresos */
+.ingresos-toggle { margin-top: 13px; gap: 6px; }
+
+/* Selector rápido de sexo (♂ / ♀) en el formulario de socio */
+.sexo-toggle { display: flex; gap: 10px; }
+.sexo-op {
+  flex: 1; display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+  padding: 9px 12px; border: 1.5px solid var(--linea-fuerte); background: var(--marfil);
+  color: var(--tinta-soft); font-weight: 700; font-size: 13px; cursor: pointer;
+  border-radius: var(--radio); text-transform: uppercase; letter-spacing: 0.03em;
+  transition: background 0.12s, color 0.12s, border-color 0.12s;
+}
+.sexo-op .sx { width: 18px; height: 18px; display: block; flex-shrink: 0; }
+.sexo-op:hover { border-color: var(--tinta-soft); color: var(--tinta); }
+.sexo-op.on.hombre { background: var(--azul-500); border-color: var(--azul-500); color: #fff; }
+.sexo-op.on.mujer { background: var(--terracota); border-color: var(--terracota); color: #fff; }
 .ficha-col-der > .card:last-child .section-title { flex-shrink: 0; }
 .ficha .historial-scroll { flex: 1; max-height: none; }

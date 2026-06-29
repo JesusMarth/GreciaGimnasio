@@ -165,7 +165,7 @@ export function PagoModal({ socioId, socioNombre, suscripcionIdPre, onCerrar, on
 
             <div className="total-line">
               <span>Total</span>
-              <span>{euros(total)}</span>
+              <span className="cifra">{euros(total)}</span>
             </div>
             <div className="hint">
               Tú escribes el importe acordado de cada concepto. La app no calcula ofertas ni descuentos: guarda lo que cobras.
