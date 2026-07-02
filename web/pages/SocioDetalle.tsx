@@ -250,12 +250,12 @@ export function SocioDetalle() {
             {pagos.map((p) => (
               <div key={p.id} className="sub-card verde" style={{ borderLeftColor: "var(--border)" }}>
                 <div className="top" style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                  <strong className="cifra">{euros(p.total)}</strong>
+                  <strong className="cifra" style={{ fontSize: 15.5 }}>{euros(p.total)}</strong>
                   <span className="muted" style={{ fontSize: 12.5 }}>
                     {fecha(p.fecha)} · {capitalizar(p.metodo)}
                   </span>
                 </div>
-                <div className="meta" style={{ marginTop: 6, fontSize: 12.5, color: "var(--text-soft)" }}>
+                <div className="meta" style={{ marginTop: 7, fontSize: 13, color: "var(--text-soft)", lineHeight: 1.55 }}>
                   {p.lineas.map((l, i) => (
                     <div key={i}>
                       {capitalizar(l.actividad)}
@@ -265,7 +265,7 @@ export function SocioDetalle() {
                   ))}
                   {p.notas && <div style={{ fontStyle: "italic", marginTop: 3 }}>{p.notas}</div>}
                 </div>
-                <div className="acciones" style={{ marginTop: 8 }}>
+                <div className="acciones" style={{ marginTop: 10 }}>
                   <button className="btn sm" onClick={() => window.open(api.reciboUrl(p.id), "_blank")}>
                     Recibo PDF
                   </button>

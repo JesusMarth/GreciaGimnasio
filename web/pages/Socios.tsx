@@ -39,6 +39,8 @@ function GrupoChips({ label, opciones, valor, onToggle }: { label: string; opcio
   );
 }
 
+type TipoFiltro = "act" | "est" | "cuo" | "sex";
+
 export function Socios() {
   const [params] = useSearchParams();
   const desdeUrl = (k: string) => new Set((params.get(k) || "").split(",").filter(Boolean));
@@ -56,6 +58,11 @@ export function Socios() {
   const [nuevo, setNuevo] = useState(false);
   const [error, setError] = useState("");
   const [sel, setSel] = useState<Set<number>>(new Set());
+  // Animación de salida al filtrar: filas que se van + lista congelada durante el fundido.
+  const [saliendo, setSaliendo] = useState<Set<number>>(new Set());
+  const [listaCongelada, setListaCongelada] = useState<Socio[] | null>(null);
+  const salTimer = useRef<number>(0);
+  const visIds = useRef<number[]>([]);
   const tbodyRef = useRef<HTMLTableSectionElement>(null);
   const nav = useNavigate();
 
@@ -72,6 +79,7 @@ export function Socios() {
     const t = setTimeout(() => recargar(buscar), 200);
     return () => clearTimeout(t);
   }, [buscar]);
+  useEffect(() => () => window.clearTimeout(salTimer.current), []);
 
   // Filtrado cliente (lógica pura y testeada en web/filtros.pruebas.ts).
   const filtros: FiltrosSocios = { actividades: [...filtroAct], estado: [...filtroEstado], cuota: [...filtroCuota], sexo: [...filtroSexo], fecha: filtroFecha };
@@ -108,22 +116,57 @@ export function Socios() {
       })
     : sociosFiltrados;
 
-  const totalPaginas = Math.max(1, Math.ceil(sociosOrdenados.length / filasPorPagina));
+  // Mientras dura el fundido de salida se muestra la lista congelada (la anterior).
+  const listaBase = listaCongelada ?? sociosOrdenados;
+  const totalPaginas = Math.max(1, Math.ceil(listaBase.length / filasPorPagina));
   const paginaActual = Math.min(pagina, totalPaginas);
-  const visibles = sociosOrdenados.slice((paginaActual - 1) * filasPorPagina, paginaActual * filasPorPagina);
+  const visibles = listaBase.slice((paginaActual - 1) * filasPorPagina, paginaActual * filasPorPagina);
+  visIds.current = visibles.map((s) => s.id);
 
   // El export se adapta: marcados → esos; si no, lo filtrado; sin filtro → todos.
   const idsExport = sel.size ? [...sel] : hayFiltro ? sociosFiltrados.map((s) => s.id) : undefined;
   const nExport = sel.size || sociosFiltrados.length;
 
-  function alternaEn(setter: Dispatch<SetStateAction<Set<string>>>, k: string) {
-    setPagina(1);
-    setter((prev) => {
-      const n = new Set(prev);
-      if (n.has(k)) n.delete(k);
-      else n.add(k);
-      return n;
-    });
+  /** Cambia un filtro de chips. Si hay filas visibles que van a desaparecer,
+   *  primero se funden (240 ms) y después se aplica la lista nueva. */
+  function alternaEn(tipo: TipoFiltro, k: string) {
+    const actuales: Record<TipoFiltro, [Set<string>, Dispatch<SetStateAction<Set<string>>>]> = {
+      act: [filtroAct, setFiltroAct],
+      est: [filtroEstado, setFiltroEstado],
+      cuo: [filtroCuota, setFiltroCuota],
+      sex: [filtroSexo, setFiltroSexo],
+    };
+    const [actual, setter] = actuales[tipo];
+    const n = new Set(actual);
+    if (n.has(k)) n.delete(k);
+    else n.add(k);
+
+    const futuros: FiltrosSocios = {
+      actividades: [...(tipo === "act" ? n : filtroAct)],
+      estado: [...(tipo === "est" ? n : filtroEstado)],
+      cuota: [...(tipo === "cuo" ? n : filtroCuota)],
+      sexo: [...(tipo === "sex" ? n : filtroSexo)],
+      fecha: filtroFecha,
+    };
+    const idsFuturos = new Set(filtrarSocios(socios, futuros).map((s) => s.id));
+    const sal = new Set(visIds.current.filter((id) => !idsFuturos.has(id)));
+
+    window.clearTimeout(salTimer.current);
+    if (sal.size === 0 || window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+      setPagina(1);
+      setter(n);
+      setListaCongelada(null);
+      setSaliendo(new Set());
+      return;
+    }
+    setSaliendo(sal);
+    setListaCongelada(sociosOrdenados); // el chip cambia ya; la tabla espera al fundido
+    setter(n);
+    salTimer.current = window.setTimeout(() => {
+      setListaCongelada(null);
+      setSaliendo(new Set());
+      setPagina(1);
+    }, 240);
   }
   function alternar(id: number) {
     setSel((prev) => {
@@ -143,6 +186,9 @@ export function Socios() {
     });
   }
   function limpiar() {
+    window.clearTimeout(salTimer.current);
+    setListaCongelada(null);
+    setSaliendo(new Set());
     setBuscar("");
     setFiltroAct(new Set());
     setFiltroEstado(new Set());
@@ -176,36 +222,34 @@ export function Socios() {
       {error && <div className="error-banner">{error}</div>}
 
       <div className="card" style={{ overflow: "hidden" }}>
-        <div className="card-pad" style={{ borderBottom: "1px solid var(--border)", display: "flex", flexDirection: "column", gap: 14 }}>
+        {/* Banda única: búsqueda + filtros + limpiar (con hueco reservado, no mueve nada) */}
+        <div className="filtros-banda">
           <div className="search">
             <span className="ico">⌕</span>
             <input value={buscar} onChange={(e) => { setBuscar(e.target.value); setPagina(1); }} placeholder="Buscar por nombre o teléfono…" />
           </div>
-          <div className="filtros">
-            <div className="filtros-fila">
-              <GrupoChips label="Actividad" opciones={ACTIVIDADES.map((a) => ({ k: a, t: capitalizar(a) }))} valor={filtroAct} onToggle={(k) => alternaEn(setFiltroAct, k)} />
-              <GrupoChips label="Estado" opciones={OPC_ESTADO} valor={filtroEstado} onToggle={(k) => alternaEn(setFiltroEstado, k)} />
-              <GrupoChips label="Cuota" opciones={OPC_CUOTA} valor={filtroCuota} onToggle={(k) => alternaEn(setFiltroCuota, k)} />
-              <GrupoChips label="Sexo" opciones={OPC_SEXO} valor={filtroSexo} onToggle={(k) => alternaEn(setFiltroSexo, k)} />
-            </div>
-            <div className="filtros-fila">
-              <FiltroFecha rango={filtroFecha} onChange={(r) => { setPagina(1); setFiltroFecha(r); }} />
-              {hayFiltro && (
-                <button className="btn ghost sm limpiar" onClick={limpiar}>
-                  Limpiar filtros
-                </button>
-              )}
-            </div>
-          </div>
+          <span className="filtros-sep" aria-hidden="true" />
+          <GrupoChips label="Actividad" opciones={ACTIVIDADES.map((a) => ({ k: a, t: capitalizar(a) }))} valor={filtroAct} onToggle={(k) => alternaEn("act", k)} />
+          <span className="filtros-sep" aria-hidden="true" />
+          <GrupoChips label="Estado" opciones={OPC_ESTADO} valor={filtroEstado} onToggle={(k) => alternaEn("est", k)} />
+          <span className="filtros-sep" aria-hidden="true" />
+          <GrupoChips label="Cuota" opciones={OPC_CUOTA} valor={filtroCuota} onToggle={(k) => alternaEn("cuo", k)} />
+          <span className="filtros-sep" aria-hidden="true" />
+          <GrupoChips label="Sexo" opciones={OPC_SEXO} valor={filtroSexo} onToggle={(k) => alternaEn("sex", k)} />
+          <span className="filtros-sep" aria-hidden="true" />
+          <FiltroFecha rango={filtroFecha} onChange={(r) => { setPagina(1); setFiltroFecha(r); }} />
+          <button className={"btn ghost sm limpiar-reservado" + (hayFiltro ? " on" : "")} onClick={limpiar} tabIndex={hayFiltro ? 0 : -1}>
+            Limpiar filtros
+          </button>
         </div>
 
-        {sociosFiltrados.length === 0 ? (
+        {listaBase.length === 0 ? (
           <div className="center-box">
             {hayFiltro ? "Ningún socio coincide con el filtro." : "Aún no hay socios. Crea el primero con “Nuevo socio”."}
           </div>
         ) : (
           <>
-            <table>
+            <table className="tabla-socios">
               <thead>
                 <tr>
                   <th style={{ width: 30 }}>
@@ -229,8 +273,13 @@ export function Socios() {
                 </tr>
               </thead>
               <tbody ref={tbodyRef}>
-                {visibles.map((s) => (
-                  <tr key={s.id} className="clickable" onClick={() => nav(`/socios/${s.id}`)}>
+                {visibles.map((s, idx) => (
+                  <tr
+                    key={s.id}
+                    className={"clickable" + (saliendo.has(s.id) ? " saliendo" : "")}
+                    style={{ animationDelay: saliendo.has(s.id) ? "0ms" : `${Math.min(idx * 22, 400)}ms` }}
+                    onClick={() => nav(`/socios/${s.id}`)}
+                  >
                     <td onClick={(e) => e.stopPropagation()}>
                       <input type="checkbox" checked={sel.has(s.id)} onChange={() => alternar(s.id)} style={{ width: "auto" }} aria-label={`Seleccionar ${s.nombre}`} />
                     </td>
@@ -262,7 +311,7 @@ export function Socios() {
             {totalPaginas > 1 && (
               <div className="paginacion">
                 <span className="info">
-                  {sociosFiltrados.length} socios{hayFiltro ? " (filtrados)" : ""}
+                  {listaBase.length} socios{hayFiltro ? " (filtrados)" : ""}
                 </span>
                 <div className="controles">
                   <button className="btn sm" disabled={paginaActual <= 1} onClick={() => setPagina((p) => Math.max(1, p - 1))}>

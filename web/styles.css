@@ -547,3 +547,117 @@ input, select, textarea, .search input, .linea-pago { border-radius: var(--radio
 .sexo-op.on.mujer { background: var(--terracota); border-color: var(--terracota); color: #fff; }
 .ficha-col-der > .card:last-child .section-title { flex-shrink: 0; }
 .ficha .historial-scroll { flex: 1; max-height: none; }
+
+/* ============================================================
+   REDISEÑO 2026 · compacto + animaciones
+   Bloque añadido al final: gana en cascada sobre el sistema base.
+   Sin popups: el feedback vive en el propio elemento.
+   ============================================================ */
+
+/* ---------- Animaciones base ---------- */
+@keyframes fadeUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
+@keyframes fadeInSuave { from { opacity: 0; } to { opacity: 1; } }
+@keyframes modalIn { from { opacity: 0; transform: translateY(16px) scale(0.985); } to { opacity: 1; transform: none; } }
+@keyframes rowOut { to { opacity: 0; } }
+@keyframes barGrow { from { transform: scaleX(0); } to { transform: scaleX(1); } }
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation: none !important; transition: none !important; }
+}
+
+/* ---------- Cabecera compacta (friso): misma esencia, la mitad de alto ---------- */
+.hero.hero-compacta {
+  padding: 17px 48px 15px;
+  margin-bottom: 20px;
+  text-align: left;
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 18px; flex-wrap: wrap;
+  animation: fadeInSuave 0.4s ease-out backwards;
+}
+.hero.hero-compacta .eyebrow { font-size: 10px; }
+.hero.hero-compacta .wordmark { font-size: 27px; margin: 6px 0 0; }
+.hero.hero-compacta .templo { left: auto; right: -30px; bottom: -36px; transform: none; width: 380px; opacity: 0.08; }
+.hero.hero-compacta .hero-fecha { margin-top: 0; padding: 6px 15px; font-size: 11.5px; }
+.hero-marca { position: relative; }
+.hero-dcha { position: relative; display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.hero-dcha .ayuda-btn { width: 38px; height: 38px; }
+
+/* ---------- Marcadores: rejilla adaptable, tarjetas iguales, hover con vida ---------- */
+.stat-grid { grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 13px; align-items: stretch; }
+.stat { padding: 16px 18px 13px; display: flex; flex-direction: column; min-height: 124px; animation: fadeUp 0.4s ease-out backwards; }
+.stat:nth-child(2) { animation-delay: 0.06s; }
+.stat:nth-child(3) { animation-delay: 0.12s; }
+.stat:nth-child(4) { animation-delay: 0.18s; }
+.stat .bar { height: 5px; transform-origin: left; animation: barGrow 0.55s ease-out backwards; animation-delay: 0.2s; }
+.stat .label { font-size: 11px; justify-content: space-between; }
+.stat .value { font-size: 37px; margin-top: 5px; font-variant-numeric: tabular-nums; }
+.stat .desglose { margin-top: auto; padding-top: 10px; }
+.stat .nota { margin-top: auto; padding-top: 10px; font-size: 11.5px; }
+.stat.clic, .stat.oro { transition: background 0.12s, transform 0.12s, box-shadow 0.12s; }
+.stat.clic:hover, .stat.oro:hover { background: var(--crema-2); transform: translateY(-2px); box-shadow: 6px 8px 0 rgba(20, 49, 75, 0.09); }
+/* El valor oculto/visible se funde al cambiar (sin saltos) */
+.stat .value .fade-suave { display: inline-block; animation: fadeInSuave 0.35s ease-out backwards; }
+
+/* ---------- Columnas del panel: adaptables + entrada escalonada ---------- */
+.cols { grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 16px; margin-top: 20px; }
+.cols > div { animation: fadeUp 0.42s ease-out backwards; }
+.cols > div:nth-child(2) { animation-delay: 0.06s; }
+.cols > div:nth-child(3) { animation-delay: 0.12s; }
+.col-head { padding: 4px 2px 10px; margin-bottom: 12px; }
+.col-head .count { font-size: 11.5px; font-variant-numeric: tabular-nums; }
+
+/* ---------- Tarjetas de socio: compactas, 3 filas fijas, misma altura ---------- */
+.item { padding: 10px 12px; margin-bottom: 9px; transition: border-color 0.12s, box-shadow 0.12s; animation: fadeUp 0.36s ease-out backwards; }
+.cols .item:nth-child(2) { animation-delay: 45ms; }
+.cols .item:nth-child(3) { animation-delay: 90ms; }
+.cols .item:nth-child(4) { animation-delay: 135ms; }
+.cols .item:nth-child(5) { animation-delay: 180ms; }
+.cols .item:nth-child(6) { animation-delay: 225ms; }
+.cols .item:nth-child(7) { animation-delay: 270ms; }
+.item:hover { box-shadow: 3px 3px 0 rgba(20, 49, 75, 0.06); }
+.item .top .nombre { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 13.5px; }
+.item .top .cifra { flex-shrink: 0; font-size: 13.5px; }
+.item .meta { flex-wrap: nowrap; overflow: hidden; margin-top: 4px; gap: 6px; }
+.item .meta .badge { min-width: 0; overflow: hidden; font-size: 10px; padding: 2px 8px; }
+.item .meta .pill-act { flex-shrink: 0; font-size: 10px; padding: 0 7px; }
+.item .acciones { margin-top: 8px; gap: 8px; flex-wrap: nowrap; overflow: hidden; }
+.item .acciones .btn { white-space: nowrap; flex-shrink: 0; padding: 5px 11px; font-size: 10.5px; }
+.item .item-fecha { flex-shrink: 0; font-size: 10.5px; }
+.panel-mas { padding: 8px; font-size: 11px; }
+
+/* Botón "Avisar" confirmando en el sitio (sin popups ni banners) */
+.btn.avisado, .btn.avisado:hover { color: var(--verde); border-color: var(--verde); background: var(--verde-soft); cursor: default; }
+
+/* ---------- Ingresos por actividad: mostrar/ocultar sin saltos de scroll ---------- */
+.ingresos-card .tag-list, .ingresos-card .oculto-linea { min-height: 36px; display: flex; align-items: center; flex-wrap: wrap; animation: fadeInSuave 0.3s ease-out backwards; }
+
+/* ---------- Modales con transición ---------- */
+.overlay { animation: fadeInSuave 0.18s ease-out backwards; }
+.modal { animation: modalIn 0.24s cubic-bezier(0.2, 0.9, 0.3, 1) backwards; }
+
+/* ---------- Socios: banda única de filtros + "Limpiar" con hueco reservado ---------- */
+.filtros-banda { display: flex; flex-wrap: wrap; gap: 11px 16px; align-items: center; padding: 14px 18px; border-bottom: 1px solid var(--linea); }
+.filtros-banda .search { width: 280px; flex-shrink: 0; }
+.filtros-banda .search input { padding-top: 8px; padding-bottom: 8px; font-size: 13px; }
+.filtros-sep { width: 1.5px; height: 24px; background: var(--linea); flex-shrink: 0; }
+.chip { padding: 5px 12px; font-size: 11px; }
+.limpiar-reservado { visibility: hidden; opacity: 0; pointer-events: none; margin-left: auto; transition: opacity 0.18s, background 0.12s, color 0.12s; }
+.limpiar-reservado.on { visibility: visible; opacity: 1; pointer-events: auto; }
+
+/* Filas de la tabla: entran en cascada y salen con fundido al filtrar */
+tbody tr.clickable { animation: fadeInSuave 0.3s ease-out backwards; }
+tbody tr.saliendo { animation: rowOut 0.24s ease-in forwards; }
+th { padding: 10px 12px; }
+td { padding: 9px 12px; font-size: 13px; }
+
+/* ---------- Ficha: historial de pagos con más aire ---------- */
+.historial-scroll .sub-card { padding: 14px 16px; margin-bottom: 10px; }
+.historial-scroll .sub-card strong.cifra { font-size: 15.5px; }
+
+/* ---------- Socios: anchos de columna fijos (ordenar no recoloca nada) ---------- */
+.tabla-socios { table-layout: fixed; }
+.tabla-socios thead th:nth-child(3) { width: 120px; } /* Teléfono */
+.tabla-socios thead th:nth-child(4) { width: 170px; } /* Actividades */
+.tabla-socios thead th:nth-child(5) { width: 145px; } /* Estado cuota */
+.tabla-socios thead th:nth-child(6) { width: 105px; } /* Vence */
+.tabla-socios thead th:nth-child(7) { width: 34px; }
+.tabla-socios td:nth-child(2), .tabla-socios td:nth-child(3) { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }

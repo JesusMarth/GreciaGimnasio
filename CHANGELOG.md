@@ -20,6 +20,11 @@ y el proyecto usa [Versionado Semántico](https://semver.org/lang/es/) (SemVer):
   regeneran solos). Así siempre hay a mano una vuelta atrás.
 
 ### Changed
+- **Rediseño compacto con animaciones**: contadores animados en los marcadores
+  del panel, cabecera (friso del templo) más baja, confirmación **"✓ Enviado"**
+  en el propio botón de avisar (sin banners ni popups), **banda única de filtros**
+  en Socios con fundido de filas al filtrar, y anchos de columna fijos para que
+  ordenar no recoloque la tabla. Respeta `prefers-reduced-motion`.
 - **`Actualizar.bat` ahora usa Git** en lugar de la API "zipball" de GitHub.
   Nuevo requisito: tener **Git para Windows** instalado en el PC del local.
 
