@@ -13,6 +13,9 @@ y el proyecto usa [Versionado Semántico](https://semver.org/lang/es/) (SemVer):
 ## [Sin publicar]
 
 ### Added
+- **Acceso directo en el Escritorio con icono propio**: `Crear icono en
+  Escritorio.bat` crea (o actualiza) un acceso directo a `GymGrecia.bat` con
+  `GymGrecia.ico` (los `.bat` no llevan icono; se le pone al acceso directo).
 - **`Actualizar.bat` hace copia de seguridad antes de actualizar**: guarda toda
   la carpeta (**incluida `data/`**) en el Escritorio, en
   `GymGrecia-backup-v<version>_<fecha>`, marcada con la versión anterior. Si la
