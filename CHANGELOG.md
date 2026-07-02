@@ -12,6 +12,23 @@ y el proyecto usa [Versionado Semántico](https://semver.org/lang/es/) (SemVer):
 
 ## [Sin publicar]
 
+### Added
+- **`Actualizar.bat` hace copia de seguridad antes de actualizar**: guarda toda
+  la carpeta (**incluida `data/`**) en el Escritorio, en
+  `GymGrecia-backup-v<version>_<fecha>`, marcada con la versión anterior. Si la
+  copia falla, **no actualiza nada**. Se omiten `node_modules`/`dist` (se
+  regeneran solos). Así siempre hay a mano una vuelta atrás.
+
+### Changed
+- **`Actualizar.bat` ahora usa Git** en lugar de la API "zipball" de GitHub.
+  Nuevo requisito: tener **Git para Windows** instalado en el PC del local.
+
+### Fixed
+- **Actualización falla con error 404** ("no se encontró el servidor remoto")
+  usando un token *fine-grained*: esa API devuelve 404 en repos privados aunque
+  el token sea válido. Con `git clone` el mismo token funciona. Los datos
+  (`data/`) siguen sin tocarse y el flujo del dueño sigue siendo un doble clic.
+
 ## [1.1.0] - 2026-06-29
 
 ### Added
