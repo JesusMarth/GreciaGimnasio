@@ -41,7 +41,7 @@ export function SocioDetalle() {
     if (!socio) return;
     const ok = await confirmar({
       titulo: "Borrar socio",
-      mensaje: `¿Borrar a ${socio.nombre} y todo su historial? Esto no se puede deshacer.`,
+      mensaje: `¿Borrar a ${socio.nombreCompleto} y todo su historial? Esto no se puede deshacer.`,
       confirmar: "Borrar",
       peligro: true,
     });
@@ -153,7 +153,7 @@ export function SocioDetalle() {
         <div>
           <div className="eyebrow">Ficha de socio</div>
           <h1 style={{ display: "flex", alignItems: "center", gap: 12 }}>
-            {socio.nombre} <EstadoBadge estado={socio.estadoResumen} />
+            {socio.nombreCompleto} <EstadoBadge estado={socio.estadoResumen} />
             {socio.estado === "baja" && <span className="badge gris">Baja</span>}
           </h1>
           <div className="sub">Alta: {fecha(socio.fechaAlta)}</div>
@@ -286,7 +286,7 @@ export function SocioDetalle() {
       {cobrar && (
         <PagoModal
           socioId={socioId}
-          socioNombre={socio.nombre}
+          socioNombre={socio.nombreCompleto}
           suscripcionIdPre={cobrar.pre}
           onCerrar={() => setCobrar(null)}
           onHecho={() => {

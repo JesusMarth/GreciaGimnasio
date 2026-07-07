@@ -10,13 +10,14 @@ sociosRouter.get("/", (req, res) => {
   const buscar = String(req.query.buscar ?? "").trim();
   const hoy = hoyISO();
   let filas: SocioRow[];
+  const ORDEN = "ORDER BY apellidos COLLATE NOCASE, nombre COLLATE NOCASE";
   if (buscar) {
     const like = `%${buscar}%`;
     filas = db
-      .prepare("SELECT * FROM socios WHERE nombre LIKE ? OR telefono LIKE ? OR email LIKE ? ORDER BY nombre")
-      .all(like, like, like) as SocioRow[];
+      .prepare(`SELECT * FROM socios WHERE nombre LIKE ? OR apellidos LIKE ? OR telefono LIKE ? OR email LIKE ? ${ORDEN}`)
+      .all(like, like, like, like) as SocioRow[];
   } else {
-    filas = db.prepare("SELECT * FROM socios ORDER BY nombre").all() as SocioRow[];
+    filas = db.prepare(`SELECT * FROM socios ${ORDEN}`).all() as SocioRow[];
   }
   res.json(filas.map((s) => socioConResumen(s, hoy)));
 });
@@ -30,16 +31,17 @@ sociosRouter.get("/:id", (req, res) => {
 
 // Alta de socio.
 sociosRouter.post("/", (req, res) => {
-  const { nombre, telefono, email, dni, sexo, fechaAlta, fechaNacimiento, notas } = req.body ?? {};
+  const { nombre, apellidos, telefono, email, dni, sexo, fechaAlta, fechaNacimiento, notas } = req.body ?? {};
   if (!nombre || !String(nombre).trim()) return res.status(400).json({ error: "El nombre es obligatorio" });
   const sexoVal = sexo === "hombre" || sexo === "mujer" ? sexo : null;
   const info = db
     .prepare(
-      `INSERT INTO socios (nombre, telefono, email, dni, sexo, fecha_alta, fecha_nacimiento, estado, notas, creado_en)
-       VALUES (?,?,?,?,?,?,?,?,?,?)`
+      `INSERT INTO socios (nombre, apellidos, telefono, email, dni, sexo, fecha_alta, fecha_nacimiento, estado, notas, creado_en)
+       VALUES (?,?,?,?,?,?,?,?,?,?,?)`
     )
     .run(
       String(nombre).trim(),
+      apellidos && String(apellidos).trim() ? String(apellidos).trim() : null,
       telefono || null,
       email || null,
       dni || null,
@@ -58,13 +60,16 @@ sociosRouter.post("/", (req, res) => {
 sociosRouter.put("/:id", (req, res) => {
   const s = db.prepare("SELECT * FROM socios WHERE id = ?").get(req.params.id) as SocioRow | undefined;
   if (!s) return res.status(404).json({ error: "Socio no encontrado" });
-  const { nombre, telefono, email, dni, sexo, fechaAlta, fechaNacimiento, estado, notas } = req.body ?? {};
+  const { nombre, apellidos, telefono, email, dni, sexo, fechaAlta, fechaNacimiento, estado, notas } = req.body ?? {};
   // sexo: si no viene en la petición, se conserva; si viene, se valida (vacío → null).
   const sexoVal = sexo === undefined ? s.sexo : sexo === "hombre" || sexo === "mujer" ? sexo : null;
+  // apellidos: si no viene, se conserva; si viene vacío, se pone a null.
+  const apellidosVal = apellidos === undefined ? s.apellidos : String(apellidos).trim() || null;
   db.prepare(
-    `UPDATE socios SET nombre=?, telefono=?, email=?, dni=?, sexo=?, fecha_alta=?, fecha_nacimiento=?, estado=?, notas=? WHERE id=?`
+    `UPDATE socios SET nombre=?, apellidos=?, telefono=?, email=?, dni=?, sexo=?, fecha_alta=?, fecha_nacimiento=?, estado=?, notas=? WHERE id=?`
   ).run(
     nombre?.trim() || s.nombre,
+    apellidosVal,
     telefono ?? s.telefono,
     email ?? s.email,
     dni ?? s.dni,

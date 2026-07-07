@@ -12,6 +12,7 @@ interface Props {
 
 export function SocioFormModal({ socio, onCerrar, onHecho }: Props) {
   const [nombre, setNombre] = useState(socio?.nombre ?? "");
+  const [apellidos, setApellidos] = useState(socio?.apellidos ?? "");
   const [telefono, setTelefono] = useState(socio?.telefono ?? "");
   const [email, setEmail] = useState(socio?.email ?? "");
   const [dni, setDni] = useState(socio?.dni ?? "");
@@ -30,7 +31,7 @@ export function SocioFormModal({ socio, onCerrar, onHecho }: Props) {
     }
     setGuardando(true);
     setError("");
-    const datos = { nombre, telefono, email, dni, sexo, fechaAlta, fechaNacimiento: fechaNacimiento || null, estado, notas };
+    const datos = { nombre, apellidos, telefono, email, dni, sexo, fechaAlta, fechaNacimiento: fechaNacimiento || null, estado, notas };
     try {
       const s = socio ? await api.editarSocio(socio.id, datos) : await api.crearSocio(datos);
       onHecho(s);
@@ -57,9 +58,15 @@ export function SocioFormModal({ socio, onCerrar, onHecho }: Props) {
     >
       <div className="modal-body">
         {error && <div className="error-banner">{error}</div>}
-        <div className="field">
-          <label>Nombre y apellidos *</label>
-          <input value={nombre} onChange={(e) => setNombre(e.target.value)} autoFocus placeholder="p. ej. María López" />
+        <div className="row2">
+          <div className="field">
+            <label>Nombre *</label>
+            <input value={nombre} onChange={(e) => setNombre(e.target.value)} autoFocus placeholder="p. ej. María" />
+          </div>
+          <div className="field">
+            <label>Apellidos</label>
+            <input value={apellidos} onChange={(e) => setApellidos(e.target.value)} placeholder="p. ej. López García" />
+          </div>
         </div>
         <div className="row2">
           <div className="field">

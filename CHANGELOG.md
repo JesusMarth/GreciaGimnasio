@@ -12,7 +12,24 @@ y el proyecto usa [Versionado Semántico](https://semver.org/lang/es/) (SemVer):
 
 ## [Sin publicar]
 
+## [1.2.0] - 2026-07-07
+
 ### Added
+- **Pantalla de Métricas** (nueva sección en el menú): vista de negocio centrada
+  en los **ingresos**, con **filtro de periodo** (Este mes · Este año · Año
+  pasado · 12/24 meses · Todo · o un **rango a medida** de un mes a otro). El
+  sistema **detecta desde cuándo tienes historial** (tu primer cobro) y lo usa como
+  inicio del rango. Incluye: marcadores del periodo (ingresos con **comparativa
+  frente al mismo periodo del año anterior**, media por mes, socios activos) y el
+  **mejor mes de siempre** (récord de todo el historial); **gráfica mensual con 3
+  vistas** que se alternan (Ingresos · **Socios que pagan** · **€ por socio**, esta
+  última como medida de retención) y línea de media; desglose **por actividad**; y
+  **evolución de socios** (altas por mes + estado de las cuotas hoy). Contadores
+  animados y botón de **ojo** para ocultar los importes.
+- **Nombre y apellidos por separado**: la ficha de socio ahora tiene un campo
+  **Nombre** y otro **Apellidos**. Los socios existentes se reparten solos al
+  actualizar (partiendo por el primer espacio; se puede afinar editando la ficha).
+  El export a Excel gana una columna **Apellidos**.
 - **Acceso directo en el Escritorio con icono propio**: `Crear icono en
   Escritorio.bat` crea (o actualiza) un acceso directo a `GymGrecia.bat` con
   `GymGrecia.ico` (los `.bat` no llevan icono; se le pone al acceso directo).
@@ -23,6 +40,12 @@ y el proyecto usa [Versionado Semántico](https://semver.org/lang/es/) (SemVer):
   regeneran solos). Así siempre hay a mano una vuelta atrás.
 
 ### Changed
+- **Socios se ordena por apellido** (A→Z, como el archivador de papel) en lugar de
+  por nombre de pila; se puede alternar a **Z→A** pulsando la cabecera *Socio*
+  (antes "Nombre").
+- **Lista de socios con scroll infinito**: la tabla tiene su propio desplazamiento
+  y va cargando más socios al bajar, en vez de dividirse en páginas. La pantalla no
+  se mueve. El buscador también encuentra por **apellidos**.
 - **Rediseño compacto con animaciones**: contadores animados en los marcadores
   del panel, cabecera (friso del templo) más baja, confirmación **"✓ Enviado"**
   en el propio botón de avisar (sin banners ni popups), **banda única de filtros**
@@ -80,6 +103,7 @@ SemVer.
   email** (SMTP), **recibos PDF** y **ayuda contextual** por pantalla.
 - **Entorno MOCK** (`GymGrecia-MOCK.bat`, ~60 socios de prueba, puerto 4712).
 
-[Sin publicar]: https://github.com/JesusMarth/GreciaGimnasio/compare/v1.1.0...HEAD
+[Sin publicar]: https://github.com/JesusMarth/GreciaGimnasio/compare/v1.2.0...HEAD
+[1.2.0]: https://github.com/JesusMarth/GreciaGimnasio/compare/v1.1.0...v1.2.0
 [1.1.0]: https://github.com/JesusMarth/GreciaGimnasio/compare/v1.0.0...v1.1.0
 [1.0.0]: https://github.com/JesusMarth/GreciaGimnasio/releases/tag/v1.0.0

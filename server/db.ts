@@ -86,6 +86,7 @@ CREATE TABLE IF NOT EXISTS config (
 
 CREATE INDEX IF NOT EXISTS idx_suscripciones_socio ON suscripciones(socio_id);
 CREATE INDEX IF NOT EXISTS idx_pagos_socio ON pagos(socio_id);
+CREATE INDEX IF NOT EXISTS idx_pagos_fecha ON pagos(fecha);
 CREATE INDEX IF NOT EXISTS idx_lineas_pago ON pago_lineas(pago_id);
 CREATE INDEX IF NOT EXISTS idx_lineas_suscripcion ON pago_lineas(suscripcion_id);
 `);
@@ -98,6 +99,26 @@ CREATE INDEX IF NOT EXISTS idx_lineas_suscripcion ON pago_lineas(suscripcion_id)
   }
   try {
     conn.exec("ALTER TABLE socios ADD COLUMN sexo TEXT"); // hombre | mujer | null
+  } catch {
+    /* la columna ya existe */
+  }
+  try {
+    conn.exec("ALTER TABLE socios ADD COLUMN apellidos TEXT");
+    // Recién añadida: repartimos el "nombre completo" histórico en nombre (pila) +
+    // apellidos, partiendo por el PRIMER espacio ("María García López" → "María" /
+    // "García López"). Es best-effort (los nombres compuestos quedan en 'nombre');
+    // el dueño puede afinarlo editando la ficha. Solo corre esta vez.
+    const filas = conn.prepare("SELECT id, nombre FROM socios").all() as { id: number; nombre: string }[];
+    const upd = conn.prepare("UPDATE socios SET nombre = ?, apellidos = ? WHERE id = ?");
+    const tx = conn.transaction(() => {
+      for (const f of filas) {
+        const partes = String(f.nombre).trim().split(/\s+/);
+        const pila = partes.shift() || f.nombre;
+        const apellidos = partes.join(" ");
+        upd.run(pila, apellidos || null, f.id);
+      }
+    });
+    tx();
   } catch {
     /* la columna ya existe */
   }

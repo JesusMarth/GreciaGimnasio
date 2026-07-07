@@ -560,6 +560,7 @@ input, select, textarea, .search input, .linea-pago { border-radius: var(--radio
 @keyframes modalIn { from { opacity: 0; transform: translateY(16px) scale(0.985); } to { opacity: 1; transform: none; } }
 @keyframes rowOut { to { opacity: 0; } }
 @keyframes barGrow { from { transform: scaleX(0); } to { transform: scaleX(1); } }
+@keyframes barGrowY { from { transform: scaleY(0); } to { transform: scaleY(1); } }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation: none !important; transition: none !important; }
 }
@@ -655,9 +656,127 @@ td { padding: 9px 12px; font-size: 13px; }
 
 /* ---------- Socios: anchos de columna fijos (ordenar no recoloca nada) ---------- */
 .tabla-socios { table-layout: fixed; }
-.tabla-socios thead th:nth-child(3) { width: 120px; } /* Teléfono */
-.tabla-socios thead th:nth-child(4) { width: 170px; } /* Actividades */
-.tabla-socios thead th:nth-child(5) { width: 145px; } /* Estado cuota */
+.tabla-socios thead th:nth-child(3) { width: 112px; } /* Teléfono */
+.tabla-socios thead th:nth-child(4) { width: 212px; } /* Actividades */
+.tabla-socios thead th:nth-child(5) { width: 138px; } /* Estado cuota */
 .tabla-socios thead th:nth-child(6) { width: 105px; } /* Vence */
 .tabla-socios thead th:nth-child(7) { width: 34px; }
 .tabla-socios td:nth-child(2), .tabla-socios td:nth-child(3) { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+/* Actividades SIEMPRE en una sola línea → todas las filas miden igual (no se apilan). */
+.tabla-socios td:nth-child(4) { overflow: hidden; padding-left: 8px; padding-right: 8px; }
+.tabla-socios td:nth-child(4) .tag-list {
+  flex-wrap: nowrap;
+  gap: 5px;
+  overflow: hidden;
+  -webkit-mask-image: linear-gradient(90deg, #000 90%, transparent);
+  mask-image: linear-gradient(90deg, #000 90%, transparent);
+}
+.tabla-socios .pill-act { font-size: 10px; padding: 1px 5px; letter-spacing: 0.02em; }
+
+/* ---------- Socios: scroll infinito dentro de la tabla (la página no scrollea) ---------- */
+.socios-scroll { overflow-y: auto; overflow-x: hidden; overscroll-behavior: contain; }
+.socios-scroll .tabla-socios thead th { position: sticky; top: 0; z-index: 2; background: var(--marfil); }
+.socios-pie { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 12px 16px; border-top: 1.5px solid var(--linea-fuerte); flex-wrap: wrap; }
+.socios-pie .info { color: var(--tinta-soft); font-size: 12.5px; }
+
+/* ============================================================
+   Métricas (pantalla de negocio)
+   ============================================================ */
+.stat.terracota .bar { background: var(--terracota); }
+.stat.terracota .value { color: var(--terracota); }
+.stat .nota.delta { font-weight: 700; }
+.stat .delta.up { color: var(--verde); }
+.stat .delta.down { color: var(--rojo); }
+.stat .delta.neutro { color: var(--tinta-faint); }
+
+/* Puntos de leyenda reutilizables */
+.pt { width: 9px; height: 9px; border-radius: 2px; display: inline-block; flex-shrink: 0; }
+.pt.ing { background: var(--azul-500); }
+.pt.gas { background: var(--terracota); }
+.pt.ben { background: var(--verde); }
+.leyenda { display: flex; gap: 14px; }
+.leyenda .lg { display: inline-flex; align-items: center; gap: 6px; font-size: 11px; color: var(--tinta-soft); text-transform: none; letter-spacing: 0; font-weight: 600; }
+
+/* --- Gráfica de barras por mes (ingresos + gastos) --- */
+.grafica { position: relative; padding-left: 52px; margin-top: 10px; }
+.graf-plot { position: relative; height: 232px; }
+.graf-grid { position: absolute; left: 0; right: 0; height: 0; border-top: 1px dashed var(--linea); }
+.graf-grid:first-child { border-top-color: var(--linea-fuerte); }
+.graf-yval { position: absolute; left: -52px; width: 44px; text-align: right; top: -7px; font-size: 10px; color: var(--tinta-faint); font-family: var(--mono); white-space: nowrap; }
+.graf-cols { position: absolute; inset: 0; display: flex; align-items: flex-end; gap: 3px; }
+.graf-col { flex: 1; position: relative; height: 100%; display: flex; align-items: flex-end; justify-content: center; min-width: 0; transition: background 0.1s; }
+.graf-col.hov { background: rgba(20, 49, 75, 0.06); }
+.gb { width: 60%; border-radius: 3px 3px 0 0; min-height: 0; transition: height 0.45s ease-out; }
+/* Cada barra NACE desde abajo y crece verticalmente (scaleY), no de lado. */
+.gb.ingresos { background: var(--azul-500); animation: barGrowY 0.5s ease-out backwards; transform-origin: bottom center; }
+.graf-col.actual .gb.ingresos { background: var(--azul-900); }
+.graf-col.actual::before { content: ""; position: absolute; top: -3px; left: 50%; transform: translateX(-50%); width: 5px; height: 5px; border-radius: 999px; background: var(--oro); }
+.graf-xrow { display: flex; gap: 3px; margin-top: 7px; }
+.graf-xcell { flex: 1; text-align: center; font-size: 10px; color: var(--tinta-faint); font-family: var(--mono); min-width: 0; overflow: hidden; white-space: nowrap; }
+.graf-xcell.actual { color: var(--azul-900); font-weight: 700; }
+.graf-yr { display: block; opacity: 0.7; font-size: 9px; }
+.graf-tip { position: absolute; top: 4px; transform: translateX(-50%); background: var(--tinta); color: var(--marfil); padding: 9px 11px; font-size: 11.5px; z-index: 6; white-space: nowrap; pointer-events: none; border-radius: var(--radio); box-shadow: 0 10px 26px rgba(20, 41, 74, 0.32); min-width: 148px; }
+.graf-tip.izq { transform: translateX(-100%); margin-left: -8px; }
+.graf-tip .gt-mes { font-family: var(--display); font-weight: 700; font-size: 12px; margin-bottom: 6px; }
+.graf-tip .gt-fila { display: flex; align-items: center; gap: 7px; line-height: 1.9; }
+.graf-tip .gt-fila b { margin-left: auto; padding-left: 12px; }
+.graf-tip .gt-ben { margin-top: 3px; padding-top: 4px; border-top: 1px solid rgba(251, 247, 238, 0.2); }
+.graf-tip .gt-sub { margin-top: 5px; color: rgba(251, 247, 238, 0.6); font-size: 10.5px; }
+
+/* --- Dos columnas de desglose --- */
+.met-cols { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-top: 20px; align-items: start; }
+.met-cols.met-cols-b { margin-top: 4px; }
+.mini-titulo { font-size: 11.5px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: var(--tinta-soft); margin-bottom: 14px; }
+
+/* --- Barras horizontales (actividad / método) --- */
+.barras-h { display: flex; flex-direction: column; gap: 15px; }
+.bh-top { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 6px; }
+.bh-et { font-weight: 700; font-size: 12.5px; }
+.bh-val { display: inline-flex; gap: 8px; align-items: baseline; }
+.bh-pct { color: var(--tinta-faint); font-size: 11px; font-family: var(--mono); }
+.bh-track { height: 10px; background: var(--crema-2); border: 1px solid var(--linea); overflow: hidden; border-radius: var(--radio-pill); }
+.bh-fill { height: 100%; border-radius: var(--radio-pill); transition: width 0.5s ease-out; min-width: 3px; }
+
+/* --- Altas por mes (mini) --- */
+.graf-altas { display: flex; gap: 3px; align-items: flex-end; height: 130px; }
+.ga-col { flex: 1; display: flex; flex-direction: column; justify-content: flex-end; align-items: center; height: 100%; min-width: 0; }
+.ga-barras { flex: 1; width: 100%; display: flex; align-items: flex-end; justify-content: center; }
+.ga-bar { width: 58%; background: var(--azul-400); border-radius: 3px 3px 0 0; min-height: 0; transition: height 0.45s ease-out; animation: barGrowY 0.5s ease-out backwards; transform-origin: bottom center; }
+.ga-num { font-size: 10px; color: var(--tinta-soft); height: 14px; font-family: var(--mono); }
+.graf-xlabel { font-size: 10px; color: var(--tinta-faint); font-family: var(--mono); margin-top: 3px; text-align: center; }
+
+/* --- Barra segmentada de morosidad --- */
+.seg-bar { display: flex; height: 22px; border: 1.5px solid var(--linea-fuerte); overflow: hidden; border-radius: var(--radio-pill); background: var(--crema-2); }
+.seg { height: 100%; transition: width 0.5s ease-out; }
+.seg.empty { width: 100%; background: var(--crema-2); }
+.seg-leyenda { display: flex; flex-wrap: wrap; gap: 10px 16px; margin-top: 13px; }
+.seg-leyenda .sl { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; color: var(--tinta-soft); }
+.seg-leyenda .sl .pt { width: 10px; height: 10px; }
+.seg-leyenda .sl b { color: var(--tinta); }
+
+/* --- Filtro de periodo --- */
+.met-filtros { display: flex; align-items: center; gap: 12px 16px; flex-wrap: wrap; padding: 13px 18px; }
+.rango-custom { display: flex; align-items: center; gap: 8px; }
+.rango-custom input[type="month"] { padding: 6px 9px; font-size: 12.5px; font-family: var(--mono); width: auto; }
+.rango-custom .rc-sep { color: var(--tinta-faint); }
+.met-historial { margin-left: auto; color: var(--tinta-faint); font-size: 11.5px; font-family: var(--mono); white-space: nowrap; }
+
+/* --- Pestañas de la gráfica (Ingresos / Socios / € por socio) --- */
+.graf-tabs { display: inline-flex; gap: 4px; background: var(--crema-2); border: 1.5px solid var(--linea-fuerte); border-radius: var(--radio-pill); padding: 3px; }
+.gt-tab { flex: 1 1 0; min-width: 96px; text-align: center; white-space: nowrap; border: none; background: transparent; color: var(--tinta-soft); font-family: var(--sans); font-weight: 700; font-size: 11.5px; text-transform: none; letter-spacing: 0; padding: 5px 12px; border-radius: var(--radio-pill); cursor: pointer; transition: background 0.12s, color 0.12s; }
+.gt-tab:hover { color: var(--tinta); }
+.gt-tab.on { background: var(--azul-500); color: #fff; }
+.graf-pie { margin-top: 12px; color: var(--tinta-faint); font-size: 12px; line-height: 1.5; }
+
+/* KPIs de Métricas: mismo realce al pasar el ratón que en el Panel (todas las cards). */
+.met-kpis .stat { transition: background 0.12s, transform 0.12s, box-shadow 0.12s; }
+.met-kpis .stat:hover { background: var(--crema-2); transform: translateY(-2px); box-shadow: 6px 8px 0 rgba(20, 49, 75, 0.09); }
+
+/* --- Línea de media en la gráfica --- */
+.graf-media { position: absolute; left: 0; right: 0; height: 0; border-top: 2px dashed var(--oro); z-index: 3; pointer-events: none; }
+.graf-media-lbl { position: absolute; right: 0; top: -8px; font-size: 9.5px; font-family: var(--mono); color: var(--oro); background: var(--marfil); padding: 0 4px; text-transform: uppercase; letter-spacing: 0.05em; }
+.pt.media { background: transparent; border-top: 2px dashed var(--oro); border-radius: 0; height: 0; width: 14px; }
+
+@media (max-width: 900px) {
+  .met-cols { grid-template-columns: 1fr; }
+}

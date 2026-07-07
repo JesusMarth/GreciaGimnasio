@@ -60,10 +60,10 @@ ajustesRouter.post("/avisos/email", async (req, res) => {
   const fila = db.prepare("SELECT * FROM socios WHERE id = ?").get(socioId) as SocioRow | undefined;
   if (!fila) return res.status(404).json({ error: "Socio no encontrado" });
   const socio = socioConResumen(fila);
-  if (!socio.email) return res.status(400).json({ error: `${socio.nombre} no tiene email guardado.` });
+  if (!socio.email) return res.status(400).json({ error: `${socio.nombreCompleto} no tiene email guardado.` });
 
   const pendientes = socio.suscripciones.filter((s) => s.activa && (s.estado === "atrasado" || s.estado === "pendiente"));
-  if (pendientes.length === 0) return res.status(400).json({ error: `${socio.nombre} no tiene cuotas atrasadas.` });
+  if (pendientes.length === 0) return res.status(400).json({ error: `${socio.nombreCompleto} no tiene cuotas atrasadas.` });
 
   const c = leerConfigEmail();
   const firma = c.remitente || "El gimnasio";
@@ -72,7 +72,7 @@ ajustesRouter.post("/avisos/email", async (req, res) => {
     const venc = s.estado === "pendiente" ? "sin pagar todavía" : `venció el ${ddmmaaaa(s.pagadoHasta)}`;
     return `  • ${act}: ${s.importe} € · ${venc}`;
   });
-  const texto = `Hola ${socio.nombre}:\n\nTe recordamos que tienes cuotas pendientes en el gimnasio:\n\n${lineas.join(
+  const texto = `Hola ${socio.nombreCompleto}:\n\nTe recordamos que tienes cuotas pendientes en el gimnasio:\n\n${lineas.join(
     "\n"
   )}\n\nCuando puedas, pásate a ponerlas al día. ¡Gracias!\n\n${firma}`;
 

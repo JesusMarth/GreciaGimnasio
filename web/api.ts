@@ -1,4 +1,4 @@
-import type { ConfigEmail, CopiaInfo, DatosRecibo, Dashboard, Pago, Socio, Tarifa } from "./types.ts";
+import type { ConfigEmail, CopiaInfo, DatosRecibo, Dashboard, Metricas, Pago, Socio, Tarifa } from "./types.ts";
 
 async function req<T>(path: string, opts?: RequestInit): Promise<T> {
   const r = await fetch("/api" + path, {
@@ -23,6 +23,18 @@ const body = (data: unknown) => JSON.stringify(data);
 
 export const api = {
   dashboard: () => req<Dashboard>("/dashboard"),
+
+  metricas: (p?: { desde?: string; hasta?: string; meses?: number }) => {
+    const q = new URLSearchParams();
+    if (p?.desde && p?.hasta) {
+      q.set("desde", p.desde);
+      q.set("hasta", p.hasta);
+    } else if (p?.meses) {
+      q.set("meses", String(p.meses));
+    }
+    const s = q.toString();
+    return req<Metricas>("/metricas" + (s ? `?${s}` : ""));
+  },
 
   socios: (buscar?: string) =>
     req<Socio[]>("/socios" + (buscar ? `?buscar=${encodeURIComponent(buscar)}` : "")),

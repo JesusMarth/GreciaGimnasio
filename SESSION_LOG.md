@@ -52,6 +52,86 @@ Replica el patrón con el que se añadió `dni` y el de los filtros existentes. 
 
 ## 📋 Registro (más reciente arriba)
 
+### 2026-07-07 (4) · Métricas: gráfica con modos + animaciones + "Socio"
+- **Socios**: cabecera de columna "Nombre" → **"Socio"** (sigue ordenando por apellido).
+- **Animaciones arregladas**: las barras usaban `@keyframes barGrow` (scaleX → crecían
+  "de lado"). Nuevo **`barGrowY`** (scaleY, `transform-origin: bottom`) para `.gb`/`.ga-bar`
+  → nacen desde abajo y suben, con stagger por `animationDelay`. **`useContador`**
+  extraído a `web/anim.ts` (Panel y Métricas lo comparten); KPIs de Métricas ahora con
+  **count-up + fundido** y el **ojo con fundido** (`.fade-suave`, patrón del Panel).
+- **Gráfica con 3 modos** (pestañas): **Ingresos** · **Socios** (distintos que pagaron
+  ese mes) · **€ por socio** (ingresos/socios = retención). El eje, la media, el tooltip
+  y el pie se adaptan; el ojo oculta el dinero pero NO los conteos de socios. Server:
+  `serie[].socios = COUNT(DISTINCT socio_id)` por mes.
+- Verificado en vivo: barras `barGrowY`, 3 modos con ejes/medias correctos (socios 24
+  medio, €/socio 39,16 €), ojo respeta conteos, "Socio" en la tabla. Typecheck+build OK.
+
+### 2026-07-07 (3) · Métricas: simplificar (feedback "muchas cosas confusas")
+- **Fuera "cuota mensual esperada" (MRR) y toda la tarjeta de estado de cobro** (`ingresosMes`+`mrr` fuera del server, tipos y CSS `.cobro-*`).
+- **Fuera "por método de cobro"** (ahora todo es efectivo): quitado `porMetodo` del server, tipo y UI. "Ingresos por actividad" pasa a ancho completo.
+- **"Mejor mes" ahora es GLOBAL** (récord de todo el historial, `SELECT ... GROUP BY mes ORDER BY total DESC LIMIT 1`), NO reacciona al filtro. Antes se calculaba dentro del rango (confuso con rangos de 2 meses).
+- **Historial**: el server ya expone `rango.dataDesde` (primer cobro) y la UI muestra **"Historial desde <mes>"** en la banda de periodo; es el suelo del selector.
+- Verificado: con filtro ene–feb, "mejor mes" sigue siendo mar. 2026 (récord). Typecheck web+server OK, build OK.
+
+### 2026-07-07 (2) · Métricas: filtro de periodo + métricas de negocio + fuera gastos
+- Iteración sobre Métricas (feedback: "solo ingresos" + "filtros fecha y demás,
+  actúa como diseñador de negocio").
+- **Backend de gastos ELIMINADO** (quedó inactivo tras dejar Métricas solo-ingresos):
+  fuera tabla `gastos` (`db.ts`), CRUD y agregación de gastos (`metricas.ts`), tipo
+  `Gasto` y métodos `api.gastos/crearGasto/borrarGasto`, y campos `gastos/beneficio`.
+- **`GET /api/metricas` ahora acepta rango**: `?desde=YYYY-MM&hasta=YYYY-MM` (o
+  `?meses=N` por compat). Acota a datos reales; **"Todo" arranca en el primer cobro**
+  (no en las altas, que pueden ser antiguas). Nuevos campos en la respuesta:
+  `rango{desde,hasta,meses,dataDesde,dataHasta}`, `periodoAnterior` (mismo rango 12
+  meses antes, para comparativa interanual), `ingresosMes` (cobrado en el mes) y
+  `mrr` (**cuota mensual esperada** = suma de cuotas mensuales activas de socios activos).
+- **Web `Metricas.tsx`**: **filtro de periodo** (presets Este mes/Este año/Año
+  pasado/12m/24m/Todo + **rango a medida** con `<input type=month>`); KPIs del periodo
+  (ingresos con **▲/▼ vs. año pasado**, media/mes, **mejor mes**, socios activos);
+  **tarjeta "estado de cobro"** (MRR vs. cobrado del mes, barra y % con color verde/
+  ámbar/rojo); gráfica con **línea de media** y **mejor mes** en oro. `api.metricas`
+  pasa a recibir `{desde,hasta}`. CSS nuevo (`.met-filtros`, `.cobro-card`, `.graf-media`).
+- Verificado en vivo: presets y rango a medida refetchean bien (incluso desde>hasta
+  se ordena solo en el server), YoY, MRR (3688 € en el mock), "Todo"=primer cobro,
+  sin overflow horizontal. Typecheck web+server OK, build OK.
+
+### 2026-07-07 · Métricas + Nombre/Apellidos + scroll infinito (3 mejoras del jefe)
+- **Pantalla de Métricas nueva** (`/metricas`, en el sidebar):
+  - **Server**: tabla `gastos` (migración idempotente en `db.ts`) + `server/routes/metricas.ts`
+    → `GET /api/metricas?meses=N` (serie mensual ingresos/gastos/beneficio + altas,
+    `porActividad`, `porMetodo`, snapshot de socios/morosidad, comparativa mes actual
+    vs. anterior) y CRUD `/api/gastos`. Registrado en `index.ts` (`app.use("/api", metricasRouter)`).
+  - **Web**: `web/pages/Metricas.tsx` (KPIs con delta, gráfica de barras HTML/CSS
+    ingresos+gastos con tooltip, barras H por actividad/método, altas por mes,
+    barra segmentada de morosidad, alta/baja de gastos). Todo con el tema existente
+    (CSS nuevo al final de `styles.css`, bloque "Métricas"). Ojo de privacidad
+    (`localStorage gym_ver_metricas`). Ayuda `AyudaMetricas`.
+- **"Ingresos del mes" (el "bug raro" del jefe)**: **el SQL es correcto**. "Ingresos del
+  mes" = **cobrado en el mes natural en curso por fecha de pago**. A principios de mes
+  o sin cobros aún sale 0/bajo comparado con meses llenos → parece raro pero no lo es.
+  La pantalla de Métricas lo deja claro mes a mes. **Pendiente de hablar con el jefe**:
+  si tras verlo quiere afinar la tarjeta del Panel (p. ej. etiqueta "cobrado este mes"
+  más explícita o mini-tendencia). No se tocó la lógica de ingresos.
+- **Nombre + Apellidos por separado**: `ALTER TABLE socios ADD COLUMN apellidos` con
+  **reparto único** de los nombres existentes por el primer espacio (`db.ts`). Tocado
+  todo el recorrido: `queries.ts` (añade `apellidos` + `nombreCompleto`), `socios.ts`
+  (búsqueda por apellidos, `ORDER BY apellidos, nombre`, POST/PUT), `dashboard.ts`,
+  `ajustes.ts` (avisos), `recibo.ts`, `export.ts` (columna Apellidos), `seed-mock.ts`.
+  Web: `types.ts`, `SocioFormModal` (2 campos), `SocioDetalle`/`Socios` muestran
+  `nombreCompleto`, `filtros.pruebas.ts` (factory actualizado, 40+ casos OK).
+- **Socios: orden por apellido + scroll infinito**: `Socios.tsx` reescrito. Orden por
+  apellido **A→Z por defecto** (como el archivador), toggle **Z→A** en la cabecera
+  *Nombre*; se mantiene el orden por *Vence*. **Paginación eliminada** → `tbody` con
+  scroll interno (alto medido para que **la página no scrollee**) que carga filas por
+  bloques al bajar (`INICIAL=40`, `CHUNK=24`). CSS `.socios-scroll`/`.socios-pie`.
+- **Verificado en vivo** (mock, Vite+API 4711): métricas (serie mensual correcta, CRUD
+  de gastos, beneficio), migración de apellidos (60 socios repartidos y ordenados),
+  scroll infinito (40→60), toggles de orden, búsqueda por apellido, modal con 2 campos,
+  sin overflow de página. Typecheck web+server OK, `test:filtros` OK, `npm run build` OK.
+- ⚠️ **Mock DB**: `data-mock/gymgrecia.db` (versionado) quedó migrado en sitio al
+  arrancar el server. Para datos limpios con apellidos nativos: borrar `data-mock` y
+  `npm run seed:mock` (el seed ya inserta `apellidos`).
+
 ### 2026-06-26 · Versionado + actualización automática
 - **SemVer** arrancando en **`1.0.0`** (la app ya estaba en producción).
 - **`npm version patch|minor|major`** = bump + commit + tag + push en un comando:

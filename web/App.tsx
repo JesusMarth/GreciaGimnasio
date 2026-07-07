@@ -1,5 +1,6 @@
 import { NavLink, Route, Routes } from "react-router-dom";
 import { Panel } from "./pages/Panel.tsx";
+import { Metricas } from "./pages/Metricas.tsx";
 import { Socios } from "./pages/Socios.tsx";
 import { SocioDetalle } from "./pages/SocioDetalle.tsx";
 import { Tarifas } from "./pages/Tarifas.tsx";
@@ -41,6 +42,14 @@ const ICONOS: Record<string, JSX.Element> = {
       <circle cx="15" cy="12" r="5.3" />
     </svg>
   ),
+  metricas: (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M3 3v18h18" />
+      <rect x="7" y="12" width="3" height="6" rx="0.6" />
+      <rect x="12" y="8" width="3" height="10" rx="0.6" />
+      <rect x="17" y="5" width="3" height="13" rx="0.6" />
+    </svg>
+  ),
   tarifas: (
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
       <path d="M20.6 13.1 L13 20.7 a2 2 0 0 1 -2.8 0 L3.6 14 a2 2 0 0 1 -0.6 -1.4 V5.5 a1.5 1.5 0 0 1 1.5 -1.5 h7 a2 2 0 0 1 1.4 0.6 l7.3 7.3 a2 2 0 0 1 0 2.2 Z" />
@@ -80,6 +89,9 @@ function Sidebar() {
       <NavLink to="/socios" className="nav-link">
         <span className="ico">{ICONOS.socios}</span> Socios
       </NavLink>
+      <NavLink to="/metricas" className="nav-link">
+        <span className="ico">{ICONOS.metricas}</span> Métricas
+      </NavLink>
       <NavLink to="/tarifas" className="nav-link">
         <span className="ico">{ICONOS.tarifas}</span> Tarifas
       </NavLink>
@@ -108,6 +120,7 @@ export function App() {
       <main className="main">
         <Routes>
           <Route path="/" element={<Panel />} />
+          <Route path="/metricas" element={<Metricas />} />
           <Route path="/socios" element={<Socios />} />
           <Route path="/socios/:id" element={<SocioDetalle />} />
           <Route path="/tarifas" element={<Tarifas />} />

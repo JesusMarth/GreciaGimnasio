@@ -39,7 +39,10 @@ const cap = (s: string) => (s ? s.charAt(0).toUpperCase() + s.slice(1) : s);
 export function datosDelRecibo(pagoId: number): DatosReciboPago | null {
   const pago = db.prepare("SELECT * FROM pagos WHERE id = ?").get(pagoId) as any;
   if (!pago) return null;
-  const socio = db.prepare("SELECT nombre, dni, email FROM socios WHERE id = ?").get(pago.socio_id) as any;
+  const fila = db.prepare("SELECT nombre, apellidos, dni, email FROM socios WHERE id = ?").get(pago.socio_id) as any;
+  const socio = fila
+    ? { nombre: [fila.nombre, fila.apellidos].filter(Boolean).join(" "), dni: fila.dni, email: fila.email }
+    : null;
   const lineas = db.prepare("SELECT * FROM pago_lineas WHERE pago_id = ?").all(pagoId) as LineaPago[];
   const anio = (pago.fecha || "").slice(0, 4) || "0000";
   return {

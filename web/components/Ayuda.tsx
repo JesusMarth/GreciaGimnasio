@@ -59,6 +59,34 @@ export const AyudaPanel = () => (
   </Ayuda>
 );
 
+export const AyudaMetricas = () => (
+  <Ayuda titulo="Métricas, explicado">
+    <p>La vista de negocio: cómo evolucionan tus <strong>ingresos</strong> y tus socios a lo largo del tiempo.</p>
+    <h4>Elegir el periodo</h4>
+    <p>Arriba eliges qué tramo mirar: <strong>Este mes</strong>, <strong>Este año</strong>, <strong>Año pasado</strong>, <strong>12</strong> o <strong>24 meses</strong>, <strong>Todo</strong>, o un <strong>rango a medida</strong> (de un mes a otro). Todo lo de abajo se recalcula para ese periodo.</p>
+    <h4>Los marcadores</h4>
+    <ul>
+      <li><strong>Ingresos del periodo</strong>: lo cobrado en el tramo, con la comparativa <strong>frente al mismo periodo del año pasado</strong> (▲ sube / ▼ baja) para ver si vas mejor o peor.</li>
+      <li><strong>Media por mes</strong> del periodo elegido.</li>
+      <li><strong>Mejor mes de siempre</strong>: el mes con más ingresos de todo tu historial (tu récord). No cambia al mover el filtro.</li>
+      <li><strong>Socios activos</strong>: cuántos hay y cuántos tienen la cuota pendiente.</li>
+    </ul>
+    <h4>La gráfica por mes (3 vistas)</h4>
+    <p>Con las pestañas de arriba cambias qué mira la gráfica; la línea de puntos dorada es siempre la <strong>media</strong> del periodo:</p>
+    <ul>
+      <li><strong>Ingresos</strong>: lo cobrado cada mes (por fecha de cobro, así que a principio de mes sale bajo).</li>
+      <li><strong>Socios</strong>: cuántos socios distintos pagaron cada mes.</li>
+      <li><strong>€ por socio</strong>: el ingreso medio por socio que paga. Si se mantiene estable mes a mes, es buena señal: tus socios pagan y se quedan (retención).</li>
+    </ul>
+    <h4>Más abajo</h4>
+    <ul>
+      <li><strong>Ingresos por actividad</strong>: cuánto aporta gimnasio, karate o pilates.</li>
+      <li><strong>Evolución de socios</strong>: altas por mes y el estado de las cuotas hoy.</li>
+    </ul>
+    <p>Arriba a la derecha se indica desde cuándo tienes <strong>historial</strong> (tu primer cobro). El <strong>ojo</strong> oculta todos los importes por si enseñas la pantalla a alguien.</p>
+  </Ayuda>
+);
+
 export const AyudaSocios = () => (
   <Ayuda titulo="La pantalla de Socios, explicada">
     <p>Aquí tienes a todos los socios y gestionas altas, búsquedas y exportaciones.</p>
@@ -71,8 +99,10 @@ export const AyudaSocios = () => (
       <li><strong>Fecha de alta</strong>: abre una ventana con periodos rápidos (hoy, ayer, últimos 7 días, esta semana, este mes, este año) y, en “Más opciones”, un año entero o un rango exacto con calendario.</li>
       <li>Los filtros se <strong>suman</strong> entre sí; <strong>Limpiar filtros</strong> los quita todos. El export y “seleccionar todos” respetan lo filtrado.</li>
     </ul>
-    <h4>Páginas</h4>
-    <p>La tabla se divide en páginas para no tener que bajar sin fin. Usa <strong>Anterior</strong> / <strong>Siguiente</strong> abajo a la derecha.</p>
+    <h4>Orden de la lista</h4>
+    <p>Por defecto se ordena <strong>por apellido de la A a la Z</strong>, como el archivador de papel. Pulsa la cabecera <strong>Nombre</strong> para alternar a <strong>Z→A</strong>, o la cabecera <strong>Vence</strong> para ordenar por quién tiene la cuota más próxima a vencer.</p>
+    <h4>Desplazamiento</h4>
+    <p>La lista tiene <strong>scroll propio</strong>: baja dentro de la tabla y se van cargando más socios solos (la pantalla no se mueve). Abajo se indica cuántos hay y cuántos se están mostrando.</p>
     <h4>Seleccionar y exportar</h4>
     <ul>
       <li>Las <strong>casillas</strong> de la izquierda te dejan elegir socios concretos (incluso de varias páginas). La casilla de la cabecera marca/desmarca todos los del filtro actual.</li>

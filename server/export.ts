@@ -31,18 +31,20 @@ async function aBuffer(wb: ExcelJS.Workbook): Promise<Buffer> {
 /** Listado de socios (todos, o solo los ids indicados). Una hoja resumen. */
 export async function libroSocios(ids?: number[]): Promise<Buffer> {
   let filas: SocioRow[];
+  const ORDEN = "ORDER BY apellidos COLLATE NOCASE, nombre COLLATE NOCASE";
   if (ids && ids.length) {
     const ph = ids.map(() => "?").join(",");
-    filas = db.prepare(`SELECT * FROM socios WHERE id IN (${ph}) ORDER BY nombre`).all(...ids) as SocioRow[];
+    filas = db.prepare(`SELECT * FROM socios WHERE id IN (${ph}) ${ORDEN}`).all(...ids) as SocioRow[];
   } else {
-    filas = db.prepare("SELECT * FROM socios ORDER BY nombre").all() as SocioRow[];
+    filas = db.prepare(`SELECT * FROM socios ${ORDEN}`).all() as SocioRow[];
   }
   const socios = filas.map((s) => socioConResumen(s));
 
   const wb = new ExcelJS.Workbook();
   const ws = wb.addWorksheet("Socios");
   ws.columns = [
-    { header: "Nombre", key: "nombre", width: 28 },
+    { header: "Apellidos", key: "apellidos", width: 22 },
+    { header: "Nombre", key: "nombre", width: 18 },
     { header: "DNI/NIF", key: "dni", width: 14 },
     { header: "Sexo", key: "sexo", width: 10 },
     { header: "Teléfono", key: "tel", width: 14 },
@@ -56,6 +58,7 @@ export async function libroSocios(ids?: number[]): Promise<Buffer> {
   for (const s of socios) {
     const activas = s.suscripciones.filter((x) => x.activa);
     ws.addRow({
+      apellidos: s.apellidos ?? "",
       nombre: s.nombre,
       dni: s.dni ?? "",
       sexo: sexoTxt(s.sexo),
@@ -87,7 +90,7 @@ export async function libroSocio(id: number): Promise<Buffer> {
     { key: "v", width: 42 },
   ];
   const datos: [string, string][] = [
-    ["Socio", socio.nombre],
+    ["Socio", socio.nombreCompleto],
     ["DNI/NIF", socio.dni ?? ""],
     ["Sexo", sexoTxt(socio.sexo)],
     ["Teléfono", socio.telefono ?? ""],

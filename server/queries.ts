@@ -5,6 +5,7 @@ import { estadoDe, hoyISO, peorEstado, type EstadoCuota } from "./util.ts";
 export interface SocioRow {
   id: number;
   nombre: string;
+  apellidos: string | null;
   telefono: string | null;
   email: string | null;
   dni: string | null;
@@ -65,6 +66,8 @@ export function socioConResumen(s: SocioRow, hoy = hoyISO()) {
   return {
     id: s.id,
     nombre: s.nombre,
+    apellidos: s.apellidos,
+    nombreCompleto: [s.nombre, s.apellidos].filter(Boolean).join(" "),
     telefono: s.telefono,
     email: s.email,
     dni: s.dni,

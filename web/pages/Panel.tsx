@@ -5,6 +5,7 @@ import { euros, fecha, estadoTexto, colorEstado, capitalizar } from "../format.t
 import { PagoModal } from "../components/PagoModal.tsx";
 import type { Dashboard, DashItem } from "../types.ts";
 import { AyudaPanel } from "../components/Ayuda.tsx";
+import { useContador } from "../anim.ts";
 
 const OJO_ABIERTO = (
   <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -18,36 +19,6 @@ const OJO_CERRADO = (
     <line x1="1" y1="1" x2="23" y2="23" />
   </svg>
 );
-
-/** Contador animado: sube (o baja) hasta el objetivo con easing suave.
- *  Usa setTimeout (no rAF) para funcionar también en pestañas en segundo plano,
- *  y respeta `prefers-reduced-motion`. Al terminar muestra el valor exacto. */
-function useContador(objetivo: number): number {
-  const [valor, setValor] = useState(0);
-  const actual = useRef(0);
-  useEffect(() => {
-    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
-      actual.current = objetivo;
-      setValor(objetivo);
-      return;
-    }
-    const desde = actual.current;
-    const t0 = performance.now();
-    const dur = 750;
-    let timer = 0;
-    const paso = () => {
-      const p = Math.min(1, (performance.now() - t0) / dur);
-      const e = 1 - Math.pow(1 - p, 3);
-      const v = p < 1 ? Math.round(desde + (objetivo - desde) * e) : objetivo;
-      actual.current = v;
-      setValor(v);
-      if (p < 1) timer = window.setTimeout(paso, 16);
-    };
-    paso();
-    return () => window.clearTimeout(timer);
-  }, [objetivo]);
-  return valor;
-}
 
 export function Panel() {
   const [data, setData] = useState<Dashboard | null>(null);

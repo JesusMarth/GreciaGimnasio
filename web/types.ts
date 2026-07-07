@@ -16,7 +16,9 @@ export interface Suscripcion {
 
 export interface Socio {
   id: number;
-  nombre: string;
+  nombre: string; // nombre de pila
+  apellidos: string | null;
+  nombreCompleto: string; // "nombre apellidos" (compuesto en el servidor)
   telefono: string | null;
   email: string | null;
   dni: string | null;
@@ -87,6 +89,35 @@ export interface Dashboard {
   porCobrar: DashItem[];
   pronto: DashItem[];
   aldia: DashItem[];
+}
+
+export interface MetricaMes {
+  mes: string; // "YYYY-MM"
+  ingresos: number;
+  nPagos: number;
+  socios: number; // socios distintos que pagaron ese mes
+  altas: number;
+}
+
+export interface Metricas {
+  hoy: string;
+  mesActual: string;
+  rango: { desde: string; hasta: string; meses: number; dataDesde: string; dataHasta: string };
+  serie: MetricaMes[];
+  porActividad: { actividad: string; total: number }[];
+  totales: { ingresos: number; nPagos: number };
+  periodoAnterior: { desde: string; hasta: string; ingresos: number };
+  mejorMes: { mes: string; ingresos: number }; // récord de todo el historial (no del rango)
+  socios: {
+    total: number;
+    activos: number;
+    bajas: number;
+    sinCuota: number;
+    aldia: number;
+    pronto: number;
+    atrasado: number;
+    pendiente: number;
+  };
 }
 
 export interface CopiaInfo {

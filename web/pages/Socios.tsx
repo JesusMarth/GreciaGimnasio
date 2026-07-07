@@ -9,7 +9,8 @@ import { FiltroFecha } from "../components/FiltroFecha.tsx";
 import { filtrarSocios, hayFiltrosActivos, type FiltrosSocios, type RangoFecha } from "../filtros.ts";
 import type { Socio } from "../types.ts";
 
-const MIN_FILAS = 6;
+const INICIAL = 40; // filas que se pintan de entrada
+const CHUNK = 24; // filas que se añaden al acercarse al final (scroll infinito)
 
 const OPC_ESTADO = [
   { k: "activo", t: "Activos" },
@@ -25,6 +26,20 @@ const OPC_SEXO = [
   { k: "hombre", t: "Hombre" },
   { k: "mujer", t: "Mujer" },
 ];
+
+// Orden de la tabla. Por defecto por apellido A→Z (como el archivador físico).
+type Orden = "apeAsc" | "apeDesc" | "vence";
+
+const Chevron = () => (
+  <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3.2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M6 9l6 6 6-6" />
+  </svg>
+);
+
+/** Clave de orden por apellido (cae al nombre si no hay apellidos). */
+function claveApellido(s: Socio): string {
+  return (s.apellidos || s.nombre || "").trim();
+}
 
 function GrupoChips({ label, opciones, valor, onToggle }: { label: string; opciones: { k: string; t: string }[]; valor: Set<string>; onToggle: (k: string) => void }) {
   return (
@@ -52,9 +67,9 @@ export function Socios() {
   const [filtroCuota, setFiltroCuota] = useState<Set<string>>(() => desdeUrl("cuota"));
   const [filtroSexo, setFiltroSexo] = useState<Set<string>>(() => desdeUrl("sexo"));
   const [filtroFecha, setFiltroFecha] = useState<RangoFecha>({ desde: null, hasta: null });
-  const [ordenVence, setOrdenVence] = useState(false); // false = orden natural; true = quien vence antes primero
-  const [pagina, setPagina] = useState(1);
-  const [filasPorPagina, setFilasPorPagina] = useState(12);
+  const [orden, setOrden] = useState<Orden>("apeAsc");
+  const [limite, setLimite] = useState(INICIAL); // scroll infinito: cuántas filas hay pintadas
+  const [alto, setAlto] = useState(440); // alto del área con scroll (la página no scrollea)
   const [nuevo, setNuevo] = useState(false);
   const [error, setError] = useState("");
   const [sel, setSel] = useState<Set<number>>(new Set());
@@ -63,7 +78,7 @@ export function Socios() {
   const [listaCongelada, setListaCongelada] = useState<Socio[] | null>(null);
   const salTimer = useRef<number>(0);
   const visIds = useRef<number[]>([]);
-  const tbodyRef = useRef<HTMLTableSectionElement>(null);
+  const scrollRef = useRef<HTMLDivElement>(null);
   const nav = useNavigate();
 
   function recargar(q = buscar) {
@@ -86,16 +101,47 @@ export function Socios() {
   const sociosFiltrados = filtrarSocios(socios, filtros);
   const hayFiltro = buscar.trim() !== "" || hayFiltrosActivos(filtros);
 
-  // Calcula cuántas filas caben en la pantalla y pagina el resto (sin scroll de página).
+  // Orden: por apellido (A→Z o Z→A) o por vencimiento (quien vence antes primero).
+  const sociosOrdenados =
+    orden === "vence"
+      ? [...sociosFiltrados].sort((a, b) => {
+          if (a.proximaExpiracion === b.proximaExpiracion) return 0;
+          if (!a.proximaExpiracion) return 1;
+          if (!b.proximaExpiracion) return -1;
+          return a.proximaExpiracion < b.proximaExpiracion ? -1 : 1; // ISO asc = vence antes primero
+        })
+      : (() => {
+          const s = [...sociosFiltrados].sort((a, b) => {
+            const c = claveApellido(a).localeCompare(claveApellido(b), "es", { sensitivity: "base" });
+            return c !== 0 ? c : (a.nombre || "").localeCompare(b.nombre || "", "es", { sensitivity: "base" });
+          });
+          return orden === "apeDesc" ? s.reverse() : s;
+        })();
+
+  // Mientras dura el fundido de salida se muestra la lista congelada (la anterior).
+  const listaBase = listaCongelada ?? sociosOrdenados;
+  const visibles = listaBase.slice(0, limite);
+  visIds.current = visibles.map((s) => s.id);
+
+  // Al cambiar filtros/búsqueda/orden: volver al principio y reiniciar el scroll infinito.
+  useEffect(() => {
+    setLimite(INICIAL);
+    if (scrollRef.current) scrollRef.current.scrollTop = 0;
+  }, [buscar, filtroAct, filtroEstado, filtroCuota, filtroSexo, filtroFecha, orden]);
+
+  // El área con scroll se ajusta a la pantalla (la página en sí no scrollea).
   useEffect(() => {
     function medir() {
-      const tb = tbodyRef.current;
-      if (!tb || tb.rows.length === 0) return;
-      const altoFila = tb.rows[0].getBoundingClientRect().height || 46;
-      const arriba = tb.getBoundingClientRect().top;
-      const reserva = 130; // paginación + respiración + padding inferior del contenido
-      const caben = Math.max(MIN_FILAS, Math.floor((window.innerHeight - arriba - reserva) / altoFila));
-      setFilasPorPagina((prev) => (prev === caben ? prev : caben));
+      const el = scrollRef.current;
+      if (!el) return;
+      const top = el.getBoundingClientRect().top;
+      // Reservamos lo que hay DEBAJO del área con scroll: el pie de la tabla y el
+      // padding inferior del <main>. Medido, no fijo, para no descuadrar en móvil.
+      const pie = el.parentElement?.querySelector<HTMLElement>(".socios-pie");
+      const pieH = pie ? pie.getBoundingClientRect().height : 46;
+      const main = el.closest<HTMLElement>(".main") ?? document.querySelector<HTMLElement>(".main");
+      const mainPad = main ? parseFloat(getComputedStyle(main).paddingBottom) || 0 : 0;
+      setAlto(Math.max(220, window.innerHeight - top - pieH - mainPad - 8));
     }
     medir();
     const t = setTimeout(medir, 60);
@@ -104,24 +150,16 @@ export function Socios() {
       clearTimeout(t);
       window.removeEventListener("resize", medir);
     };
-  }, [socios.length, sociosFiltrados.length]);
+  }, [socios.length]);
 
-  // Orden opcional por vencimiento (los que no tienen cuota con fecha van al final).
-  const sociosOrdenados = ordenVence
-    ? [...sociosFiltrados].sort((a, b) => {
-        if (a.proximaExpiracion === b.proximaExpiracion) return 0;
-        if (!a.proximaExpiracion) return 1;
-        if (!b.proximaExpiracion) return -1;
-        return a.proximaExpiracion < b.proximaExpiracion ? -1 : 1; // ISO asc = vence antes primero
-      })
-    : sociosFiltrados;
-
-  // Mientras dura el fundido de salida se muestra la lista congelada (la anterior).
-  const listaBase = listaCongelada ?? sociosOrdenados;
-  const totalPaginas = Math.max(1, Math.ceil(listaBase.length / filasPorPagina));
-  const paginaActual = Math.min(pagina, totalPaginas);
-  const visibles = listaBase.slice((paginaActual - 1) * filasPorPagina, paginaActual * filasPorPagina);
-  visIds.current = visibles.map((s) => s.id);
+  // Scroll infinito: al acercarse al final, pinta el siguiente bloque.
+  function alScroll() {
+    const el = scrollRef.current;
+    if (!el) return;
+    if (el.scrollTop + el.clientHeight >= el.scrollHeight - 240) {
+      setLimite((l) => (l >= listaBase.length ? l : Math.min(listaBase.length, l + CHUNK)));
+    }
+  }
 
   // El export se adapta: marcados → esos; si no, lo filtrado; sin filtro → todos.
   const idsExport = sel.size ? [...sel] : hayFiltro ? sociosFiltrados.map((s) => s.id) : undefined;
@@ -153,7 +191,6 @@ export function Socios() {
 
     window.clearTimeout(salTimer.current);
     if (sal.size === 0 || window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
-      setPagina(1);
       setter(n);
       setListaCongelada(null);
       setSaliendo(new Set());
@@ -165,7 +202,6 @@ export function Socios() {
     salTimer.current = window.setTimeout(() => {
       setListaCongelada(null);
       setSaliendo(new Set());
-      setPagina(1);
     }, 240);
   }
   function alternar(id: number) {
@@ -195,7 +231,6 @@ export function Socios() {
     setFiltroCuota(new Set());
     setFiltroSexo(new Set());
     setFiltroFecha({ desde: null, hasta: null });
-    setPagina(1);
   }
 
   const todosMarcados = sociosFiltrados.length > 0 && sociosFiltrados.every((s) => sel.has(s.id));
@@ -226,7 +261,7 @@ export function Socios() {
         <div className="filtros-banda">
           <div className="search">
             <span className="ico">⌕</span>
-            <input value={buscar} onChange={(e) => { setBuscar(e.target.value); setPagina(1); }} placeholder="Buscar por nombre o teléfono…" />
+            <input value={buscar} onChange={(e) => setBuscar(e.target.value)} placeholder="Buscar por nombre, apellidos o teléfono…" />
           </div>
           <span className="filtros-sep" aria-hidden="true" />
           <GrupoChips label="Actividad" opciones={ACTIVIDADES.map((a) => ({ k: a, t: capitalizar(a) }))} valor={filtroAct} onToggle={(k) => alternaEn("act", k)} />
@@ -237,7 +272,7 @@ export function Socios() {
           <span className="filtros-sep" aria-hidden="true" />
           <GrupoChips label="Sexo" opciones={OPC_SEXO} valor={filtroSexo} onToggle={(k) => alternaEn("sex", k)} />
           <span className="filtros-sep" aria-hidden="true" />
-          <FiltroFecha rango={filtroFecha} onChange={(r) => { setPagina(1); setFiltroFecha(r); }} />
+          <FiltroFecha rango={filtroFecha} onChange={(r) => setFiltroFecha(r)} />
           <button className={"btn ghost sm limpiar-reservado" + (hayFiltro ? " on" : "")} onClick={limpiar} tabIndex={hayFiltro ? 0 : -1}>
             Limpiar filtros
           </button>
@@ -249,81 +284,83 @@ export function Socios() {
           </div>
         ) : (
           <>
-            <table className="tabla-socios">
-              <thead>
-                <tr>
-                  <th style={{ width: 30 }}>
-                    <input type="checkbox" checked={todosMarcados} onChange={alternarTodos} style={{ width: "auto" }} aria-label="Seleccionar todos" />
-                  </th>
-                  <th>Nombre</th>
-                  <th>Teléfono</th>
-                  <th>Actividades</th>
-                  <th>Estado cuota</th>
-                  <th className="th-sort" onClick={() => { setOrdenVence((v) => !v); setPagina(1); }} title="Ordenar por quién vence antes">
-                    <span className="th-sort-inner">
-                      Vence
-                      <span className={"th-chevron" + (ordenVence ? " on" : "")} aria-hidden="true">
-                        <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3.2" strokeLinecap="round" strokeLinejoin="round">
-                          <path d="M6 9l6 6 6-6" />
-                        </svg>
+            <div className="socios-scroll" ref={scrollRef} style={{ maxHeight: alto }} onScroll={alScroll}>
+              <table className="tabla-socios">
+                <thead>
+                  <tr>
+                    <th style={{ width: 30 }}>
+                      <input type="checkbox" checked={todosMarcados} onChange={alternarTodos} style={{ width: "auto" }} aria-label="Seleccionar todos" />
+                    </th>
+                    <th className="th-sort" onClick={() => setOrden((o) => (o === "apeAsc" ? "apeDesc" : "apeAsc"))} title="Ordenar por apellido (A→Z / Z→A)">
+                      <span className="th-sort-inner">
+                        Socio
+                        <span
+                          className={"th-chevron" + (orden === "apeAsc" || orden === "apeDesc" ? " on" : "")}
+                          style={{ transform: orden === "apeDesc" ? "rotate(180deg)" : undefined }}
+                          aria-hidden="true"
+                        >
+                          <Chevron />
+                        </span>
                       </span>
-                    </span>
-                  </th>
-                  <th></th>
-                </tr>
-              </thead>
-              <tbody ref={tbodyRef}>
-                {visibles.map((s, idx) => (
-                  <tr
-                    key={s.id}
-                    className={"clickable" + (saliendo.has(s.id) ? " saliendo" : "")}
-                    style={{ animationDelay: saliendo.has(s.id) ? "0ms" : `${Math.min(idx * 22, 400)}ms` }}
-                    onClick={() => nav(`/socios/${s.id}`)}
-                  >
-                    <td onClick={(e) => e.stopPropagation()}>
-                      <input type="checkbox" checked={sel.has(s.id)} onChange={() => alternar(s.id)} style={{ width: "auto" }} aria-label={`Seleccionar ${s.nombre}`} />
-                    </td>
-                    <td>
-                      <span className="nombre">{s.nombre}</span>
-                      {s.estado === "baja" && <span className="badge gris" style={{ marginLeft: 8 }}>Baja</span>}
-                    </td>
-                    <td className="muted">{s.telefono || "—"}</td>
-                    <td>
-                      <div className="tag-list">
-                        {s.suscripciones.filter((x) => x.activa).map((x) => (
-                          <span key={x.id} className="pill-act">
-                            {capitalizar(x.actividad)}
-                          </span>
-                        ))}
-                        {s.suscripciones.filter((x) => x.activa).length === 0 && <span className="muted">—</span>}
-                      </div>
-                    </td>
-                    <td>
-                      <EstadoBadge estado={s.estadoResumen} />
-                    </td>
-                    <td className="td-vence">{fecha(s.proximaExpiracion)}</td>
-                    <td style={{ textAlign: "right", color: "var(--text-faint)" }}>›</td>
+                    </th>
+                    <th>Teléfono</th>
+                    <th>Actividades</th>
+                    <th>Estado cuota</th>
+                    <th className="th-sort" onClick={() => setOrden((o) => (o === "vence" ? "apeAsc" : "vence"))} title="Ordenar por quién vence antes">
+                      <span className="th-sort-inner">
+                        Vence
+                        <span className={"th-chevron" + (orden === "vence" ? " on" : "")} aria-hidden="true">
+                          <Chevron />
+                        </span>
+                      </span>
+                    </th>
+                    <th></th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody>
+                  {visibles.map((s, idx) => (
+                    <tr
+                      key={s.id}
+                      className={"clickable" + (saliendo.has(s.id) ? " saliendo" : "")}
+                      style={{ animationDelay: saliendo.has(s.id) ? "0ms" : `${Math.min(idx * 18, 360)}ms` }}
+                      onClick={() => nav(`/socios/${s.id}`)}
+                    >
+                      <td onClick={(e) => e.stopPropagation()}>
+                        <input type="checkbox" checked={sel.has(s.id)} onChange={() => alternar(s.id)} style={{ width: "auto" }} aria-label={`Seleccionar ${s.nombreCompleto}`} />
+                      </td>
+                      <td>
+                        <span className="nombre">{s.nombreCompleto}</span>
+                        {s.estado === "baja" && <span className="badge gris" style={{ marginLeft: 8 }}>Baja</span>}
+                      </td>
+                      <td className="muted">{s.telefono || "—"}</td>
+                      <td>
+                        <div className="tag-list">
+                          {s.suscripciones.filter((x) => x.activa).map((x) => (
+                            <span key={x.id} className="pill-act">
+                              {capitalizar(x.actividad)}
+                            </span>
+                          ))}
+                          {s.suscripciones.filter((x) => x.activa).length === 0 && <span className="muted">—</span>}
+                        </div>
+                      </td>
+                      <td>
+                        <EstadoBadge estado={s.estadoResumen} />
+                      </td>
+                      <td className="td-vence">{fecha(s.proximaExpiracion)}</td>
+                      <td style={{ textAlign: "right", color: "var(--text-faint)" }}>›</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
 
-            {totalPaginas > 1 && (
-              <div className="paginacion">
-                <span className="info">
-                  {listaBase.length} socios{hayFiltro ? " (filtrados)" : ""}
-                </span>
-                <div className="controles">
-                  <button className="btn sm" disabled={paginaActual <= 1} onClick={() => setPagina((p) => Math.max(1, p - 1))}>
-                    ‹ Anterior
-                  </button>
-                  <span className="pag-num">{paginaActual} / {totalPaginas}</span>
-                  <button className="btn sm" disabled={paginaActual >= totalPaginas} onClick={() => setPagina((p) => Math.min(totalPaginas, p + 1))}>
-                    Siguiente ›
-                  </button>
-                </div>
-              </div>
-            )}
+            <div className="socios-pie">
+              <span className="info">
+                {listaBase.length} socios{hayFiltro ? " (filtrados)" : ""}
+                {visibles.length < listaBase.length ? ` · mostrando ${visibles.length}` : ""}
+              </span>
+              {sel.size > 0 && <span className="info">{sel.size} seleccionado{sel.size === 1 ? "" : "s"}</span>}
+            </div>
           </>
         )}
       </div>

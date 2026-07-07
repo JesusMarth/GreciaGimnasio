@@ -12,7 +12,9 @@ dashboardRouter.get("/", (_req, res) => {
   const filas = db
     .prepare(
       `SELECT su.id, su.actividad, su.etiqueta, su.importe, su.periodicidad, su.pagado_hasta,
-              so.id AS socio_id, so.nombre AS socio_nombre, so.telefono AS socio_telefono, so.fecha_alta AS socio_alta
+              so.id AS socio_id,
+              (so.nombre || CASE WHEN COALESCE(so.apellidos,'') <> '' THEN ' ' || so.apellidos ELSE '' END) AS socio_nombre,
+              so.telefono AS socio_telefono, so.fecha_alta AS socio_alta
        FROM suscripciones su
        JOIN socios so ON so.id = su.socio_id
        WHERE su.activa = 1 AND so.estado = 'activo'`

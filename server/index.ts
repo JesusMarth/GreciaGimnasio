@@ -7,6 +7,7 @@ import { suscripcionesRouter } from "./routes/suscripciones.ts";
 import { pagosRouter } from "./routes/pagos.ts";
 import { tarifasRouter } from "./routes/tarifas.ts";
 import { dashboardRouter } from "./routes/dashboard.ts";
+import { metricasRouter } from "./routes/metricas.ts";
 import { backupsRouter } from "./routes/backups.ts";
 import { ajustesRouter } from "./routes/ajustes.ts";
 import { exportRouter } from "./routes/export.ts";
@@ -18,6 +19,7 @@ app.use(express.json());
 app.use("/api/socios", sociosRouter);
 app.use("/api/tarifas", tarifasRouter);
 app.use("/api/dashboard", dashboardRouter);
+app.use("/api", metricasRouter); // /metricas, /gastos
 app.use("/api/pagos", pagosRouter);
 app.use("/api", suscripcionesRouter); // /socios/:id/suscripciones y /suscripciones/:id
 app.use("/api", backupsRouter); // /backups, /backup, /backup/restaurar
