@@ -61,29 +61,21 @@ export const AyudaPanel = () => (
 
 export const AyudaMetricas = () => (
   <Ayuda titulo="Métricas, explicado">
-    <p>La vista de negocio: cómo evolucionan tus <strong>ingresos</strong> y tus socios a lo largo del tiempo.</p>
-    <h4>Elegir el periodo</h4>
-    <p>Arriba eliges qué tramo mirar: <strong>Este mes</strong>, <strong>Este año</strong>, <strong>Año pasado</strong>, <strong>12</strong> o <strong>24 meses</strong>, <strong>Todo</strong>, o un <strong>rango a medida</strong> (de un mes a otro). Todo lo de abajo se recalcula para ese periodo.</p>
-    <h4>Los marcadores</h4>
+    <h4>Los cuatro marcadores</h4>
     <ul>
-      <li><strong>Ingresos del periodo</strong>: lo cobrado en el tramo, con la comparativa <strong>frente al mismo periodo del año pasado</strong> (▲ sube / ▼ baja) para ver si vas mejor o peor.</li>
-      <li><strong>Media por mes</strong> del periodo elegido.</li>
-      <li><strong>Mejor mes de siempre</strong>: el mes con más ingresos de todo tu historial (tu récord). No cambia al mover el filtro.</li>
-      <li><strong>Socios activos</strong>: cuántos hay y cuántos tienen la cuota pendiente.</li>
+      <li><strong>Ingresos del periodo</strong>: lo cobrado en los meses elegidos. La flecha lo compara con los mismos meses del año anterior.</li>
+      <li><strong>Mes en curso</strong>: lo que llevas cobrado este mes. La proyección estima cómo acabará si sigue al mismo ritmo.</li>
+      <li><strong>Socios activos</strong>: los que hay hoy, junto a las altas y bajas del periodo.</li>
+      <li><strong>Retención media</strong>: de los que pagan un mes, cuántos vuelven a pagar al siguiente. Si baja, se te están escapando socios.</li>
     </ul>
-    <h4>La gráfica por mes (3 vistas)</h4>
-    <p>Con las pestañas de arriba cambias qué mira la gráfica; la línea de puntos dorada es siempre la <strong>media</strong> del periodo:</p>
-    <ul>
-      <li><strong>Ingresos</strong>: lo cobrado cada mes (por fecha de cobro, así que a principio de mes sale bajo).</li>
-      <li><strong>Socios</strong>: cuántos socios distintos pagaron cada mes.</li>
-      <li><strong>€ por socio</strong>: el ingreso medio por socio que paga. Si se mantiene estable mes a mes, es buena señal: tus socios pagan y se quedan (retención).</li>
-    </ul>
-    <h4>Más abajo</h4>
-    <ul>
-      <li><strong>Ingresos por actividad</strong>: cuánto aporta gimnasio, karate o pilates.</li>
-      <li><strong>Evolución de socios</strong>: altas por mes y el estado de las cuotas hoy.</li>
-    </ul>
-    <p>Arriba a la derecha se indica desde cuándo tienes <strong>historial</strong> (tu primer cobro). El <strong>ojo</strong> oculta todos los importes por si enseñas la pantalla a alguien.</p>
+    <h4>La gráfica</h4>
+    <p>Cada barra es un mes y cada color una actividad. Con <strong>vs. año anterior</strong> aparece detrás, en gris, el mismo mes del año pasado: si la barra de color la supera, ese mes fue mejor. El tramo rayado del mes actual es la proyección, y la línea dorada, la media del periodo. Las pestañas cambian qué se mira: dinero, socios que pagaron o retención.</p>
+    <h4>Filtros</h4>
+    <p>Puedes mirar el año en curso, los últimos 12 meses, un año entero o el tramo que quieras con «A medida». Si eliges una actividad, toda la pantalla se centra en ella (los chips y las barras de abajo también). La pantalla recuerda tus filtros la próxima vez que entres.</p>
+    <h4>Socios al día que no salen en Ingresos</h4>
+    <p>Ingresos solo suma los cobros apuntados en la app. Los socios que venían del archivador en papel (alta con «ya estaba pagado») están al día sin cobro apuntado, y el aviso ⚠ de abajo dice cuántos son. En cuanto les registres su siguiente pago, cuadran solos.</p>
+    <h4>El ojo</h4>
+    <p>Oculta todos los importes de la pantalla. Los recuentos de socios se siguen viendo.</p>
   </Ayuda>
 );
 
@@ -138,7 +130,8 @@ export const AyudaSocioDetalle = () => (
     <ul>
       <li>Cada actividad (gimnasio, karate, pilates…) tiene su importe y su estado.</li>
       <li><strong>Cobrar</strong> / <strong>Editar</strong> esa actividad, <strong>Pausar</strong> (deja de contar sin borrarla) o <strong>Quitar</strong>.</li>
-      <li><strong>+ Añadir actividad</strong> para sumarle una nueva.</li>
+      <li><strong>+ Añadir actividad</strong> para sumarle una nueva. Elige cómo empieza: <strong>Queda pendiente</strong> (le cobrarás después), <strong>Cobrar ahora</strong> (apunta el primer pago de verdad: cuenta en Ingresos y genera recibo) o <strong>Ya estaba pagado</strong> (venía pagado del archivador: solo cuadra su estado, sin apuntar cobro).</li>
+      <li>Si una cuota pone <strong>«apuntado a mano»</strong>, su fecha de cobertura se puso a dedo y no hay ningún cobro registrado detrás: por eso ese dinero no sale en Ingresos.</li>
     </ul>
     <h4>Historial de pagos</h4>
     <ul>

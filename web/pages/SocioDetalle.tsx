@@ -347,6 +347,11 @@ function SubCard({
         <span className="muted" style={{ fontSize: 12.5 }}>
           {sub.activa ? estadoTexto(sub.estado, sub.dias) : "Inactiva"}
           {sub.pagadoHasta ? ` · hasta ${fecha(sub.pagadoHasta)}` : ""}
+          {sub.coberturaSinCobro && (
+            <span title="La fecha de cobertura se apuntó a mano (alta o edición): no hay ningún cobro registrado que la respalde, así que ese dinero no aparece en Ingresos.">
+              {" "}· apuntado a mano
+            </span>
+          )}
         </span>
       </div>
       <div className="acciones" style={{ marginTop: 10 }}>

@@ -12,6 +12,54 @@ y el proyecto usa [Versionado Semántico](https://semver.org/lang/es/) (SemVer):
 
 ## [Sin publicar]
 
+## [1.3.0] - 2026-07-08
+
+### Added
+- **Métricas rediseñada** (según `design/Metricas Rediseño.dc.html`):
+  - **Filtros nuevos**: periodo (Este año · 12 meses · Todo · chips por **año** del
+    historial · rango **a medida** plegable) y **filtro de actividad** (Gimnasio/
+    Karate/Pilates con su color) que afecta a toda la pantalla. Los filtros **se
+    recuerdan** entre visitas.
+  - **KPIs**: Ingresos del periodo (vs. mismo periodo del año anterior), **Mes en
+    curso con proyección** a fin de mes, Socios activos (con altas/bajas y neto del
+    periodo) y **Retención media** (% de socios que repiten pago al mes siguiente).
+  - **Gráfica principal**: barras **apiladas por actividad**, comparativa **vs. año
+    anterior** (barra gris fantasma), **proyección rayada** del mes en curso, y
+    modos Ingresos · Socios · **Retención** (línea, escala 60–100%).
+    Cambiar de modo anima las barras sin redibujarlas.
+  - **Altas y bajas por mes** en gráfica espejo (verdes arriba, rojas abajo) con
+    neto del periodo. Las bajas guardan ahora su **fecha** (`fecha_baja`, se apunta
+    al dar de baja y se limpia al reactivar; las bajas antiguas no tienen fecha y
+    no aparecen).
+  - **Ingresos por actividad** con tendencia vs. año anterior; clic en una fila
+    filtra toda la pantalla por esa actividad.
+  - API: `GET /api/metricas` acepta `?actividad=`, y devuelve desglose mensual por
+    actividad, `serieAnterior` (mismo rango, 12 meses antes), `retencion` por mes,
+    `retencionMedia`, `proyeccion` del mes en curso y `bajas` por mes.
+- **Alta de actividad con primer pago claro** (arregla el "los ingresos no cuadran"):
+  al añadir una actividad ahora se elige cómo empieza — **Queda pendiente** (sin
+  pagos), **Cobrar ahora** (apunta el primer pago REAL con fecha y método: cuenta
+  en Ingresos, sale en el historial y tiene recibo) o **Ya estaba pagado** (venía
+  del archivador en papel: solo cuadra el estado, sin apuntar ningún cobro). Antes
+  el campo "pagado hasta" del alta dejaba socios **al día sin ningún ingreso
+  registrado**, y el Panel/Métricas parecían "perder" dinero.
+- **La cobertura "apuntada a mano" ahora se ve**: en la ficha del socio la cuota
+  lo indica («apuntado a mano») y en Métricas un aviso ⚠ dice cuántos socios están
+  al día sin cobro registrado que lo respalde. Las BDs existentes se marcan solas
+  al actualizar (migración automática).
+- **Pruebas de ingresos** (`npm run test:ingresos`): levanta un servidor real con
+  datos temporales y comprueba las casuísticas alta/cobro/borrado (21 checks).
+- El entorno **mock** ahora genera también socios "del archivador" (al día sin
+  pagos registrados), como los datos reales, y un **historial multianual** con
+  huecos de pago y bajas con fecha, para poder ver todas las casuísticas de la
+  pantalla de Métricas (comparativa interanual, retención variable, espejo de
+  altas/bajas).
+
+### Fixed
+- **Borrar un pago ya no borra la cobertura puesta a mano en el alta**: al
+  recalcular el "pagado hasta" se recupera la fecha del archivador si los pagos
+  restantes no llegan a ella (antes el socio pasaba a "Sin pagar" injustamente).
+
 ## [1.2.0] - 2026-07-07
 
 ### Added

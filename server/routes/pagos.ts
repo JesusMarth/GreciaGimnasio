@@ -129,13 +129,19 @@ pagosRouter.delete("/:id", (req, res) => {
   const tx = db.transaction(() => {
     const info = db.prepare("DELETE FROM pagos WHERE id = ?").run(id);
     if (info.changes === 0) return 0;
-    // Recalcular pagado_hasta = ultima cobertura que quede de cada suscripcion (o null).
+    // Recalcular pagado_hasta = lo ultimo que quede cubierto: la mayor cobertura de
+    // las lineas de pago restantes o, si va mas alla, la cobertura manual del alta
+    // (sin ella, borrar un pago dejaria al socio "Sin pagar" aunque viniera pagado
+    // del archivador en papel).
     const maxStmt = db.prepare("SELECT MAX(periodo_hasta) AS m FROM pago_lineas WHERE suscripcion_id = ?");
+    const manualStmt = db.prepare("SELECT cobertura_manual AS cm FROM suscripciones WHERE id = ?");
     const updStmt = db.prepare("UPDATE suscripciones SET pagado_hasta = ? WHERE id = ?");
     for (const { suscripcion_id } of subs) {
       if (!suscripcion_id) continue;
       const r = maxStmt.get(suscripcion_id) as { m: string | null };
-      updStmt.run(r.m ?? null, suscripcion_id);
+      const cm = (manualStmt.get(suscripcion_id) as { cm: string | null } | undefined)?.cm ?? null;
+      const candidatas = [r.m, cm].filter((x): x is string => !!x);
+      updStmt.run(candidatas.length ? candidatas.reduce((a, b) => (a > b ? a : b)) : null, suscripcion_id);
     }
     return info.changes;
   });

@@ -1,0 +1,11 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "gymgrecia-mock",
+      "runtimeExecutable": "cmd",
+      "runtimeArgs": ["/c", "set GYM_DATA_DIR=data-mock&& set GYM_API_PORT=4712&& set GYM_NO_OPEN=1&& npx tsx server/index.ts"],
+      "port": 4712
+    }
+  ]
+}

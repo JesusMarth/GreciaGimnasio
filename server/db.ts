@@ -103,6 +103,28 @@ CREATE INDEX IF NOT EXISTS idx_lineas_suscripcion ON pago_lineas(suscripcion_id)
     /* la columna ya existe */
   }
   try {
+    // Fecha en que el socio se dio de baja (para "bajas por mes" en Métricas).
+    // Se apunta al pasar a baja y se limpia al reactivar. Las bajas anteriores a
+    // esta versión no tienen fecha y no salen en la gráfica (no se inventa).
+    conn.exec("ALTER TABLE socios ADD COLUMN fecha_baja TEXT");
+  } catch {
+    /* la columna ya existe */
+  }
+  try {
+    // Cobertura "apuntada a mano" (campo Pagado hasta del alta/edición, típico del
+    // archivador en papel): NO respaldada por un pago registrado. Se guarda aparte
+    // para (1) poder restaurarla si se borra un pago posterior y (2) poder señalar
+    // en Métricas/ficha que ese dinero no está en Ingresos.
+    conn.exec("ALTER TABLE suscripciones ADD COLUMN cobertura_manual TEXT");
+    // Solo esta vez: en BDs anteriores, la cobertura que va más allá de lo que
+    // justifican las líneas de pago solo pudo ponerse a mano.
+    conn.exec(`UPDATE suscripciones SET cobertura_manual = pagado_hasta
+      WHERE pagado_hasta IS NOT NULL
+        AND pagado_hasta > COALESCE((SELECT MAX(l.periodo_hasta) FROM pago_lineas l WHERE l.suscripcion_id = suscripciones.id), '')`);
+  } catch {
+    /* la columna ya existe */
+  }
+  try {
     conn.exec("ALTER TABLE socios ADD COLUMN apellidos TEXT");
     // Recién añadida: repartimos el "nombre completo" histórico en nombre (pila) +
     // apellidos, partiendo por el PRIMER espacio ("María García López" → "María" /

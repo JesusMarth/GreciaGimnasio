@@ -24,7 +24,7 @@ const body = (data: unknown) => JSON.stringify(data);
 export const api = {
   dashboard: () => req<Dashboard>("/dashboard"),
 
-  metricas: (p?: { desde?: string; hasta?: string; meses?: number }) => {
+  metricas: (p?: { desde?: string; hasta?: string; meses?: number; actividad?: string }) => {
     const q = new URLSearchParams();
     if (p?.desde && p?.hasta) {
       q.set("desde", p.desde);
@@ -32,6 +32,7 @@ export const api = {
     } else if (p?.meses) {
       q.set("meses", String(p.meses));
     }
+    if (p?.actividad && p.actividad !== "todas") q.set("actividad", p.actividad);
     const s = q.toString();
     return req<Metricas>("/metricas" + (s ? `?${s}` : ""));
   },

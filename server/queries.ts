@@ -13,6 +13,7 @@ export interface SocioRow {
   fecha_alta: string;
   fecha_nacimiento: string | null;
   estado: string;
+  fecha_baja: string | null; // solo bajas posteriores a v1.3 (antes no se guardaba)
   notas: string | null;
   creado_en: string;
 }
@@ -25,6 +26,7 @@ export interface SuscripcionRow {
   importe: number;
   periodicidad: string;
   pagado_hasta: string | null;
+  cobertura_manual: string | null; // cobertura puesta a mano (sin cobro registrado)
   activa: number;
   notas: string | null;
   creado_en: string;
@@ -46,6 +48,9 @@ export function suscripcionConEstado(s: SuscripcionRow, hoy: string) {
     importe: s.importe,
     periodicidad: s.periodicidad,
     pagadoHasta: s.pagado_hasta,
+    // true = la cobertura vigente esta puesta a mano, ningun cobro llega hasta ahi
+    // (pagado_hasta solo iguala a cobertura_manual cuando ningun pago la supera).
+    coberturaSinCobro: !!s.pagado_hasta && s.cobertura_manual === s.pagado_hasta,
     activa: !!s.activa,
     notas: s.notas,
     estado,

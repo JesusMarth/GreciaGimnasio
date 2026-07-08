@@ -8,6 +8,7 @@ export interface Suscripcion {
   importe: number;
   periodicidad: string;
   pagadoHasta: string | null;
+  coberturaSinCobro: boolean; // la cobertura vigente se apuntó a mano (ningún cobro la respalda)
   activa: boolean;
   notas: string | null;
   estado: EstadoCuota;
@@ -93,26 +94,35 @@ export interface Dashboard {
 
 export interface MetricaMes {
   mes: string; // "YYYY-MM"
-  ingresos: number;
+  ingresos: number; // ya filtrado por actividad si se pidió ?actividad=
+  porActividad: Record<string, number>; // desglose por actividad (una sola clave si hay filtro)
   nPagos: number;
   socios: number; // socios distintos que pagaron ese mes
   altas: number;
+  bajas: number; // solo bajas con fecha (desde v1.3); las antiguas no salen
+  retencion: number | null; // % de los que pagaron el mes anterior que repiten (null sin mes previo)
 }
 
 export interface Metricas {
   hoy: string;
   mesActual: string;
+  actividad: string; // "todas" o la actividad filtrada
   rango: { desde: string; hasta: string; meses: number; dataDesde: string; dataHasta: string };
   serie: MetricaMes[];
-  porActividad: { actividad: string; total: number }[];
+  serieAnterior: MetricaMes[]; // mismo rango 12 meses antes, elemento a elemento
+  porActividad: { actividad: string; total: number }[]; // periodo completo, SIN filtrar
+  porActividadAnterior: { actividad: string; total: number }[];
   totales: { ingresos: number; nPagos: number };
   periodoAnterior: { desde: string; hasta: string; ingresos: number };
   mejorMes: { mes: string; ingresos: number }; // récord de todo el historial (no del rango)
+  proyeccion: { mes: string; cobrado: number; estimado: number; dia: number; diasMes: number };
+  retencionMedia: number | null;
   socios: {
     total: number;
     activos: number;
     bajas: number;
     sinCuota: number;
+    coberturaManual: number; // al día/pronto solo por cobertura apuntada a mano (sin cobro)
     aldia: number;
     pronto: number;
     atrasado: number;

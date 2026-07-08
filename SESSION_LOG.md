@@ -52,6 +52,82 @@ Replica el patrón con el que se añadió `dni` y el de los filtros existentes. 
 
 ## 📋 Registro (más reciente arriba)
 
+### 2026-07-08 (2) · Métricas REDISEÑADA (handoff de diseño)
+- Reimplementada la pantalla según **`design/Metricas Rediseño.dc.html`** (prototipo
+  con la lógica en su clase `Component`; los colores del diseño ya coincidían 1:1
+  con las variables de `styles.css`).
+- **Server (`metricas.ts` reescrito)**: `?actividad=` (importes desde `pago_lineas`
+  de esa actividad; nPagos/socios = pagos que la incluyen) · `serie[].porActividad`
+  (desglose apilado) · `serie[].retencion` (∩ de socios que pagan M-1 y M, cargado
+  una vez en un Map mes→Set) · `serieAnterior` (mismo rango −12, elemento a
+  elemento) · `proyeccion` del mes en curso (cobrado/día·díasMes) · `retencionMedia`
+  · `bajas` por mes vía **columna nueva `socios.fecha_baja`** (migración en `db.ts`;
+  se escribe en el PUT de socios al cambiar estado; bajas antiguas sin fecha no se
+  inventan) · `porActividadAnterior` (tendencia del reparto). `mejorMes` sigue en la
+  respuesta por compat aunque la UI nueva no lo pinta.
+- **Web (`Metricas.tsx` reescrito)**: filtros en tarjeta de 2 filas (presets + chips
+  de año generados del historial + «A medida…» plegable animando `max-width` sin
+  saltos de altura) · chips de actividad con punto de color · persistencia en
+  `localStorage gym_metricas_filtros_v2` · KPIs con `useContador` (Ingresos+delta
+  interanual, Mes en curso con proyección, Socios activos con neto, Retención
+  media) · gráfica con barras apiladas, fantasma del año anterior (76% de ancho),
+  tramo rayado de proyección, línea de retención SVG (escala 60–100, animación de
+  trazo), tooltip con desglose y comparativa, media dorada · espejo altas/bajas ·
+  barras por actividad clicables (atenúa no seleccionadas) · Estado de cuotas +
+  aviso de cobertura manual se mantienen. CSS: bloque nuevo «MÉTRICAS v2» al final
+  de `styles.css`. `AyudaMetricas` con los textos del modal de referencia.
+- **Verificado**: typecheck web+server · test:filtros · **test:ingresos ampliado a
+  30 checks** (desglose suma=total, filtro actividad, proyección, bajas con fecha,
+  serieAnterior alineada) · build · y en vivo sobre el mock: cuadre a mano de los
+  8 meses apilados contra `SUM(pagos)`, retención jun-2026 = 78% (21/27 recontado
+  en BD), cambio de pestaña SIN re-nacer (mismo nodo DOM, transición), «A medida»
+  no salta la tarjeta a ancho de escritorio (sí envuelve en ventanas muy estrechas,
+  como el prototipo), filtro Karate de punta a punta, recarga conserva filtros+ojo,
+  tooltip con desglose, baja→espejo (+1 jul) y reactivar→0.
+- **Iteración con feedback**: pestaña «Socios que pagan» → **«Socios»**; ayuda «?»
+  reescrita con tono natural; **seed mock multianual** (hasta ~30 meses de pagos con
+  huecos → retención variable, bajas con `fecha_baja`, 800 pagos) para ver todas las
+  casuísticas: comparativa interanual con fantasmas, chips 2024/2025/2026, delta
+  ▲108%, espejo con bajas. Verificado en vivo y **publicado como v1.3.0** (commit +
+  tag + push; el PC del gimnasio se actualiza con `Actualizar.bat`).
+
+### 2026-07-08 · Ingresos que no cuadraban: cobertura manual vs. pagos reales
+- **Diagnóstico (queja del jefe "los ingresos no se reflejan bien")**: el campo
+  "Pagado hasta (si ya tenía pagos)" del alta de actividad ponía al socio **al día
+  sin crear ningún pago** → Panel/Métricas (que suman la tabla `pagos`) no veían
+  ese dinero. Verificado por API con casuísticas A–G (alta sin nada = "Sin pagar"
+  correcto; alta con fecha = al día con 0 €; no había duplicidad real). Bug extra
+  encontrado: **borrar un pago recalculaba `pagado_hasta` solo con las líneas
+  restantes** y perdía la cobertura manual del alta (socio pasaba a "Sin pagar").
+- **Arreglo**:
+  - Columna nueva **`suscripciones.cobertura_manual`** (migración suave en `db.ts`
+    que además clasifica las BDs existentes: cobertura más allá de lo que
+    justifican las líneas de pago = manual).
+  - **POST suscripciones acepta `cobroInicial {metodo, fecha?, meses?}`**: crea
+    sub + pago + línea en una transacción (ingreso real). `pagadoHasta` manual y
+    `cobroInicial` son excluyentes en la UI → no hay forma de duplicar dinero.
+  - **Modal "Añadir actividad"**: chips **Queda pendiente / Cobrar ahora / Ya
+    estaba pagado** con textos que explican qué cuenta en Ingresos. En edición,
+    hint de que cambiar la fecha a mano no apunta cobros.
+  - **DELETE pago**: recalcula con `max(líneas restantes, cobertura_manual)`.
+  - **Visibilidad**: ficha → «apuntado a mano» en la cuota; Métricas → aviso ⚠
+    "N socios al día sin cobro registrado"; ayudas "?" actualizadas.
+  - **`npm run test:ingresos`** (`server/ingresos.pruebas.ts`): servidor real en
+    puerto 4799 + carpeta temporal, 21 comprobaciones (papel no genera ingresos
+    pero queda marcado; cobrar-ahora sí; sin duplicidad; borrar pago restaura la
+    cobertura del papel; métricas == dashboard). NO está en `preversion` (levanta
+    servidor); correrlo a mano antes de publicar.
+  - **seed-mock**: ~25% de las cuotas cubiertas ahora son "del archivador" (sin
+    pagos), para reproducir los datos reales. `data-mock` regenerado.
+- Verificado: typecheck web+server, test:filtros, test:ingresos, build, migración
+  probada sobre una BD con esquema viejo, y **UI en vivo** (mock): aviso en
+  Métricas (10 socios), «apuntado a mano» en ficha, alta con "Cobrar ahora" desde
+  el navegador → pago en historial y al día.
+- **Pendiente / decisión de negocio**: los socios del archivador seguirán sin
+  aparecer en Ingresos (ese dinero se cobró fuera de la app, contarlo AHORA sería
+  falsear el mes). Si el jefe quiere "migrarlos", que registre su próximo cobro
+  normal: desde ahí todo cuadra solo. Próxima sesión: repaso de Métricas con él.
+
 ### 2026-07-07 (4) · Métricas: gráfica con modos + animaciones + "Socio"
 - **Socios**: cabecera de columna "Nombre" → **"Socio"** (sigue ordenando por apellido).
 - **Animaciones arregladas**: las barras usaban `@keyframes barGrow` (scaleX → crecían

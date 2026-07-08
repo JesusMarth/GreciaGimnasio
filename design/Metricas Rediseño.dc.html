@@ -1,0 +1,861 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta charset="utf-8">
+<title>GymGrecia · Métricas (rediseño)</title>
+<style>
+@font-face{font-family:'Cinzel';src:url('./fonts/Cinzel.ttf') format('truetype');font-weight:400 900;font-display:swap;}
+@font-face{font-family:'Archivo';src:url('./fonts/Archivo.ttf') format('truetype');font-weight:100 900;font-stretch:75% 125%;font-display:swap;}
+@font-face{font-family:'Space Mono';src:url('./fonts/SpaceMono-400.woff2') format('woff2');font-weight:400;font-display:swap;}
+@font-face{font-family:'Space Mono';src:url('./fonts/SpaceMono-700.woff2') format('woff2');font-weight:700;font-display:swap;}
+html,body{height:100%;margin:0;}
+body{font-family:'Archivo','Segoe UI',system-ui,sans-serif;color:#14314b;font-size:14px;line-height:1.5;-webkit-font-smoothing:antialiased;background-color:#f3ecdd;background-image:linear-gradient(rgba(20,41,74,0.035) 1px,transparent 1px),linear-gradient(90deg,rgba(20,41,74,0.035) 1px,transparent 1px);background-size:30px 30px;}
+a{color:#1c5a89;text-decoration:none;}
+a:hover{color:#14314b;}
+input[type="month"]{font-family:'Space Mono','Consolas',monospace;}
+input[type="month"]:focus{outline:none;border-color:#1c5a89 !important;box-shadow:0 0 0 2px #e2eaf1;}
+@keyframes barGrowY{from{transform:scaleY(0);}to{transform:scaleY(1);}}
+@keyframes fadeUp{from{opacity:0;transform:translateY(10px);}to{opacity:1;transform:none;}}
+@keyframes fadeInSuave{from{opacity:0;}to{opacity:1;}}
+@keyframes modalIn{from{opacity:0;transform:translateY(16px) scale(0.985);}to{opacity:1;transform:none;}}
+@keyframes trazoLinea{from{stroke-dashoffset:1600;}to{stroke-dashoffset:0;}}
+</style>
+</helmet>
+
+<div style="display:grid;grid-template-columns:244px 1fr;min-height:100vh;">
+
+  <!-- ══════ Sidebar ══════ -->
+  <aside data-screen-label="Sidebar" style="background:#ede5d2;border-right:1.5px solid #c9bc9e;position:sticky;top:0;height:100vh;padding:22px 14px;display:flex;flex-direction:column;gap:3px;">
+    <div style="display:flex;align-items:center;gap:12px;padding:4px 8px 16px;margin-bottom:8px;border-bottom:1.5px solid #c9bc9e;">
+      <div style="width:40px;height:40px;flex-shrink:0;color:#14314b;">
+        <svg viewBox="0 0 48 48" fill="currentColor" aria-hidden="true" style="width:100%;height:100%;display:block;">
+          <path d="M24 5 L43 17 H5 Z"></path>
+          <rect x="5" y="19.4" width="38" height="3.2"></rect>
+          <rect x="9" y="24.6" width="3.1" height="13.6"></rect>
+          <rect x="15.7" y="24.6" width="3.1" height="13.6"></rect>
+          <rect x="22.45" y="24.6" width="3.1" height="13.6"></rect>
+          <rect x="29.2" y="24.6" width="3.1" height="13.6"></rect>
+          <rect x="35.9" y="24.6" width="3.1" height="13.6"></rect>
+          <rect x="5" y="40" width="38" height="3.2"></rect>
+          <rect x="2.5" y="44.4" width="43" height="2.2" opacity="0.45"></rect>
+        </svg>
+      </div>
+      <div style="font-family:'Cinzel',serif;font-weight:700;font-size:18px;letter-spacing:0.08em;color:#14314b;line-height:1.05;text-transform:uppercase;">
+        GymGrecia
+        <small style="display:block;font-family:'Archivo',sans-serif;font-weight:500;font-size:10.5px;letter-spacing:0.04em;color:#8b93a0;text-transform:uppercase;margin-top:4px;">Gestión de socios</small>
+      </div>
+    </div>
+
+    <div style="display:flex;align-items:center;gap:11px;padding:11px 12px;border-left:3px solid transparent;border-radius:7px;color:#45596b;font-weight:600;font-size:13px;letter-spacing:0.04em;text-transform:uppercase;cursor:pointer;" style-hover="background:rgba(20,49,75,0.06);color:#1c5a89;">
+      <span style="width:20px;height:20px;flex-shrink:0;display:inline-flex;align-items:center;justify-content:center;"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:19px;height:19px;display:block;"><rect x="3" y="3" width="7.5" height="7.5" rx="1.6"></rect><rect x="13.5" y="3" width="7.5" height="7.5" rx="1.6"></rect><rect x="3" y="13.5" width="7.5" height="7.5" rx="1.6"></rect><rect x="13.5" y="13.5" width="7.5" height="7.5" rx="1.6"></rect></svg></span> Panel
+    </div>
+    <div style="display:flex;align-items:center;gap:11px;padding:11px 12px;border-left:3px solid transparent;border-radius:7px;color:#45596b;font-weight:600;font-size:13px;letter-spacing:0.04em;text-transform:uppercase;cursor:pointer;" style-hover="background:rgba(20,49,75,0.06);color:#1c5a89;">
+      <span style="width:20px;height:20px;flex-shrink:0;display:inline-flex;align-items:center;justify-content:center;"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:19px;height:19px;display:block;"><circle cx="9" cy="12" r="5.3"></circle><circle cx="15" cy="12" r="5.3"></circle></svg></span> Socios
+    </div>
+    <div style="display:flex;align-items:center;gap:11px;padding:11px 12px;border-left:3px solid #b5891f;border-radius:7px;background:#14314b;color:#ffffff;font-weight:600;font-size:13px;letter-spacing:0.04em;text-transform:uppercase;cursor:pointer;">
+      <span style="width:20px;height:20px;flex-shrink:0;display:inline-flex;align-items:center;justify-content:center;color:#b5891f;"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:19px;height:19px;display:block;"><path d="M3 3v18h18"></path><rect x="7" y="12" width="3" height="6" rx="0.6"></rect><rect x="12" y="8" width="3" height="10" rx="0.6"></rect><rect x="17" y="5" width="3" height="13" rx="0.6"></rect></svg></span> Métricas
+    </div>
+    <div style="display:flex;align-items:center;gap:11px;padding:11px 12px;border-left:3px solid transparent;border-radius:7px;color:#45596b;font-weight:600;font-size:13px;letter-spacing:0.04em;text-transform:uppercase;cursor:pointer;" style-hover="background:rgba(20,49,75,0.06);color:#1c5a89;">
+      <span style="width:20px;height:20px;flex-shrink:0;display:inline-flex;align-items:center;justify-content:center;"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:19px;height:19px;display:block;"><path d="M20.6 13.1 L13 20.7 a2 2 0 0 1 -2.8 0 L3.6 14 a2 2 0 0 1 -0.6 -1.4 V5.5 a1.5 1.5 0 0 1 1.5 -1.5 h7 a2 2 0 0 1 1.4 0.6 l7.3 7.3 a2 2 0 0 1 0 2.2 Z"></path><circle cx="8" cy="8.6" r="1.5"></circle></svg></span> Tarifas
+    </div>
+    <div style="display:flex;align-items:center;gap:11px;padding:11px 12px;border-left:3px solid transparent;border-radius:7px;color:#45596b;font-weight:600;font-size:13px;letter-spacing:0.04em;text-transform:uppercase;cursor:pointer;" style-hover="background:rgba(20,49,75,0.06);color:#1c5a89;">
+      <span style="width:20px;height:20px;flex-shrink:0;display:inline-flex;align-items:center;justify-content:center;"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:19px;height:19px;display:block;"><rect x="8.5" y="8.5" width="12" height="12" rx="2"></rect><path d="M4.5 15.5 A1.5 1.5 0 0 1 3 14 V5 A1.5 1.5 0 0 1 4.5 3.5 h9 A1.5 1.5 0 0 1 15 5"></path></svg></span> Copias
+    </div>
+    <div style="display:flex;align-items:center;gap:11px;padding:11px 12px;border-left:3px solid transparent;border-radius:7px;color:#45596b;font-weight:600;font-size:13px;letter-spacing:0.04em;text-transform:uppercase;cursor:pointer;" style-hover="background:rgba(20,49,75,0.06);color:#1c5a89;">
+      <span style="width:20px;height:20px;flex-shrink:0;display:inline-flex;align-items:center;justify-content:center;"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:19px;height:19px;display:block;"><circle cx="12" cy="12" r="7.5"></circle><circle cx="12" cy="12" r="2.4" fill="currentColor" stroke="none"></circle><path d="M12 2.4 V5 M12 19 V21.6 M2.4 12 H5 M19 12 H21.6 M5.2 5.2 L7 7 M19 19 L17.2 17.2 M18.8 5.2 L17 7 M5 19 L6.8 17.2"></path></svg></span> Ajustes
+    </div>
+
+    <div style="flex:1;"></div>
+    <div style="font-family:'Space Mono',monospace;color:#8b93a0;font-size:10.5px;line-height:1.5;letter-spacing:0.02em;padding:12px 8px 0;border-top:1.5px solid #c9bc9e;display:flex;align-items:center;gap:8px;text-transform:uppercase;">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" style="color:#2e70a1;flex-shrink:0;"><path d="M5 21h14M7 21V8M17 21V8M4 8h16l-2-4H6L4 8Z"></path></svg>
+      Datos guardados en este equipo.
+    </div>
+    <div style="font-family:'Space Mono',monospace;color:#8b93a0;font-size:10px;letter-spacing:0.06em;padding:6px 8px 0;font-variant-numeric:tabular-nums;opacity:0.7;">v1.2.0</div>
+  </aside>
+
+  <!-- ══════ Main ══════ -->
+  <main data-screen-label="Métricas (rediseño)" style="padding:0 0 70px;width:100%;min-width:0;">
+    <div style="max-width:1720px;margin-inline:auto;padding:0 48px;">
+
+      <!-- Cabecera -->
+      <div style="display:flex;align-items:flex-end;justify-content:space-between;margin:34px 0 22px;gap:16px;flex-wrap:wrap;">
+        <div>
+          <div style="font-family:'Space Mono',monospace;font-weight:700;text-transform:uppercase;letter-spacing:0.2em;color:#1c5a89;font-size:11px;">Negocio</div>
+          <h1 style="font-size:32px;font-weight:800;letter-spacing:-0.02em;margin:7px 0 3px;color:#14314b;">Métricas</h1>
+          <div style="color:#45596b;font-size:13.5px;">{{ subCabecera }}</div>
+        </div>
+        <div style="display:flex;gap:10px;flex-wrap:wrap;">
+          <button onClick="{{ toggleVer }}" title="Mostrar u ocultar importes" style="width:41px;height:41px;flex-shrink:0;padding:0;border:1.5px solid #c9bc9e;background:#fbf7ee;color:#184e78;cursor:pointer;display:inline-grid;place-items:center;border-radius:8px;" style-hover="background:#1c5a89;color:#ffffff;border-color:#1c5a89;">
+            <sc-if value="{{ ver }}" hint-placeholder-val="{{ true }}">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+            </sc-if>
+            <sc-if value="{{ noVer }}" hint-placeholder-val="{{ false }}">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 19c-7 0-11-7-11-7a18.5 18.5 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 7 11 7a18.5 18.5 0 0 1-2.16 3.19"></path><line x1="1" y1="1" x2="23" y2="23"></line></svg>
+            </sc-if>
+          </button>
+          <button onClick="{{ abrirAyuda }}" title="¿Qué es esta pantalla?" style="width:41px;height:41px;flex-shrink:0;padding:0;border:1.5px solid #c9bc9e;background:#fbf7ee;color:#184e78;cursor:pointer;display:inline-grid;place-items:center;border-radius:8px;" style-hover="background:#1c5a89;color:#ffffff;border-color:#1c5a89;">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:19px;height:19px;display:block;"><circle cx="12" cy="12" r="10"></circle><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
+          </button>
+        </div>
+      </div>
+
+      <!-- ── Filtros: periodo + actividad en una sola tarjeta ── -->
+      <div data-comment-anchor="met-filtros" style="background:#fbf7ee;border:1.5px solid #c9bc9e;border-radius:8px;box-shadow:4px 4px 0 rgba(20,49,75,0.05);">
+        <div style="display:flex;align-items:center;gap:12px 16px;flex-wrap:wrap;padding:13px 18px;border-bottom:1px solid #dad0bb;">
+          <span style="font-family:'Space Mono',monospace;color:#8b93a0;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.02em;">Periodo:</span>
+          <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;" role="group" aria-label="Periodo">
+            <sc-for list="{{ presetsChips }}" as="p" hint-placeholder-count="4">
+              <button onClick="{{ p.onClick }}" style="font-family:'Space Mono',monospace;border:1.5px solid {{ p.borde }};background:{{ p.bg }};color:{{ p.color }};padding:5px 12px;font-weight:700;font-size:11px;text-transform:uppercase;letter-spacing:0.02em;cursor:pointer;border-radius:999px;">{{ p.t }}</button>
+            </sc-for>
+          </div>
+          <span aria-hidden="true" style="width:1.5px;height:24px;background:#dad0bb;flex-shrink:0;"></span>
+          <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;" role="group" aria-label="Año completo">
+            <sc-for list="{{ aniosChips }}" as="p" hint-placeholder-count="3">
+              <button onClick="{{ p.onClick }}" style="font-family:'Space Mono',monospace;border:1.5px solid {{ p.borde }};background:{{ p.bg }};color:{{ p.color }};padding:5px 12px;font-weight:700;font-size:11px;text-transform:uppercase;letter-spacing:0.02em;cursor:pointer;border-radius:999px;">{{ p.t }}</button>
+            </sc-for>
+          </div>
+          <span aria-hidden="true" style="width:1.5px;height:24px;background:#dad0bb;flex-shrink:0;"></span>
+          <button onClick="{{ toggleAMedida }}" style="font-family:'Space Mono',monospace;border:1.5px {{ aMedidaBordeEstilo }} {{ aMedidaBorde }};background:{{ aMedidaBg }};color:{{ aMedidaColor }};padding:5px 12px;font-weight:700;font-size:11px;text-transform:uppercase;letter-spacing:0.02em;cursor:pointer;border-radius:999px;">A medida…</button>
+          <div style="display:flex;align-items:center;gap:8px;overflow:hidden;white-space:nowrap;flex-shrink:0;max-width:{{ aMedidaMax }};opacity:{{ aMedidaOp }};pointer-events:{{ aMedidaEventos }};transition:max-width 0.32s ease,opacity 0.25s ease;">
+            <input type="month" value="{{ desde }}" min="{{ dataDesde }}" max="{{ hasta }}" onChange="{{ cambiarDesde }}" style="font-size:12px;color:#14314b;border:1.5px solid #c9bc9e;padding:5px 7px;background:#ffffff;width:138px;border-radius:8px;">
+            <span style="color:#8b93a0;">→</span>
+            <input type="month" value="{{ hasta }}" min="{{ desde }}" max="{{ hoyMes }}" onChange="{{ cambiarHasta }}" style="font-size:12px;color:#14314b;border:1.5px solid #c9bc9e;padding:5px 7px;background:#ffffff;width:138px;border-radius:8px;">
+          </div>
+        </div>
+        <div style="display:flex;align-items:center;gap:12px 16px;flex-wrap:wrap;padding:11px 18px;">
+          <span style="font-family:'Space Mono',monospace;color:#8b93a0;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.02em;">Actividad:</span>
+          <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;" role="group" aria-label="Actividad">
+            <sc-for list="{{ actividadChips }}" as="p" hint-placeholder-count="4">
+              <button onClick="{{ p.onClick }}" style="display:inline-flex;align-items:center;gap:7px;font-family:'Space Mono',monospace;border:1.5px solid {{ p.borde }};background:{{ p.bg }};color:{{ p.color }};padding:5px 12px;font-weight:700;font-size:11px;text-transform:uppercase;letter-spacing:0.02em;cursor:pointer;border-radius:999px;">
+                <sc-if value="{{ p.dot }}" hint-placeholder-val="{{ false }}"><i style="width:8px;height:8px;border-radius:999px;background:{{ p.dot }};flex-shrink:0;"></i></sc-if>
+                {{ p.t }}
+              </button>
+            </sc-for>
+          </div>
+          <span title="Primer cobro registrado" style="margin-left:auto;color:#8b93a0;font-size:11.5px;font-family:'Space Mono',monospace;white-space:nowrap;">Historial desde {{ dataDesdeLargo }}</span>
+        </div>
+      </div>
+
+      <!-- ── KPIs: lo que el jefe mira primero ── -->
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:13px;align-items:stretch;margin-top:16px;">
+        <div data-comment-anchor="kpi-ingresos" style="background:#fbf7ee;border:1px solid #dad0bb;border-radius:8px;box-shadow:4px 4px 0 rgba(20,49,75,0.05);padding:16px 18px 13px;position:relative;overflow:hidden;display:flex;flex-direction:column;min-height:124px;transition:background 0.12s,transform 0.12s,box-shadow 0.12s;animation:fadeUp 0.4s ease-out backwards;" style-hover="background:#ede5d2;transform:translateY(-2px);box-shadow:6px 8px 0 rgba(20,49,75,0.09);">
+          <div style="position:absolute;left:0;right:0;top:0;height:5px;background:#1c5a89;"></div>
+          <div style="font-family:'Cinzel',serif;color:#45596b;font-size:11px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;">Ingresos del periodo</div>
+          <div style="font-family:'Cinzel',serif;font-size:37px;font-weight:700;margin-top:5px;letter-spacing:0.01em;color:#1c5a89;line-height:1;font-variant-numeric:tabular-nums;">{{ kpiIngresos }}</div>
+          <div style="margin-top:auto;padding-top:10px;color:{{ deltaColor }};font-size:11.5px;font-family:'Space Mono',monospace;letter-spacing:0.01em;font-weight:700;">{{ deltaTexto }}</div>
+        </div>
+        <div data-comment-anchor="kpi-mes-curso" style="background:#fbf7ee;border:1px solid #dad0bb;border-radius:8px;box-shadow:4px 4px 0 rgba(20,49,75,0.05);padding:16px 18px 13px;position:relative;overflow:hidden;display:flex;flex-direction:column;min-height:124px;transition:background 0.12s,transform 0.12s,box-shadow 0.12s;animation:fadeUp 0.4s ease-out 0.06s backwards;" style-hover="background:#ede5d2;transform:translateY(-2px);box-shadow:6px 8px 0 rgba(20,49,75,0.09);">
+          <div style="position:absolute;left:0;right:0;top:0;height:5px;background:#be5a3a;"></div>
+          <div style="font-family:'Cinzel',serif;color:#45596b;font-size:11px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;display:flex;align-items:center;justify-content:space-between;">{{ mesCursoLabel }} <span style="font-family:'Space Mono',monospace;font-size:10px;color:#be5a3a;letter-spacing:0.04em;">en curso</span></div>
+          <div style="font-family:'Cinzel',serif;font-size:37px;font-weight:700;margin-top:5px;letter-spacing:0.01em;color:#be5a3a;line-height:1;font-variant-numeric:tabular-nums;">{{ mesCursoValor }}</div>
+          <div style="margin-top:auto;padding-top:10px;color:#8b93a0;font-size:11.5px;font-family:'Space Mono',monospace;letter-spacing:0.01em;">{{ mesCursoNota }}</div>
+        </div>
+        <div data-comment-anchor="kpi-socios" style="background:#fbf7ee;border:1px solid #dad0bb;border-radius:8px;box-shadow:4px 4px 0 rgba(20,49,75,0.05);padding:16px 18px 13px;position:relative;overflow:hidden;display:flex;flex-direction:column;min-height:124px;transition:background 0.12s,transform 0.12s,box-shadow 0.12s;animation:fadeUp 0.4s ease-out 0.12s backwards;" style-hover="background:#ede5d2;transform:translateY(-2px);box-shadow:6px 8px 0 rgba(20,49,75,0.09);">
+          <div style="position:absolute;left:0;right:0;top:0;height:5px;background:#2e7b53;"></div>
+          <div style="font-family:'Cinzel',serif;color:#45596b;font-size:11px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;">Socios activos</div>
+          <div style="font-family:'Cinzel',serif;font-size:37px;font-weight:700;margin-top:5px;letter-spacing:0.01em;color:#2e7b53;line-height:1;font-variant-numeric:tabular-nums;">{{ kpiActivos }}</div>
+          <div style="margin-top:auto;padding-top:10px;color:#8b93a0;font-size:11.5px;font-family:'Space Mono',monospace;letter-spacing:0.01em;"><b style="color:{{ netoColor }};">{{ netoTexto }}</b> en el periodo · {{ altasBajasTexto }}</div>
+        </div>
+        <div data-comment-anchor="kpi-retencion" style="background:#fbf7ee;border:1px solid #dad0bb;border-radius:8px;box-shadow:4px 4px 0 rgba(20,49,75,0.05);padding:16px 18px 13px;position:relative;overflow:hidden;display:flex;flex-direction:column;min-height:124px;transition:background 0.12s,transform 0.12s,box-shadow 0.12s;animation:fadeUp 0.4s ease-out 0.18s backwards;" style-hover="background:#ede5d2;transform:translateY(-2px);box-shadow:6px 8px 0 rgba(20,49,75,0.09);">
+          <div style="position:absolute;left:0;right:0;top:0;height:5px;background:#b5891f;"></div>
+          <div style="font-family:'Cinzel',serif;color:#45596b;font-size:11px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;">Retención media</div>
+          <div style="font-family:'Cinzel',serif;font-size:37px;font-weight:700;margin-top:5px;letter-spacing:0.01em;color:#14314b;line-height:1;font-variant-numeric:tabular-nums;">{{ kpiRetencion }}</div>
+          <div style="margin-top:auto;padding-top:10px;color:#8b93a0;font-size:11.5px;font-family:'Space Mono',monospace;letter-spacing:0.01em;">de cada 10 que pagan, {{ retencionDe10 }} repiten al mes siguiente</div>
+        </div>
+      </div>
+
+      <!-- ── Gráfica principal ── -->
+      <div data-comment-anchor="grafica-principal" style="background:#fbf7ee;border:1.5px solid #c9bc9e;border-radius:8px;box-shadow:4px 4px 0 rgba(20,49,75,0.05);padding:22px;margin-top:20px;">
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin:0 0 16px;padding-bottom:12px;border-bottom:1.5px solid #dad0bb;">
+          <div style="display:inline-flex;gap:4px;background:#ede5d2;border:1.5px solid #c9bc9e;border-radius:999px;padding:3px;" role="group" aria-label="Qué mostrar en la gráfica">
+            <sc-for list="{{ modosTabs }}" as="m" hint-placeholder-count="3">
+              <button onClick="{{ m.onClick }}" style="text-align:center;white-space:nowrap;border:none;background:{{ m.bg }};color:{{ m.color }};font-family:'Archivo',sans-serif;font-weight:700;font-size:11.5px;padding:5px 14px;border-radius:999px;cursor:pointer;">{{ m.t }}</button>
+            </sc-for>
+          </div>
+          <div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap;">
+            <sc-for list="{{ leyendas }}" as="l" hint-placeholder-count="3">
+              <span style="display:inline-flex;align-items:center;gap:6px;font-size:11px;color:#45596b;font-weight:600;white-space:nowrap;"><i style="width:9px;height:9px;border-radius:2px;display:inline-block;flex-shrink:0;background:{{ l.color }};border:{{ l.borde }};"></i> {{ l.t }}</span>
+            </sc-for>
+            <span style="display:inline-flex;align-items:center;gap:6px;font-size:11px;color:#45596b;font-weight:600;white-space:nowrap;"><i style="width:14px;height:0;border-top:2px dashed #b5891f;display:inline-block;flex-shrink:0;"></i> Media {{ mediaLbl }}</span>
+            <button onClick="{{ toggleComparar }}" title="Superpone, en gris, el mismo mes del año anterior" style="font-family:'Space Mono',monospace;border:1.5px solid {{ compararBorde }};background:{{ compararBg }};color:{{ compararColor }};padding:5px 12px;font-weight:700;font-size:11px;text-transform:uppercase;letter-spacing:0.02em;cursor:pointer;border-radius:999px;">{{ compararTexto }}</button>
+          </div>
+        </div>
+
+        <div style="position:relative;padding-left:52px;margin-top:10px;">
+          <div style="position:relative;height:260px;" onMouseLeave="{{ salirHover }}">
+            <sc-for list="{{ gridLineas }}" as="g" hint-placeholder-count="5">
+              <div style="position:absolute;left:0;right:0;height:0;border-top:1px dashed {{ g.borde }};bottom:{{ g.bottom }};">
+                <span style="position:absolute;left:-52px;width:44px;text-align:right;top:-7px;font-size:10px;color:#8b93a0;font-family:'Space Mono',monospace;white-space:nowrap;">{{ g.label }}</span>
+              </div>
+            </sc-for>
+            <sc-if value="{{ hayMedia }}" hint-placeholder-val="{{ true }}">
+              <div style="position:absolute;left:0;right:0;height:0;border-top:2px dashed #b5891f;z-index:3;pointer-events:none;bottom:{{ mediaBottom }};">
+                <span style="position:absolute;right:0;top:-8px;font-size:9.5px;font-family:'Space Mono',monospace;color:#b5891f;background:#fbf7ee;padding:0 4px;text-transform:uppercase;letter-spacing:0.05em;">media</span>
+              </div>
+            </sc-if>
+
+            <!-- Barras (ingresos / socios) -->
+            <sc-if value="{{ esModoBarras }}" hint-placeholder-val="{{ true }}">
+              <div style="position:absolute;inset:0;display:flex;align-items:flex-end;gap:3px;">
+                <sc-for list="{{ cols }}" as="c" hint-placeholder-count="12">
+                  <div onMouseEnter="{{ c.onEnter }}" style="flex:1;position:relative;height:100%;display:flex;align-items:flex-end;justify-content:center;min-width:0;transition:background 0.1s;background:{{ c.hovBg }};">
+                    <sc-if value="{{ c.esActual }}" hint-placeholder-val="{{ false }}">
+                      <div style="position:absolute;top:-3px;left:50%;transform:translateX(-50%);width:5px;height:5px;border-radius:999px;background:#b5891f;"></div>
+                    </sc-if>
+                    <sc-if value="{{ c.ghost }}" hint-placeholder-val="{{ false }}">
+                      <div title="Mismo mes, año anterior" style="position:absolute;bottom:0;left:50%;transform:translateX(-50%);width:76%;border-radius:3px 3px 0 0;background:rgba(20,49,75,0.13);border-top:2px solid rgba(20,49,75,0.28);transition:height 0.45s ease-out;height:{{ c.ghost }};"></div>
+                    </sc-if>
+                    <div style="position:relative;width:52%;display:flex;flex-direction:column-reverse;transform-origin:bottom center;animation:barGrowY 0.5s ease-out backwards;animation-delay:{{ c.delay }};transition:height 0.45s ease-out;height:{{ c.altura }};">
+                      <sc-for list="{{ c.segs }}" as="s" hint-placeholder-count="3">
+                        <div style="width:100%;background:{{ s.color }};flex-grow:{{ s.peso }};border-radius:{{ s.radio }};transition:flex-grow 0.45s ease-out,background 0.3s;"></div>
+                      </sc-for>
+                      <sc-if value="{{ c.proy }}" hint-placeholder-val="{{ false }}">
+                        <div title="Proyección a fin de mes" style="width:100%;flex-grow:{{ c.proy }};border-radius:3px 3px 0 0;background:repeating-linear-gradient(45deg,rgba(190,90,58,0.5) 0 4px,rgba(190,90,58,0.12) 4px 8px);border:1px dashed #be5a3a;border-bottom:none;"></div>
+                      </sc-if>
+                    </div>
+                  </div>
+                </sc-for>
+              </div>
+            </sc-if>
+
+            <!-- Línea (retención) -->
+            <sc-if value="{{ esModoLinea }}" hint-placeholder-val="{{ false }}">
+              <svg viewBox="0 0 1000 260" preserveAspectRatio="none" style="position:absolute;inset:0;width:100%;height:100%;overflow:visible;">
+                <polyline points="{{ lineaGhostPoints }}" fill="none" stroke="rgba(20,49,75,0.22)" stroke-width="2" stroke-dasharray="5 5" vector-effect="non-scaling-stroke"></polyline>
+                <polyline points="{{ lineaPoints }}" fill="none" stroke="#1c5a89" stroke-width="2.5" vector-effect="non-scaling-stroke" stroke-dasharray="1600" style="animation:trazoLinea 1s ease-out backwards;"></polyline>
+              </svg>
+              <div style="position:absolute;inset:0;display:flex;gap:3px;">
+                <sc-for list="{{ dots }}" as="d" hint-placeholder-count="12">
+                  <div onMouseEnter="{{ d.onEnter }}" style="flex:1;position:relative;height:100%;min-width:0;transition:background 0.1s;background:{{ d.hovBg }};">
+                    <div style="position:absolute;left:50%;bottom:{{ d.bottom }};transform:translate(-50%,50%);width:{{ d.tam }};height:{{ d.tam }};border-radius:999px;background:{{ d.color }};border:2px solid #fbf7ee;box-shadow:0 0 0 1px #1c5a89;"></div>
+                  </div>
+                </sc-for>
+              </div>
+            </sc-if>
+
+            <!-- Tooltip -->
+            <sc-if value="{{ tip }}" hint-placeholder-val="{{ false }}">
+              <div style="position:absolute;top:4px;left:{{ tip.left }};transform:{{ tip.transform }};margin-left:{{ tip.marginLeft }};background:#14314b;color:#fbf7ee;padding:9px 11px;font-size:11.5px;z-index:6;white-space:nowrap;pointer-events:none;border-radius:8px;box-shadow:0 10px 26px rgba(20,41,74,0.32);min-width:168px;">
+                <div style="font-family:'Cinzel',serif;font-weight:700;font-size:12px;margin-bottom:6px;">{{ tip.mes }}</div>
+                <sc-for list="{{ tip.filas }}" as="f" hint-placeholder-count="3">
+                  <div style="display:flex;align-items:center;gap:7px;line-height:1.9;color:{{ f.color }};"><i style="width:9px;height:9px;border-radius:2px;display:inline-block;flex-shrink:0;background:{{ f.dot }};"></i> {{ f.label }} <b style="margin-left:auto;padding-left:12px;font-variant-numeric:tabular-nums;">{{ f.val }}</b></div>
+                </sc-for>
+                <div style="margin-top:5px;color:rgba(251,247,238,0.6);font-size:10.5px;">{{ tip.sub }}</div>
+              </div>
+            </sc-if>
+          </div>
+          <div style="display:flex;gap:3px;margin-top:7px;">
+            <sc-for list="{{ xcells }}" as="x" hint-placeholder-count="12">
+              <div style="flex:1;text-align:center;font-size:10px;color:{{ x.color }};font-weight:{{ x.peso }};font-family:'Space Mono',monospace;min-width:0;overflow:hidden;white-space:nowrap;">
+                {{ x.t }}
+                <span style="display:block;opacity:0.7;font-size:9px;">{{ x.yr }}</span>
+              </div>
+            </sc-for>
+          </div>
+        </div>
+        <div style="margin-top:12px;color:#8b93a0;font-size:12px;line-height:1.5;">{{ piePlot }}</div>
+      </div>
+
+      <!-- ── Fila: socios (altas/bajas) + reparto por actividad ── -->
+      <div style="display:grid;grid-template-columns:1.4fr 1fr;gap:20px;margin-top:20px;align-items:stretch;">
+        <div data-comment-anchor="altas-bajas" style="background:#fbf7ee;border:1.5px solid #c9bc9e;border-radius:8px;box-shadow:4px 4px 0 rgba(20,49,75,0.05);padding:22px;">
+          <div style="font-family:'Space Mono',monospace;font-size:13px;font-weight:700;margin:0 0 16px;display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;letter-spacing:0.02em;text-transform:uppercase;padding-bottom:12px;border-bottom:1.5px solid #dad0bb;">
+            Altas y bajas de socios
+            <span style="display:flex;gap:14px;text-transform:none;letter-spacing:0;">
+              <span style="display:inline-flex;align-items:center;gap:6px;font-size:11px;color:#45596b;font-weight:600;font-family:'Archivo',sans-serif;"><i style="width:9px;height:9px;border-radius:2px;background:#2e7b53;display:inline-block;"></i> Altas {{ totalAltas }}</span>
+              <span style="display:inline-flex;align-items:center;gap:6px;font-size:11px;color:#45596b;font-weight:600;font-family:'Archivo',sans-serif;"><i style="width:9px;height:9px;border-radius:2px;background:#bb3a3a;display:inline-block;"></i> Bajas {{ totalBajas }}</span>
+              <span style="display:inline-flex;align-items:center;gap:6px;font-size:11px;font-weight:700;color:{{ netoColor }};font-family:'Archivo',sans-serif;">Neto {{ netoTexto }}</span>
+            </span>
+          </div>
+          <div style="display:flex;gap:3px;align-items:stretch;">
+            <sc-for list="{{ altasBajasCols }}" as="a" hint-placeholder-count="12">
+              <div title="{{ a.title }}" style="flex:1;display:flex;flex-direction:column;align-items:center;min-width:0;" style-hover="background:rgba(20,49,75,0.05);">
+                <div style="font-size:10px;color:#2e7b53;height:15px;font-family:'Space Mono',monospace;">{{ a.numAltas }}</div>
+                <div style="height:64px;width:100%;display:flex;align-items:flex-end;justify-content:center;">
+                  <div style="width:52%;background:#2e7b53;border-radius:3px 3px 0 0;transform-origin:bottom center;animation:barGrowY 0.5s ease-out backwards;height:{{ a.alturaAltas }};animation-delay:{{ a.delay }};"></div>
+                </div>
+                <div style="height:1.5px;width:100%;background:#c9bc9e;"></div>
+                <div style="height:44px;width:100%;display:flex;align-items:flex-start;justify-content:center;">
+                  <div style="width:52%;background:#bb3a3a;border-radius:0 0 3px 3px;transform-origin:top center;animation:barGrowY 0.5s ease-out backwards;height:{{ a.alturaBajas }};animation-delay:{{ a.delay }};"></div>
+                </div>
+                <div style="font-size:10px;color:#bb3a3a;height:15px;font-family:'Space Mono',monospace;">{{ a.numBajas }}</div>
+                <div style="font-size:10px;color:{{ a.labelColor }};font-weight:{{ a.labelPeso }};font-family:'Space Mono',monospace;margin-top:3px;text-align:center;overflow:hidden;white-space:nowrap;max-width:100%;">{{ a.label }}</div>
+              </div>
+            </sc-for>
+          </div>
+        </div>
+
+        <div data-comment-anchor="por-actividad" style="background:#fbf7ee;border:1.5px solid #c9bc9e;border-radius:8px;box-shadow:4px 4px 0 rgba(20,49,75,0.05);padding:22px;display:flex;flex-direction:column;">
+          <div style="font-family:'Space Mono',monospace;font-size:13px;font-weight:700;margin:0 0 16px;letter-spacing:0.02em;text-transform:uppercase;padding-bottom:12px;border-bottom:1.5px solid #dad0bb;">Ingresos por actividad</div>
+          <div style="display:flex;flex-direction:column;gap:15px;">
+            <sc-for list="{{ actividadesFilas }}" as="a" hint-placeholder-count="3">
+              <div onClick="{{ a.onClick }}" style="cursor:pointer;opacity:{{ a.opacidad }};transition:opacity 0.15s;" title="Filtrar la pantalla por esta actividad">
+                <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:6px;">
+                  <span style="font-weight:700;font-size:12.5px;display:inline-flex;align-items:center;gap:7px;"><i style="width:9px;height:9px;border-radius:999px;background:{{ a.color }};display:inline-block;"></i>{{ a.etiqueta }}</span>
+                  <span style="display:inline-flex;gap:8px;align-items:baseline;"><b style="font-variant-numeric:tabular-nums;">{{ a.valor }}</b><span style="color:#8b93a0;font-size:11px;font-family:'Space Mono',monospace;">{{ a.pct }}</span></span>
+                </div>
+                <div style="height:10px;background:#ede5d2;border:1px solid #dad0bb;overflow:hidden;border-radius:999px;">
+                  <div style="height:100%;border-radius:999px;transition:width 0.5s ease-out;min-width:3px;background:{{ a.color }};width:{{ a.ancho }};"></div>
+                </div>
+                <div style="margin-top:5px;color:#8b93a0;font-size:11px;font-family:'Space Mono',monospace;">{{ a.tendencia }}</div>
+              </div>
+            </sc-for>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── Estado de cuotas hoy ── -->
+      <div data-comment-anchor="estado-cuotas" style="background:#fbf7ee;border:1.5px solid #c9bc9e;border-radius:8px;box-shadow:4px 4px 0 rgba(20,49,75,0.05);padding:22px;margin-top:20px;">
+        <div style="font-family:'Space Mono',monospace;font-size:13px;font-weight:700;margin:0 0 16px;display:flex;align-items:center;justify-content:space-between;letter-spacing:0.02em;text-transform:uppercase;padding-bottom:12px;border-bottom:1.5px solid #dad0bb;">Estado de cuotas hoy <span style="color:#8b93a0;font-weight:400;">186 activos</span></div>
+        <div style="display:flex;height:22px;border:1.5px solid #c9bc9e;overflow:hidden;border-radius:999px;background:#ede5d2;">
+          <sc-for list="{{ segmentos }}" as="s" hint-placeholder-count="5">
+            <div title="{{ s.title }}" style="height:100%;transition:width 0.5s ease-out;width:{{ s.ancho }};background:{{ s.color }};"></div>
+          </sc-for>
+        </div>
+        <div style="display:flex;flex-wrap:wrap;gap:10px 16px;margin-top:13px;">
+          <sc-for list="{{ leyendaSegs }}" as="s" hint-placeholder-count="5">
+            <span style="display:inline-flex;align-items:center;gap:6px;font-size:12px;color:#45596b;"><i style="width:10px;height:10px;border-radius:2px;display:inline-block;flex-shrink:0;background:{{ s.color }};"></i> {{ s.t }} <b style="color:#14314b;">{{ s.n }}</b></span>
+          </sc-for>
+        </div>
+        <div style="font-size:12px;color:#8b93a0;line-height:1.5;margin-top:10px;">⚠ 3 socios están al día por una cobertura apuntada a mano (alta «ya estaba pagado»), sin ningún cobro registrado: ese dinero no aparece en Ingresos.</div>
+      </div>
+
+    </div>
+  </main>
+
+  <!-- ── Modal de ayuda ── -->
+  <sc-if value="{{ ayudaAbierta }}" hint-placeholder-val="{{ false }}">
+    <div onClick="{{ cerrarAyuda }}" style="position:fixed;inset:0;background:rgba(20,41,74,0.45);display:grid;place-items:center;padding:20px;z-index:50;animation:fadeInSuave 0.18s ease-out backwards;">
+      <div onClick="{{ pararClick }}" style="background:#fbf7ee;box-shadow:0 24px 70px rgba(20,41,74,0.35);width:100%;max-width:680px;max-height:90vh;overflow:auto;border:1.5px solid #14314b;border-radius:8px;animation:modalIn 0.24s cubic-bezier(0.2,0.9,0.3,1) backwards;">
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:18px 22px;border-bottom:1.5px solid #c9bc9e;position:sticky;top:0;background:#fbf7ee;">
+          <h3 style="margin:0;font-size:17px;font-weight:800;letter-spacing:-0.01em;">Las Métricas, explicadas</h3>
+          <button onClick="{{ cerrarAyuda }}" style="border:none;background:transparent;font-size:22px;color:#8b93a0;cursor:pointer;line-height:1;" style-hover="color:#14314b;">×</button>
+        </div>
+        <div style="padding:22px;font-size:13.5px;line-height:1.6;">
+          <h4 style="font-size:12.5px;text-transform:uppercase;letter-spacing:0.05em;color:#184e78;margin:0 0 6px;">Los cuatro marcadores</h4>
+          <p style="margin:0 0 9px;"><strong>Ingresos del periodo</strong>: todo lo cobrado en los meses elegidos, comparado con los mismos meses del año anterior. <strong>Mes en curso</strong>: lo cobrado hasta hoy y, al ritmo que lleva, cuánto acabará haciendo el mes. <strong>Socios activos</strong>: cuántos hay hoy y cuántos se ganaron o perdieron en el periodo. <strong>Retención</strong>: de los socios que pagan un mes, qué porcentaje vuelve a pagar al siguiente.</p>
+          <h4 style="font-size:12.5px;text-transform:uppercase;letter-spacing:0.05em;color:#184e78;margin:18px 0 6px;">La gráfica</h4>
+          <p style="margin:0 0 9px;">Cada barra es un mes, con un color por actividad. El botón <strong>vs. año anterior</strong> superpone en gris el mismo mes del año pasado: si la barra de color sobresale, vas mejor. El tramo rayado del mes actual es la <strong>proyección</strong> a fin de mes. La línea dorada es la media del periodo.</p>
+          <h4 style="font-size:12.5px;text-transform:uppercase;letter-spacing:0.05em;color:#184e78;margin:18px 0 6px;">Filtros</h4>
+          <p style="margin:0 0 9px;">Arriba eliges el periodo (año en curso, últimos 12 meses, un año concreto o un rango a medida) y la actividad. El filtro de actividad afecta a toda la pantalla y se recuerda para la próxima visita.</p>
+          <h4 style="font-size:12.5px;text-transform:uppercase;letter-spacing:0.05em;color:#184e78;margin:18px 0 6px;">Privacidad</h4>
+          <p style="margin:0;">El botón del <strong>ojo</strong> oculta todos los importes (por si hay alguien delante); los recuentos de socios siguen visibles.</p>
+        </div>
+        <div style="display:flex;justify-content:flex-end;gap:10px;padding:16px 22px;border-top:1.5px solid #c9bc9e;position:sticky;bottom:0;background:#fbf7ee;">
+          <button onClick="{{ cerrarAyuda }}" style="display:inline-flex;align-items:center;gap:8px;justify-content:center;border:1.5px solid #1c5a89;background:#1c5a89;color:#ffffff;padding:10px 17px;font-weight:700;font-size:12px;cursor:pointer;text-transform:uppercase;letter-spacing:0.05em;border-radius:8px;font-family:'Archivo',sans-serif;" style-hover="background:#14314b;border-color:#14314b;">Entendido</button>
+        </div>
+      </div>
+    </div>
+  </sc-if>
+</div>
+
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;comparativaDefecto&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;Gráfica&quot;},&quot;mostrarProyeccion&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;Gráfica&quot;},&quot;modoInicial&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;default&quot;:&quot;ingresos&quot;,&quot;options&quot;:[&quot;ingresos&quot;,&quot;socios&quot;,&quot;retencion&quot;],&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;Gráfica&quot;}}">
+class Component extends DCLogic {
+  state = {
+    preset: "12m",
+    desde: "2025-08",
+    hasta: "2026-07",
+    actividad: "todas",
+    modo: "ingresos",
+    comparar: true,
+    aMedida: false,
+    ver: true,
+    hover: null,
+    ayudaAbierta: false,
+  };
+
+  HOY = "2026-07-08";
+  HOY_MES = "2026-07";
+  DIA = 8;
+  DIAS_MES = 31;
+  DATA_DESDE = "2023-09";
+  MESES = ["ene", "feb", "mar", "abr", "may", "jun", "jul", "ago", "sep", "oct", "nov", "dic"];
+  ACT = {
+    gimnasio: { t: "Gimnasio", color: "#1c5a89" },
+    karate: { t: "Karate", color: "#be5a3a" },
+    pilates: { t: "Pilates", color: "#b5891f" },
+  };
+
+  componentDidMount() {
+    try {
+      const ver = localStorage.getItem("gym_ver_metricas") !== "0";
+      const raw = localStorage.getItem("gym_metricas_filtros_v2");
+      const f = raw ? JSON.parse(raw) : {};
+      this.setState({
+        ver,
+        preset: f.preset ?? this.state.preset,
+        desde: f.desde ?? this.state.desde,
+        hasta: f.hasta ?? this.state.hasta,
+        actividad: f.actividad ?? this.state.actividad,
+        comparar: f.comparar ?? (this.props.comparativaDefecto ?? true),
+        modo: this.props.modoInicial ?? this.state.modo,
+      });
+    } catch (e) { /* sin almacenamiento */ }
+  }
+
+  /** Contador animado (como useContador del Panel): sube o baja hasta el objetivo
+   *  con easing suave; setTimeout para funcionar en segundo plano; respeta
+   *  prefers-reduced-motion; al terminar muestra el valor exacto. */
+  contador(clave, objetivo) {
+    if (!this._anim) this._anim = {};
+    let a = this._anim[clave];
+    if (!a) a = this._anim[clave] = { valor: 0, objetivo: null, timer: 0 };
+    if (a.objetivo !== objetivo) {
+      a.objetivo = objetivo;
+      clearTimeout(a.timer);
+      if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+        a.valor = objetivo;
+      } else {
+        const desde = a.valor;
+        const dur = 750;
+        let t0 = null;
+        const paso = () => {
+          if (t0 == null) t0 = performance.now();
+          const p = Math.min(1, (performance.now() - t0) / dur);
+          const e = 1 - Math.pow(1 - p, 3);
+          a.valor = p < 1 ? Math.round(desde + (objetivo - desde) * e) : objetivo;
+          this.forceUpdate();
+          if (p < 1) a.timer = window.setTimeout(paso, 16);
+        };
+        a.timer = window.setTimeout(paso, 0);
+      }
+    }
+    return a.valor;
+  }
+
+  guardarFiltros(patch) {
+    this.setState(patch, () => {
+      try {
+        const { preset, desde, hasta, actividad, comparar } = this.state;
+        localStorage.setItem("gym_metricas_filtros_v2", JSON.stringify({ preset, desde, hasta, actividad, comparar }));
+      } catch (e) { /* sin almacenamiento */ }
+    });
+  }
+
+  mesCorto(m) { return this.MESES[Number(m.slice(5, 7)) - 1] ?? m; }
+  mesLargo(m) { return `${this.mesCorto(m)}. ${m.slice(0, 4)}`; }
+  euros(n) { return new Intl.NumberFormat("es-ES", { style: "currency", currency: "EUR", maximumFractionDigits: 0, minimumFractionDigits: 0 }).format(Number.isFinite(n) ? n : 0); }
+  eurosCorto(n) {
+    if (n >= 1000) return (n / 1000).toLocaleString("es-ES", { maximumFractionDigits: 1 }) + "k €";
+    return Math.round(n) + " €";
+  }
+  addMeses(m, n) {
+    const [y, mm] = m.split("-").map(Number);
+    const d = new Date(y, mm - 1 + n, 1);
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+  }
+
+  /** Serie mensual determinista sep-2023 → jul-2026, con reparto por actividad, altas, bajas y retención. */
+  master() {
+    if (this._master) return this._master;
+    const out = [];
+    let cur = this.DATA_DESDE;
+    const est = { 1: 0.14, 2: 0.04, 3: 0.06, 4: 0, 5: 0.02, 6: -0.04, 7: -0.14, 8: -0.26, 9: 0.08, 10: 0.05, 11: 0.02, 12: -0.12 };
+    for (let i = 0; cur <= this.HOY_MES; i++) {
+      const mesNum = Number(cur.slice(5, 7));
+      let ingresos, nPagos, socios, altas, bajas;
+      if (cur === this.HOY_MES) {
+        ingresos = 1240; nPagos = 41; socios = 40; altas = 2; bajas = 1;
+      } else {
+        const base = 2500 + i * 68;
+        const ruido = Math.sin(i * 2.7) * 160 + Math.cos(i * 1.3) * 90;
+        ingresos = Math.max(0, Math.round((base * (1 + est[mesNum]) + ruido) / 5) * 5);
+        nPagos = Math.max(1, Math.round(ingresos / 30.2 + Math.sin(i * 1.9) * 3));
+        socios = Math.max(1, nPagos - Math.round(2 + Math.sin(i) * 1.5));
+        altas = Math.max(0, Math.round(4 + (mesNum === 1 ? 7 : mesNum === 9 ? 5 : 0) + Math.sin(i * 3.3) * 2.5));
+        bajas = Math.max(0, Math.round(2.6 + (mesNum === 8 ? 2.5 : 0) + Math.sin(i * 2.1) * 1.6));
+      }
+      // Reparto por actividad: pilates crece, karate estable, gimnasio el resto.
+      const pilShare = Math.min(0.19, 0.08 + i * 0.003);
+      const karShare = 0.23 + Math.sin(i * 1.1) * 0.02;
+      const pil = Math.round(ingresos * pilShare);
+      const kar = Math.round(ingresos * karShare);
+      const gim = ingresos - pil - kar;
+      // Retención: de los que pagaron el mes anterior, % que repite (mejora suave con el tiempo).
+      const retencion = cur === this.DATA_DESDE ? null :
+        Math.max(75, Math.min(97, Math.round(85 + Math.sin(i * 1.7) * 4 + (mesNum === 8 || mesNum === 12 ? -5 : 0) + i * 0.12)));
+      out.push({ mes: cur, ingresos, gim, kar, pil, nPagos, socios, altas, bajas, retencion });
+      cur = this.addMeses(cur, 1);
+    }
+    this._master = out;
+    return out;
+  }
+
+  valorActividad(fila, actividad) {
+    if (actividad === "gimnasio") return fila.gim;
+    if (actividad === "karate") return fila.kar;
+    if (actividad === "pilates") return fila.pil;
+    return fila.ingresos;
+  }
+
+  rangoDe(k) {
+    const y = Number(this.HOY_MES.slice(0, 4));
+    switch (k) {
+      case "anio": return { desde: `${y}-01`, hasta: this.HOY_MES };
+      case "todo": return { desde: this.DATA_DESDE, hasta: this.HOY_MES };
+      case "a2023": return { desde: "2023-09", hasta: "2023-12" };
+      case "a2024": return { desde: "2024-01", hasta: "2024-12" };
+      case "a2025": return { desde: "2025-01", hasta: "2025-12" };
+      default: return { desde: this.addMeses(this.HOY_MES, -11), hasta: this.HOY_MES };
+    }
+  }
+
+  renderVals() {
+    const { preset, desde, hasta, actividad, modo, comparar, aMedida, ver, hover, ayudaAbierta } = this.state;
+    const M = this.master();
+    const serie = M.filter((x) => x.mes >= desde && x.mes <= hasta);
+    const porMes = new Map(M.map((x) => [x.mes, x]));
+    const money = (n) => (ver ? this.euros(n) : "••••• €");
+    const actInfo = actividad !== "todas" ? this.ACT[actividad] : null;
+
+    // ── Totales del periodo (respetan el filtro de actividad)
+    const totalIng = serie.reduce((a, x) => a + this.valorActividad(x, actividad), 0);
+    const totalPagos = serie.reduce((a, x) => a + x.nPagos, 0);
+
+    // Comparativa interanual
+    const dAnt = this.addMeses(desde, -12), hAnt = this.addMeses(hasta, -12);
+    const serieAnt = M.filter((x) => x.mes >= dAnt && x.mes <= hAnt);
+    const ingAnt = serieAnt.reduce((a, x) => a + this.valorActividad(x, actividad), 0);
+    let deltaTexto, deltaColor;
+    if (ingAnt === 0) { deltaTexto = "Sin datos del año pasado"; deltaColor = "#8b93a0"; }
+    else {
+      const pct = Math.round(((totalIng - ingAnt) / Math.abs(ingAnt)) * 100);
+      deltaTexto = `${pct === 0 ? "→" : pct > 0 ? "▲" : "▼"} ${Math.abs(pct)}% vs. mismo periodo ${dAnt.slice(0, 4)}`;
+      deltaColor = pct === 0 ? "#8b93a0" : pct > 0 ? "#2e7b53" : "#bb3a3a";
+    }
+
+    // ── KPI mes en curso + proyección
+    const mesCurso = porMes.get(this.HOY_MES);
+    const cobradoCurso = this.valorActividad(mesCurso, actividad);
+    const proyCurso = Math.round((cobradoCurso / this.DIA) * this.DIAS_MES);
+    const mostrarProy = this.props.mostrarProyeccion ?? true;
+    const mesCursoNota = mostrarProy
+      ? `día ${this.DIA} de ${this.DIAS_MES} · proyección ≈ ${money(proyCurso)}`
+      : `cobrado hasta el día ${this.DIA}`;
+
+    // ── KPI socios: altas/bajas del periodo
+    const totalAltas = serie.reduce((a, x) => a + x.altas, 0);
+    const totalBajas = serie.reduce((a, x) => a + x.bajas, 0);
+    const neto = totalAltas - totalBajas;
+    const netoTexto = (neto > 0 ? "+" : "") + neto;
+    const netoColor = neto > 0 ? "#2e7b53" : neto < 0 ? "#bb3a3a" : "#8b93a0";
+
+    // ── KPI retención media del periodo
+    const rets = serie.map((s) => s.retencion).filter((r) => r != null);
+    const retMedia = rets.length ? Math.round(rets.reduce((a, r) => a + r, 0) / rets.length) : 0;
+
+    // ── Gráfica principal
+    const esModoLinea = modo === "retencion";
+    const esModoBarras = !esModoLinea;
+    const esDinero = modo === "ingresos";
+
+    const valorDe = (fila) => {
+      if (modo === "socios") return fila.socios;
+      if (modo === "retencion") return fila.retencion ?? 0;
+      return this.valorActividad(fila, actividad);
+    };
+    const puntos = serie.map((s) => {
+      const ant = porMes.get(this.addMeses(s.mes, -12));
+      return { fila: s, mes: s.mes, valor: valorDe(s), ghostVal: comparar && ant ? valorDe(ant) : null };
+    });
+
+    // Máximo del eje (cuenta fantasma y proyección para que nada se salga)
+    let maxBarra = Math.max(1, ...puntos.map((p) => Math.max(p.valor, p.ghostVal ?? 0)));
+    if (esDinero && mostrarProy && hasta === this.HOY_MES) maxBarra = Math.max(maxBarra, proyCurso);
+    if (esModoLinea) maxBarra = 100;
+
+    // Escala del eje: la retención se dibuja de 60 a 100 (todo vive ahí arriba)
+    const escMin = esModoLinea ? 60 : 0;
+    const escMax = esModoLinea ? 100 : maxBarra;
+    const escRango = Math.max(1, escMax - escMin);
+    const pctDe = (v) => Math.max(0, ((v - escMin) / escRango) * 100);
+
+    const valsMedia = esModoLinea ? puntos.map((p) => p.valor).filter((v) => v > 0) : puntos.map((p) => p.valor);
+    const mediaModo = valsMedia.length ? valsMedia.reduce((a, v) => a + v, 0) / valsMedia.length : 0;
+    const fmt = esDinero ? money : esModoLinea ? (n) => Math.round(n) + "%" : (n) => `${Math.round(n)}`;
+    const fmtEje = esDinero ? (n) => this.eurosCorto(n) : esModoLinea ? (n) => Math.round(n) + "%" : (n) => `${Math.round(n)}`;
+    const mostrarEje = esDinero ? ver : true;
+
+    const n = puntos.length;
+    const cols = puntos.map((p, i) => {
+      const s = p.fila;
+      const esActual = p.mes === this.HOY_MES;
+      const conProy = esDinero && esActual && mostrarProy && proyCurso > p.valor;
+      const alturaTotal = conProy ? proyCurso : p.valor;
+      // Segmentos apilados por actividad (o un solo color si hay filtro / modo socios)
+      let segs;
+      if (esDinero && actividad === "todas") {
+        segs = [
+          { color: this.ACT.gimnasio.color, peso: s.gim },
+          { color: this.ACT.karate.color, peso: s.kar },
+          { color: this.ACT.pilates.color, peso: s.pil },
+        ].filter((x) => x.peso > 0);
+      } else {
+        const c = modo === "socios" ? "#1c5a89" : (actInfo ? actInfo.color : "#1c5a89");
+        segs = [{ color: esActual && modo === "socios" ? "#14314b" : c, peso: p.valor }];
+      }
+      segs = segs.map((x, ix) => ({ ...x, radio: ix === segs.length - 1 && !conProy ? "3px 3px 0 0" : "0" }));
+      return {
+        onEnter: () => this.setState({ hover: i }),
+        hovBg: hover === i ? "rgba(20,49,75,0.06)" : "transparent",
+        altura: (alturaTotal / maxBarra) * 100 + "%",
+        delay: Math.min(i * 22, 500) + "ms",
+        esActual,
+        ghost: p.ghostVal != null && p.ghostVal > 0 ? (p.ghostVal / maxBarra) * 100 + "%" : null,
+        segs,
+        proy: conProy ? proyCurso - p.valor : null,
+      };
+    });
+
+    // Línea de retención
+    const W = 1000, H = 260;
+    const xDe = (i) => ((i + 0.5) / n) * W;
+    const yDe = (v) => H - (pctDe(v) / 100) * H;
+    const lineaPoints = puntos.filter((p) => p.valor > 0).map((p, _, arr) => `${xDe(puntos.indexOf(p))},${yDe(p.valor)}`).join(" ");
+    const lineaGhostPoints = comparar
+      ? puntos.filter((p) => p.ghostVal != null && p.ghostVal > 0).map((p) => `${xDe(puntos.indexOf(p))},${yDe(p.ghostVal)}`).join(" ")
+      : "";
+    const dots = puntos.map((p, i) => ({
+      onEnter: () => this.setState({ hover: i }),
+      hovBg: hover === i ? "rgba(20,49,75,0.06)" : "transparent",
+      bottom: pctDe(p.valor) + "%",
+      tam: hover === i ? "13px" : "9px",
+      color: p.mes === this.HOY_MES ? "#14314b" : "#1c5a89",
+    })).filter((_, i) => puntos[i].valor > 0);
+
+    const gridLineas = [1, 0.75, 0.5, 0.25, 0].map((f, ix) => ({
+      bottom: f * 100 + "%",
+      borde: ix === 0 ? "#c9bc9e" : "#dad0bb",
+      label: mostrarEje ? fmtEje(escMin + escRango * f) : "",
+    }));
+
+    // Tooltip
+    const h = hover != null ? puntos[hover] : null;
+    let tip = null;
+    if (h) {
+      const s = h.fila;
+      const filas = [];
+      if (esDinero && actividad === "todas") {
+        filas.push({ dot: this.ACT.gimnasio.color, label: "Gimnasio", val: money(s.gim), color: "#fbf7ee" });
+        filas.push({ dot: this.ACT.karate.color, label: "Karate", val: money(s.kar), color: "#fbf7ee" });
+        filas.push({ dot: this.ACT.pilates.color, label: "Pilates", val: money(s.pil), color: "#fbf7ee" });
+        filas.push({ dot: "#fbf7ee", label: "Total", val: money(s.ingresos), color: "#fbf7ee" });
+      } else if (esDinero) {
+        filas.push({ dot: actInfo.color, label: actInfo.t, val: money(h.valor), color: "#fbf7ee" });
+      } else if (modo === "socios") {
+        filas.push({ dot: "#1c5a89", label: "Socios que pagan", val: `${h.valor}`, color: "#fbf7ee" });
+      } else {
+        filas.push({ dot: "#1c5a89", label: "Retención", val: h.valor > 0 ? `${h.valor}%` : "—", color: "#fbf7ee" });
+      }
+      if (h.ghostVal != null && h.ghostVal > 0) {
+        const d = h.valor - h.ghostVal;
+        const pctYoY = Math.round((d / h.ghostVal) * 100);
+        filas.push({
+          dot: "rgba(251,247,238,0.4)",
+          label: `Año anterior`,
+          val: `${fmt(h.ghostVal)} ${d === 0 ? "→" : d > 0 ? "▲" : "▼"}${esModoLinea ? Math.abs(d) + "pt" : Math.abs(pctYoY) + "%"}`,
+          color: "rgba(251,247,238,0.75)",
+        });
+      }
+      let sub = `${s.nPagos} cobro${s.nPagos === 1 ? "" : "s"} · ${s.socios} socio${s.socios === 1 ? "" : "s"}`;
+      if (esDinero && h.esProy) sub = "";
+      if (h.mes === this.HOY_MES && esDinero && mostrarProy) sub = `mes en curso · proyección ≈ ${money(proyCurso)}`;
+      if (modo === "retencion") sub = h.valor > 0 ? "de los que pagaron el mes anterior, % que repite" : "sin mes anterior con el que comparar";
+      tip = {
+        left: ((hover + 0.5) / n) * 100 + "%",
+        transform: hover > n / 2 ? "translateX(-100%)" : "translateX(-50%)",
+        marginLeft: hover > n / 2 ? "-8px" : "0px",
+        mes: this.mesLargo(h.mes),
+        filas, sub,
+      };
+    }
+
+    const xcells = puntos.map((p, i) => ({
+      t: this.mesCorto(p.mes),
+      yr: i === 0 || p.mes.slice(5, 7) === "01" ? "'" + p.mes.slice(2, 4) : "",
+      color: p.mes === this.HOY_MES ? "#14314b" : "#8b93a0",
+      peso: p.mes === this.HOY_MES ? 700 : 400,
+    }));
+
+    // ── Chips de filtros
+    const chip = (t, on, onClick) => ({
+      t, onClick,
+      bg: on ? "#1c5a89" : "#fbf7ee",
+      color: on ? "#ffffff" : "#45596b",
+      borde: on ? "#1c5a89" : "#c9bc9e",
+    });
+    const elegir = (k) => this.guardarFiltros({ preset: k, ...this.rangoDe(k), aMedida: false, hover: null });
+    const presetsChips = [
+      chip("Este año", preset === "anio", () => elegir("anio")),
+      chip("12 meses", preset === "12m", () => elegir("12m")),
+      chip("Todo", preset === "todo", () => elegir("todo")),
+    ];
+    const aniosChips = [
+      chip("2023", preset === "a2023", () => elegir("a2023")),
+      chip("2024", preset === "a2024", () => elegir("a2024")),
+      chip("2025", preset === "a2025", () => elegir("a2025")),
+    ];
+    const actividadChips = [
+      { ...chip("Todas", actividad === "todas", () => this.guardarFiltros({ actividad: "todas", hover: null })), dot: null },
+      ...Object.entries(this.ACT).map(([k, a]) => {
+        const on = actividad === k;
+        return {
+          t: a.t,
+          onClick: () => this.guardarFiltros({ actividad: on ? "todas" : k, hover: null }),
+          bg: on ? a.color : "#fbf7ee",
+          color: on ? "#ffffff" : "#45596b",
+          borde: on ? a.color : "#c9bc9e",
+          dot: on ? "#ffffff" : a.color,
+        };
+      }),
+    ];
+
+    // ── Tabs de modo + leyendas
+    const modosTabs = [
+      { k: "ingresos", t: "Ingresos" }, { k: "socios", t: "Socios que pagan" }, { k: "retencion", t: "Retención" },
+    ].map((m) => {
+      const on = modo === m.k;
+      return { t: m.t, onClick: () => this.setState({ modo: m.k, hover: null }), bg: on ? "#1c5a89" : "transparent", color: on ? "#ffffff" : "#45596b" };
+    });
+    const leyendas = [];
+    if (esDinero && actividad === "todas") {
+      leyendas.push({ t: "Gimnasio", color: this.ACT.gimnasio.color, borde: "none" });
+      leyendas.push({ t: "Karate", color: this.ACT.karate.color, borde: "none" });
+      leyendas.push({ t: "Pilates", color: this.ACT.pilates.color, borde: "none" });
+    }
+    if (comparar) leyendas.push({ t: "Año anterior", color: "rgba(20,49,75,0.18)", borde: "1px solid rgba(20,49,75,0.35)" });
+
+    // ── Altas y bajas
+    const maxAB = Math.max(1, ...serie.map((s) => Math.max(s.altas, s.bajas)));
+    const altasBajasCols = serie.map((s, i) => {
+      const net = s.altas - s.bajas;
+      return {
+        alturaAltas: (s.altas / maxAB) * 100 + "%",
+        alturaBajas: (s.bajas / maxAB) * 100 + "%",
+        delay: Math.min(i * 22, 500) + "ms",
+        numAltas: s.altas || "",
+        numBajas: s.bajas || "",
+        label: this.mesCorto(s.mes),
+        labelColor: s.mes === this.HOY_MES ? "#14314b" : "#8b93a0",
+        labelPeso: s.mes === this.HOY_MES ? 700 : 400,
+        title: `${this.mesLargo(s.mes)}: ${s.altas} altas, ${s.bajas} bajas (neto ${net > 0 ? "+" : ""}${net})`,
+      };
+    });
+
+    // ── Ingresos por actividad (siempre las 3, atenuadas si hay filtro)
+    const totPeriodoTodas = serie.reduce((a, x) => a + x.ingresos, 0);
+    const sumas = {
+      gimnasio: serie.reduce((a, x) => a + x.gim, 0),
+      karate: serie.reduce((a, x) => a + x.kar, 0),
+      pilates: serie.reduce((a, x) => a + x.pil, 0),
+    };
+    const sumasAnt = {
+      gimnasio: serieAnt.reduce((a, x) => a + x.gim, 0),
+      karate: serieAnt.reduce((a, x) => a + x.kar, 0),
+      pilates: serieAnt.reduce((a, x) => a + x.pil, 0),
+    };
+    const maxAct = Math.max(1, ...Object.values(sumas));
+    const actividadesFilas = Object.entries(this.ACT).map(([k, a]) => {
+      const v = sumas[k], vAnt = sumasAnt[k];
+      let tendencia = "sin datos del año anterior";
+      if (vAnt > 0) {
+        const p = Math.round(((v - vAnt) / vAnt) * 100);
+        tendencia = `${p === 0 ? "→" : p > 0 ? "▲" : "▼"} ${Math.abs(p)}% vs. mismo periodo anterior`;
+      }
+      return {
+        etiqueta: a.t,
+        color: a.color,
+        valor: money(v),
+        pct: (totPeriodoTodas > 0 ? Math.round((v / totPeriodoTodas) * 100) : 0) + "%",
+        ancho: (v / maxAct) * 100 + "%",
+        tendencia,
+        opacidad: actividad === "todas" || actividad === k ? 1 : 0.35,
+        onClick: () => this.guardarFiltros({ actividad: actividad === k ? "todas" : k, hover: null }),
+      };
+    });
+
+    // ── Estado de cuotas hoy
+    const segsDef = [
+      { t: "Al día", n: 121, color: "#2e7b53" },
+      { t: "Vencen pronto", n: 18, color: "#be8a16" },
+      { t: "Atrasados", n: 22, color: "#bb3a3a" },
+      { t: "Sin pagar", n: 9, color: "#6b4da0" },
+      { t: "Sin cuotas", n: 16, color: "#6b7280" },
+    ];
+    const totalSeg = segsDef.reduce((a, s) => a + s.n, 0);
+    const segmentos = segsDef.filter((s) => s.n > 0).map((s) => ({
+      ancho: (s.n / totalSeg) * 100 + "%", color: s.color, title: `${s.t}: ${s.n}`,
+    }));
+    const leyendaSegs = segsDef.map((s) => ({ t: s.t, n: s.n, color: s.color }));
+
+    const pies = {
+      ingresos: comparar
+        ? "Cobrado por mes y actividad · gris: mismo mes del año anterior · rayado: proyección del mes en curso."
+        : "Cobrado por mes y actividad · rayado: proyección del mes en curso.",
+      socios: "Socios distintos que pagaron cada mes.",
+      retencion: "% de socios que repiten pago al mes siguiente.",
+    };
+
+    return {
+      ver, noVer: !ver, desde, hasta, aMedida, ayudaAbierta,
+      hoyMes: this.HOY_MES, dataDesde: this.DATA_DESDE, dataDesdeLargo: this.mesLargo(this.DATA_DESDE),
+      subCabecera: `${this.mesLargo(desde)} — ${this.mesLargo(hasta)} · ${totalPagos.toLocaleString("es-ES")} cobros` + (actInfo ? ` · solo ${actInfo.t}` : ""),
+      actividadNota: actInfo ? `Mostrando solo ${actInfo.t}` : "Las tres actividades",
+      toggleVer: () => {
+        try { localStorage.setItem("gym_ver_metricas", ver ? "0" : "1"); } catch (e) {}
+        this.setState({ ver: !ver });
+      },
+      abrirAyuda: () => this.setState({ ayudaAbierta: true }),
+      cerrarAyuda: () => this.setState({ ayudaAbierta: false }),
+      pararClick: (e) => e.stopPropagation(),
+      toggleAMedida: () => this.setState({ aMedida: !aMedida }),
+      aMedidaBg: aMedida ? "#e2eaf1" : "#fbf7ee",
+      aMedidaColor: aMedida ? "#184e78" : "#45596b",
+      aMedidaBorde: aMedida ? "#1c5a89" : "#c9bc9e",
+      aMedidaBordeEstilo: aMedida ? "solid" : "dashed",
+      cambiarDesde: (e) => e.target.value && this.guardarFiltros({ preset: "", desde: e.target.value, hover: null }),
+      cambiarHasta: (e) => e.target.value && this.guardarFiltros({ preset: "", hasta: e.target.value, hover: null }),
+      salirHover: () => this.setState({ hover: null }),
+      aMedidaMax: aMedida ? "380px" : "0px",
+      aMedidaOp: aMedida ? 1 : 0,
+      aMedidaEventos: aMedida ? "auto" : "none",
+      presetsChips, aniosChips, actividadChips,
+      kpiIngresos: ver ? this.euros(this.contador("ing", ver ? totalIng : 0)) : (this.contador("ing", 0), "••••• €"),
+      deltaTexto, deltaColor,
+      mesCursoLabel: this.mesLargo(this.HOY_MES).split(".")[0] === "jul" ? "Julio" : this.mesLargo(this.HOY_MES),
+      mesCursoValor: ver ? this.euros(this.contador("curso", ver ? cobradoCurso : 0)) : (this.contador("curso", 0), "••••• €"),
+      mesCursoNota,
+      kpiActivos: this.contador("act", 186),
+      netoTexto, netoColor,
+      altasBajasTexto: `${totalAltas} altas · ${totalBajas} bajas`,
+      kpiRetencion: retMedia > 0 ? this.contador("ret", retMedia) + "%" : "—",
+      retencionDe10: retMedia > 0 ? Math.round(retMedia / 10) : "—",
+      modosTabs, leyendas,
+      compararTexto: comparar ? "✓ vs. año anterior" : "vs. año anterior",
+      compararBg: comparar ? "#e2eaf1" : "#fbf7ee",
+      compararColor: comparar ? "#184e78" : "#45596b",
+      compararBorde: comparar ? "#1c5a89" : "#c9bc9e",
+      toggleComparar: () => this.guardarFiltros({ comparar: !comparar, hover: null }),
+      mediaLbl: fmt(mediaModo),
+      gridLineas, cols, xcells, tip, dots,
+      esModoBarras, esModoLinea,
+      lineaPoints, lineaGhostPoints,
+      hayMedia: mediaModo > 0,
+      mediaBottom: pctDe(mediaModo) + "%",
+      piePlot: pies[modo],
+      totalAltas, totalBajas, altasBajasCols,
+      actividadesFilas, segmentos, leyendaSegs,
+    };
+  }
+}
+</script>
+</body>
+</html>

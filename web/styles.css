@@ -780,3 +780,80 @@ td { padding: 9px 12px; font-size: 13px; }
 @media (max-width: 900px) {
   .met-cols { grid-template-columns: 1fr; }
 }
+
+/* ============================================================
+   MÉTRICAS v2 (rediseño 2026-07): filtros en dos filas, barras
+   apiladas por actividad, fantasma del año anterior, proyección
+   del mes en curso, línea de retención y espejo altas/bajas.
+   ============================================================ */
+
+/* — Tarjeta de filtros en dos filas — */
+.met2-filtros .fila { display: flex; align-items: center; gap: 12px 16px; flex-wrap: wrap; padding: 13px 18px; }
+.met2-filtros .fila + .fila { border-top: 1px solid var(--linea); }
+.f-sep { width: 1.5px; height: 24px; background: var(--linea); flex-shrink: 0; }
+
+/* Chip "encendido suave" (A medida, vs. año anterior) */
+.chip.soft-on { background: var(--azul-soft); border-color: var(--azul-500); color: var(--azul-700); }
+
+/* Chips de actividad con punto de color */
+.chip.act { display: inline-flex; align-items: center; gap: 7px; }
+.dotc { width: 8px; height: 8px; border-radius: 999px; flex-shrink: 0; display: inline-block; }
+
+/* "A medida…" plegable en línea (anima max-width, la tarjeta no salta) */
+.amedida { display: flex; align-items: center; gap: 8px; overflow: hidden; white-space: nowrap; flex-shrink: 0; max-width: 0; opacity: 0; pointer-events: none; transition: max-width 0.32s ease, opacity 0.25s ease; }
+.amedida.open { max-width: 380px; opacity: 1; pointer-events: auto; }
+.amedida input[type="month"] { padding: 5px 7px; font-size: 12px; font-family: var(--mono); width: 138px; }
+.amedida .rc-sep { color: var(--tinta-faint); }
+
+/* — KPI "mes en curso" — */
+.tag-curso { font-family: var(--mono); font-size: 10px; color: var(--terracota); letter-spacing: 0.04em; text-transform: lowercase; }
+.stat.oro .value { color: var(--tinta); }
+
+/* — Gráfica principal — */
+.graf-plot.gp260 { height: 260px; }
+.gb-stack { position: relative; width: 52%; display: flex; flex-direction: column-reverse; transform-origin: bottom center; animation: barGrowY 0.5s ease-out backwards; transition: height 0.45s ease-out; }
+.gb-seg { width: 100%; transition: flex-grow 0.45s ease-out, background 0.3s; }
+.gb-ghost { position: absolute; bottom: 0; left: 50%; transform: translateX(-50%); width: 76%; border-radius: 3px 3px 0 0; background: rgba(20, 49, 75, 0.13); border-top: 2px solid rgba(20, 49, 75, 0.28); transition: height 0.45s ease-out; }
+.gb-proy { width: 100%; border-radius: 3px 3px 0 0; background: repeating-linear-gradient(45deg, rgba(190, 90, 58, 0.5) 0 4px, rgba(190, 90, 58, 0.12) 4px 8px); border: 1px dashed var(--terracota); border-bottom: none; }
+
+/* Línea de retención */
+@keyframes trazoLinea { from { stroke-dashoffset: 1600; } to { stroke-dashoffset: 0; } }
+.gp-svg { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; }
+.gp-linea { animation: trazoLinea 1s ease-out backwards; }
+.gp-dots { position: absolute; inset: 0; display: flex; gap: 3px; }
+.gp-dotcol { flex: 1; position: relative; height: 100%; min-width: 0; transition: background 0.1s; }
+.gp-dotcol.hov { background: rgba(20, 49, 75, 0.06); }
+.gp-dot { position: absolute; left: 50%; transform: translate(-50%, 50%); border-radius: 999px; border: 2px solid var(--marfil); box-shadow: 0 0 0 1px var(--azul-500); transition: width 0.1s, height 0.1s; }
+
+/* — Espejo altas/bajas — */
+.ab-cols { display: flex; gap: 3px; align-items: stretch; }
+.ab-col { flex: 1; display: flex; flex-direction: column; align-items: center; min-width: 0; }
+.ab-col:hover { background: rgba(20, 49, 75, 0.05); }
+.ab-num { font-size: 10px; height: 15px; font-family: var(--mono); }
+.ab-num.verde { color: var(--verde); }
+.ab-num.rojo { color: var(--rojo); }
+.ab-arriba { height: 64px; width: 100%; display: flex; align-items: flex-end; justify-content: center; }
+.ab-abajo { height: 44px; width: 100%; display: flex; align-items: flex-start; justify-content: center; }
+.ab-eje { height: 1.5px; width: 100%; background: var(--linea-fuerte); }
+.ab-bar { width: 52%; animation: barGrowY 0.5s ease-out backwards; }
+.ab-bar.alta { background: var(--verde); border-radius: 3px 3px 0 0; transform-origin: bottom center; }
+.ab-bar.baja { background: var(--rojo); border-radius: 0 0 3px 3px; transform-origin: top center; }
+.ab-mes { font-size: 10px; color: var(--tinta-faint); font-family: var(--mono); margin-top: 3px; text-align: center; overflow: hidden; white-space: nowrap; max-width: 100%; }
+.ab-mes.actual { color: var(--tinta); font-weight: 700; }
+
+/* — Barras horizontales por actividad (clicables) — */
+.bact-lista { display: flex; flex-direction: column; gap: 15px; }
+.bact-fila { cursor: pointer; transition: opacity 0.15s; }
+.bact-top { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 6px; }
+.bact-et { font-weight: 700; font-size: 12.5px; display: inline-flex; align-items: center; gap: 7px; }
+.bact-val { display: inline-flex; gap: 8px; align-items: baseline; }
+.bact-pct { color: var(--tinta-faint); font-size: 11px; font-family: var(--mono); }
+.bact-track { height: 10px; background: var(--crema-2); border: 1px solid var(--linea); overflow: hidden; border-radius: 999px; }
+.bact-fill { height: 100%; border-radius: 999px; transition: width 0.5s ease-out; min-width: 3px; }
+.bact-tend { margin-top: 5px; color: var(--tinta-faint); font-size: 11px; font-family: var(--mono); }
+
+/* — Fila altas/bajas + reparto — */
+.met2-fila2 { display: grid; grid-template-columns: 1.4fr 1fr; gap: 20px; margin-top: 20px; align-items: stretch; }
+@media (max-width: 1100px) {
+  .met2-fila2 { grid-template-columns: 1fr; }
+}

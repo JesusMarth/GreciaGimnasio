@@ -33,11 +33,15 @@ if (ya > 0) {
 }
 
 const hoy = hoyISO();
+/** Meses enteros entre dos fechas ISO (b - a). */
+function diffMeses(a: string, b: string): number {
+  return (Number(b.slice(0, 4)) - Number(a.slice(0, 4))) * 12 + (Number(b.slice(5, 7)) - Number(a.slice(5, 7)));
+}
 const insSocio = db.prepare(
-  "INSERT INTO socios (nombre, apellidos, telefono, email, dni, sexo, fecha_alta, fecha_nacimiento, estado, notas, creado_en) VALUES (?,?,?,?,?,?,?,?,?,?,?)"
+  "INSERT INTO socios (nombre, apellidos, telefono, email, dni, sexo, fecha_alta, fecha_nacimiento, estado, fecha_baja, notas, creado_en) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)"
 );
 const insSub = db.prepare(
-  "INSERT INTO suscripciones (socio_id, actividad, etiqueta, importe, periodicidad, pagado_hasta, activa, notas, creado_en) VALUES (?,?,?,?,?,?,?,?,?)"
+  "INSERT INTO suscripciones (socio_id, actividad, etiqueta, importe, periodicidad, pagado_hasta, cobertura_manual, activa, notas, creado_en) VALUES (?,?,?,?,?,?,?,?,?,?)"
 );
 const insPago = db.prepare("INSERT INTO pagos (socio_id, fecha, metodo, total, notas, creado_en) VALUES (?,?,?,?,?,?)");
 const insLinea = db.prepare(
@@ -55,7 +59,14 @@ const sembrar = db.transaction(() => {
     const dni = r(10) < 6 ? `${10000000 + r(89999999)}X` : null;
     const alta = addDias(addMeses(hoy, -r(36)), -r(28)); // hasta ~3 años atrás, día variado
     const estado = r(10) < 9 ? "activo" : "baja";
-    const socioId = insSocio.run(nombre, apellidos, tel, email, dni, sexo, alta, null, estado, null, hoy).lastInsertRowid as number;
+    // ~70% de las bajas llevan fecha (las demás son "antiguas", de antes de guardarla).
+    let fechaBaja: string | null = null;
+    if (estado === "baja" && r(10) < 7) {
+      fechaBaja = addDias(addMeses(hoy, -r(12)), -r(28));
+      if (fechaBaja <= alta) fechaBaja = addDias(alta, 40 + r(280));
+      if (fechaBaja > hoy) fechaBaja = hoy;
+    }
+    const socioId = insSocio.run(nombre, apellidos, tel, email, dni, sexo, alta, null, estado, fechaBaja, null, hoy).lastInsertRowid as number;
 
     // 1-3 actividades distintas
     const acts = [...ACTS].sort(() => Math.random() - 0.5).slice(0, 1 + r(3));
@@ -70,12 +81,21 @@ const sembrar = db.transaction(() => {
         else if (bucket === 2) pagadoHasta = addDias(hoy, r(7));
         else if (bucket === 3) pagadoHasta = addMeses(hoy, 1 + r(2));
       }
-      const subId = insSub.run(socioId, act, null, importe, "mensual", pagadoHasta, activa, null, hoy).lastInsertRowid as number;
+      // ~1 de cada 4 cuotas cubiertas viene "del archivador": cobertura apuntada a
+      // mano en el alta, SIN pagos registrados (como pasa con los datos reales).
+      const delArchivador = pagadoHasta != null && r(4) === 0;
+      const subId = insSub.run(
+        socioId, act, null, importe, "mensual", pagadoHasta, delArchivador ? pagadoHasta : null, activa, null, hoy
+      ).lastInsertRowid as number;
 
-      // Historial de pagos mensuales que llevan hasta "pagadoHasta" (sin fechas futuras).
-      if (pagadoHasta) {
-        const meses = 2 + r(4);
-        for (let m = meses; m >= 1; m--) {
+      // Historial de pagos mensuales que llevan hasta "pagadoHasta" (sin fechas
+      // futuras). Arranca cerca del alta (hasta ~30 meses) para que Métricas tenga
+      // varios años y comparativa interanual, y deja HUECOS de vez en cuando
+      // (meses en los que el socio no vino) para que la retención no sea plana.
+      if (pagadoHasta && !delArchivador) {
+        const tope = Math.max(2, Math.min(diffMeses(alta, pagadoHasta), 6 + r(25)));
+        for (let m = tope; m >= 1; m--) {
+          if (m !== 1 && r(9) === 0) continue; // hueco (el último mes nunca falta: respalda pagadoHasta)
           const hasta = addMeses(pagadoHasta, -(m - 1));
           const desde = addMeses(hasta, -1);
           const fecha = desde > hoy ? hoy : desde;

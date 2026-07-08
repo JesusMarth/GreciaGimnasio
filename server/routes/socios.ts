@@ -65,8 +65,12 @@ sociosRouter.put("/:id", (req, res) => {
   const sexoVal = sexo === undefined ? s.sexo : sexo === "hombre" || sexo === "mujer" ? sexo : null;
   // apellidos: si no viene, se conserva; si viene vacío, se pone a null.
   const apellidosVal = apellidos === undefined ? s.apellidos : String(apellidos).trim() || null;
+  const nuevoEstado = estado === "activo" || estado === "baja" ? estado : s.estado;
+  // fecha_baja: se apunta al dar de baja (si no la tenía ya) y se limpia al
+  // reactivar. Alimenta "bajas por mes" en Métricas.
+  const fechaBaja = nuevoEstado === "baja" ? (s.estado === "baja" ? s.fecha_baja : hoyISO()) : null;
   db.prepare(
-    `UPDATE socios SET nombre=?, apellidos=?, telefono=?, email=?, dni=?, sexo=?, fecha_alta=?, fecha_nacimiento=?, estado=?, notas=? WHERE id=?`
+    `UPDATE socios SET nombre=?, apellidos=?, telefono=?, email=?, dni=?, sexo=?, fecha_alta=?, fecha_nacimiento=?, estado=?, fecha_baja=?, notas=? WHERE id=?`
   ).run(
     nombre?.trim() || s.nombre,
     apellidosVal,
@@ -76,7 +80,8 @@ sociosRouter.put("/:id", (req, res) => {
     sexoVal,
     fechaAlta || s.fecha_alta,
     fechaNacimiento ?? s.fecha_nacimiento,
-    estado === "activo" || estado === "baja" ? estado : s.estado,
+    nuevoEstado,
+    fechaBaja,
     notas ?? s.notas,
     s.id
   );

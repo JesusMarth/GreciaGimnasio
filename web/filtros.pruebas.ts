@@ -13,7 +13,7 @@ const igual = (a: number[], b: number[]) => a.length === b.length && a.every((x,
 
 // --- Factorías de datos mock ---
 function sub(over: Partial<Suscripcion>): Suscripcion {
-  return { id: 1, socioId: 1, actividad: "gimnasio", etiqueta: null, importe: 30, periodicidad: "mensual", pagadoHasta: null, activa: true, notas: null, estado: "aldia", dias: 30, ...over };
+  return { id: 1, socioId: 1, actividad: "gimnasio", etiqueta: null, importe: 30, periodicidad: "mensual", pagadoHasta: null, coberturaSinCobro: false, activa: true, notas: null, estado: "aldia", dias: 30, ...over };
 }
 function soc(id: number, fechaAlta: string, estado: string, estadoResumen: EstadoCuota | null, subs: Suscripcion[], sexo: string | null = null): Socio {
   return { id, nombre: "Socio", apellidos: String(id), nombreCompleto: "Socio " + id, telefono: null, email: null, dni: null, sexo, fechaAlta, fechaNacimiento: null, estado, notas: null, suscripciones: subs, estadoResumen, proximaExpiracion: null };
