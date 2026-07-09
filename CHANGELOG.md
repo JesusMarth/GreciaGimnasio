@@ -12,6 +12,14 @@ y el proyecto usa [Versionado Semántico](https://semver.org/lang/es/) (SemVer):
 
 ## [Sin publicar]
 
+## [1.6.3] - 2026-07-09
+
+### Changed
+- El filtro de avisos sale de la ventana de filtros y pasa a ser un **botón «!»
+  suelto**, junto a «Filtros»: un clic deja solo los socios con la exclamación
+  ámbar. La ventana de filtros queda con Actividad · Estado del socio · Estado de
+  cuota · Sexo · Fecha de alta.
+
 ## [1.6.2] - 2026-07-09
 
 ### Changed

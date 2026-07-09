@@ -29,7 +29,6 @@ const OPC_SEXO = [
   { k: "sin", t: "Sin asignar" }, // posible olvido al dar el alta
 ];
 // "Con aviso" = socios con la exclamación ámbar (avisosDe en web/filtros.ts).
-const OPC_AVISOS = [{ k: "con", t: "Con aviso" }];
 
 // Cómo estaba la pantalla (filtros, orden, scroll) — para restaurarla al volver de
 // una ficha y no perder el sitio en la tabla. Vive en sessionStorage: se olvida al
@@ -112,7 +111,8 @@ export function Socios() {
   const filtros: FiltrosSocios = { actividades: [...filtroAct], estado: [...filtroEstado], cuota: [...filtroCuota], sexo: [...filtroSexo], avisos: [...filtroAvisos], fecha: filtroFecha };
   const sociosFiltrados = filtrarSocios(socios, filtros);
   const hayFiltro = buscar.trim() !== "" || hayFiltrosActivos(filtros);
-  const nFiltros = filtroAct.size + filtroEstado.size + filtroCuota.size + filtroSexo.size + filtroAvisos.size + (filtroFecha.desde || filtroFecha.hasta ? 1 : 0);
+  // El aviso ("!") tiene su propio botón fuera de la ventana, no cuenta en el nº de la ventana.
+  const nFiltros = filtroAct.size + filtroEstado.size + filtroCuota.size + filtroSexo.size + (filtroFecha.desde || filtroFecha.hasta ? 1 : 0);
 
   // Foto del estado de la pantalla, siempre al día; al desmontar se guarda para
   // que "Volver" desde una ficha te deje exactamente donde estabas.
@@ -317,6 +317,20 @@ export function Socios() {
             Filtros
             {nFiltros > 0 && <span className="filtros-num">{nFiltros}</span>}
           </button>
+          <button
+            className={"btn sm aviso-toggle" + (filtroAvisos.has("con") ? " on" : "")}
+            onClick={() => alternaEn("avi", "con")}
+            title="Mostrar solo socios con aviso"
+            aria-label="Mostrar solo socios con aviso"
+            aria-pressed={filtroAvisos.has("con")}
+          >
+            <span className="aviso-flag chica" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="4" strokeLinecap="round">
+                <line x1="12" y1="6" x2="12" y2="13" />
+                <line x1="12" y1="18" x2="12" y2="18.01" />
+              </svg>
+            </span>
+          </button>
           <button className={"btn ghost sm limpiar-reservado" + (hayFiltro ? " on" : "")} onClick={limpiar} tabIndex={hayFiltro ? 0 : -1}>
             Limpiar filtros
           </button>
@@ -426,7 +440,7 @@ export function Socios() {
           onCerrar={() => setModalFiltros(false)}
           pie={
             <>
-              <button className="btn ghost" onClick={limpiar} disabled={nFiltros === 0}>
+              <button className="btn ghost" onClick={limpiar} disabled={!hayFiltro}>
                 Limpiar todo
               </button>
               <button className="btn primary" onClick={() => setModalFiltros(false)}>
@@ -461,22 +475,6 @@ export function Socios() {
               <div className="chips">
                 {OPC_CUOTA.map((o) => (
                   <button key={o.k} className={"chip" + (filtroCuota.has(o.k) ? " on" : "")} onClick={() => alternaEn("cuo", o.k)}>
-                    {o.t}
-                  </button>
-                ))}
-              </div>
-            </div>
-            <div className="fm-grupo">
-              <span className="chip-label">Avisos</span>
-              <div className="chips">
-                {OPC_AVISOS.map((o) => (
-                  <button key={o.k} className={"chip chip-aviso" + (filtroAvisos.has(o.k) ? " on" : "")} onClick={() => alternaEn("avi", o.k)}>
-                    <span className="aviso-flag chica" aria-hidden="true">
-                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="4" strokeLinecap="round">
-                        <line x1="12" y1="6" x2="12" y2="13" />
-                        <line x1="12" y1="18" x2="12" y2="18.01" />
-                      </svg>
-                    </span>
                     {o.t}
                   </button>
                 ))}

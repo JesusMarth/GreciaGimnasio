@@ -872,10 +872,12 @@ td { padding: 9px 12px; font-size: 13px; }
 /* Ventana de filtros: un grupo por línea, con su etiqueta y una nota si hace falta. */
 .fm-grupo { margin-bottom: 16px; }
 .fm-grupo .chip-label { display: block; margin-bottom: 7px; }
-/* Chip con la exclamación: flex para que icono y texto queden centrados entre sí. */
-.chip-aviso { display: inline-flex; align-items: center; gap: 6px; }
-.chip .aviso-flag.chica { width: 14px; height: 14px; }
-.chip .aviso-flag.chica svg { width: 8px; height: 8px; }
+/* Botón "!" suelto en la banda: filtra a los socios con aviso. Solo el icono.
+   Padding vertical igual que .btn.sm (6px) para casar en altura con "Filtros". */
+.aviso-toggle { display: inline-grid; place-items: center; padding: 6px 9px; flex-shrink: 0; }
+.aviso-toggle.on { border-color: var(--ambar); background: var(--ambar-soft); }
+.aviso-toggle .aviso-flag.chica { width: 13px; height: 13px; }
+.aviso-toggle .aviso-flag.chica svg { width: 8px; height: 8px; }
 
 /* Aviso del socio: "algo pasa con este socio" (columna estrecha junto al nombre).
    El detalle concreto va en el title; el icono es genérico a propósito (SVG, no

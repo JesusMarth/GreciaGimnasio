@@ -89,7 +89,7 @@ export const AyudaSocios = () => (
       <li><strong>Actividad</strong> (Gimnasio / Karate / Pilates): se combinan en “o” — marca Karate y Pilates y salen los de uno u otro.</li>
       <li><strong>Estado del socio</strong>: Activos o Bajas.</li>
       <li><strong>Estado de cuota</strong>: Pendientes (atrasados o sin pagar), Vencen pronto, Al día o Sin cuotas.</li>
-      <li><strong>Avisos → Con aviso</strong>: los que llevan la <strong>exclamación ámbar</strong> junto al nombre, que significa «algo conviene mirar en este socio» (pasa el ratón por la exclamación para ver el motivo). Hoy avisa de los cubiertos por una fecha apuntada a mano sin cobro registrado — los del ⚠ de Métricas.</li>
+      <li>El botón <strong>«!»</strong> (al lado de Filtros) deja solo los socios con la <strong>exclamación ámbar</strong> junto al nombre, que significa «algo conviene mirar en este socio» (pasa el ratón por la exclamación para ver el motivo). Hoy avisa de los cubiertos por una fecha apuntada a mano sin cobro registrado — los del ⚠ de Métricas.</li>
       <li><strong>Sexo</strong>: Hombre, Mujer o <strong>Sin asignar</strong> (útil para cazar olvidos del alta y completar fichas).</li>
       <li><strong>Fecha de alta</strong>: abre una ventana con periodos rápidos (hoy, ayer, últimos 7 días, esta semana, este mes, este año) y, en “Más opciones”, un año entero o un rango exacto con calendario.</li>
       <li>Los filtros se <strong>suman</strong> entre sí; <strong>Limpiar filtros</strong> los quita todos. El export y “seleccionar todos” respetan lo filtrado.</li>
