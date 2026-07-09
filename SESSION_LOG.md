@@ -52,6 +52,34 @@ Replica el patrón con el que se añadió `dni` y el de los filtros existentes. 
 
 ## 📋 Registro (más reciente arriba)
 
+### 2026-07-09 · Socios auditables: filtro «apuntado a mano» + navegación que no se pierde
+- **Contexto (jefe)**: v1.3.0 ya desplegada en el local con datos reales, pero "las
+  cifras del papel y de la app no cuadran" y auditar era un castigo: al entrar en
+  una ficha y volver, la tabla volvía arriba y tocaba re-buscar. **No se tocó ni un
+  dato**: el descuadre es dinero cobrado en papel que nunca entró en la app; la
+  solución es poder ENCONTRAR cada caso y corregirlo socio a socio (registrar su
+  siguiente pago; desde ahí cuadra solo).
+- **Filtro nuevo Cobros → «Apuntado a mano»** (`web/filtros.ts` + pruebas): socios
+  con cuota activa de cobertura manual **vigente** (al día o pronto) — EXACTAMENTE
+  el criterio del aviso ⚠ de Métricas, que ahora enlaza «Ver quiénes son →»
+  (`/socios?cobros=manual&estado=activo`; con `estado=activo` porque Métricas solo
+  cuenta activos — sin él salía 9 vs 8 por un socio de baja con cuota manual).
+  Marca **«a mano»** en la fila (solo si la cobertura manual sigue vigente; si
+  venció es un atrasado normal y no lleva marca ni entra en el filtro).
+- **Botón «Filtros» desplegable** (`Socios.tsx` + CSS `.filtros-panel`): búsqueda
+  siempre visible; el resto de grupos (Actividad/Estado/Cuota/Cobros/Sexo/Alta) en
+  panel plegable animado con contador de filtros activos. Se abre solo si la URL
+  trae filtros.
+- **La tabla recuerda dónde estabas** (`sessionStorage gym_socios_ui`): búsqueda,
+  filtros, orden, nº de filas cargadas y scroll exacto se restauran al volver de
+  una ficha. La URL con filtros (enlaces de Panel/Métricas) SIEMPRE manda sobre lo
+  recordado. Detalle clave: el efecto "al cambiar filtros → scroll arriba" se salta
+  el primer render para no pisar la restauración.
+- Verificado en vivo (mock): Métricas ⚠ 8 → clic → 8 filtrados con chips puestos;
+  scroll a 1200px + entrar en ficha + Volver → 1200px y 60 filas restauradas;
+  `/socios?cuota=pendiente` ignora lo guardado. Tests: filtros (+9 casos), ingresos
+  30/30, typecheck, build. **Publicado como v1.4.0** (tag + push).
+
 ### 2026-07-08 (2) · Métricas REDISEÑADA (handoff de diseño)
 - Reimplementada la pantalla según **`design/Metricas Rediseño.dc.html`** (prototipo
   con la lógica en su clase `Component`; los colores del diseño ya coincidían 1:1

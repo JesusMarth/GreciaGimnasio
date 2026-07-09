@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { Link } from "react-router-dom";
 import { api } from "../api.ts";
 import { hoyISO } from "../format.ts";
 import { useContador } from "../anim.ts";
@@ -429,7 +430,10 @@ export function Metricas() {
           <div className="hint" style={{ marginTop: 10 }}>
             ⚠ {socios.coberturaManual} {socios.coberturaManual === 1 ? "socio está al día" : "socios están al día"} por una
             cobertura apuntada a mano (alta «ya estaba pagado»), sin ningún cobro registrado: ese dinero no aparece en
-            Ingresos.
+            Ingresos.{" "}
+            <Link className="hint-accion" to="/socios?cobros=manual&estado=activo">
+              Ver quiénes son →
+            </Link>
           </div>
         )}
       </div>

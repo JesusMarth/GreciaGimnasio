@@ -81,10 +81,25 @@ check("karate + alta este año → [2,4]", igual(ids(filtrarSocios(socios, F({ a
 check("rango personalizado 2026-06-18..2026-06-23 → [4,6]", igual(ids(filtrarSocios(socios, F({ fecha: { desde: "2026-06-18", hasta: "2026-06-23" } }))), [4, 6]));
 check("sin filtros → todos", igual(ids(filtrarSocios(socios, FILTROS_VACIOS)), [1, 2, 3, 4, 5, 6]));
 
+console.log("\n— filtrarSocios: cobros (cobertura apuntada a mano) —");
+const sociosMano: Socio[] = [
+  soc(101, "2026-01-01", "activo", "aldia", [sub({ id: 11, coberturaSinCobro: true })]),
+  soc(102, "2026-01-01", "activo", "aldia", [sub({ id: 12 })]),
+  soc(103, "2026-01-01", "activo", "aldia", [sub({ id: 13, coberturaSinCobro: true, activa: false }), sub({ id: 14 })]),
+  soc(104, "2026-01-01", "activo", "atrasado", [sub({ id: 15, coberturaSinCobro: true, estado: "atrasado", dias: -9 })]),
+  soc(105, "2026-01-01", "activo", "pronto", [sub({ id: 16, coberturaSinCobro: true, estado: "pronto", dias: 3 })]),
+];
+check("manual → cuota ACTIVA a mano y VIGENTE (al día o pronto)", igual(ids(filtrarSocios(sociosMano, F({ cobros: ["manual"] }))), [101, 105]));
+check("una cuota a mano INACTIVA no cuenta", !ids(filtrarSocios(sociosMano, F({ cobros: ["manual"] }))).includes(103));
+check("una cuota a mano ya VENCIDA no cuenta (es un atrasado normal)", !ids(filtrarSocios(sociosMano, F({ cobros: ["manual"] }))).includes(104));
+check("cobros vacío → todos", igual(ids(filtrarSocios(sociosMano, F({}))), [101, 102, 103, 104, 105]));
+check("manual + al día se combinan", igual(ids(filtrarSocios(sociosMano, F({ cobros: ["manual"], cuota: ["aldia"] }))), [101]));
+
 console.log("\n— hayFiltrosActivos —");
 check("vacío → false", hayFiltrosActivos(FILTROS_VACIOS) === false);
 check("con actividad → true", hayFiltrosActivos(F({ actividades: ["karate"] })) === true);
 check("con sexo → true", hayFiltrosActivos(F({ sexo: ["hombre"] })) === true);
+check("con cobros → true", hayFiltrosActivos(F({ cobros: ["manual"] })) === true);
 check("con fecha → true", hayFiltrosActivos(F({ fecha: { desde: "2026-01-01", hasta: null } })) === true);
 
 console.log(fallos === 0 ? `\n✅ Todas las pruebas OK (${0} fallos)` : `\n❌ ${fallos} prueba(s) fallan`);

@@ -12,6 +12,22 @@ y el proyecto usa [Versionado Semántico](https://semver.org/lang/es/) (SemVer):
 
 ## [Sin publicar]
 
+## [1.4.0] - 2026-07-08
+
+### Added
+- **Socios: encontrar a los del descuadre papel↔app.** Nuevo filtro **Cobros →
+  «Apuntado a mano»**: socios al día por una fecha puesta a dedo SIN ningún cobro
+  registrado detrás (los que venían del archivador). Es el mismo criterio y la
+  misma cifra que el aviso ⚠ de Métricas, que ahora enlaza directamente
+  («Ver quiénes son →») con el filtro ya puesto. En la lista, esas cuotas llevan
+  la marca **«a mano»**.
+- **Botón «Filtros» desplegable** en Socios: la banda de filtros se pliega en un
+  botón con contador (cuántos filtros hay puestos); se abre sola si llegas con un
+  filtro desde el Panel o Métricas.
+- **La lista de Socios ya no pierde el sitio**: al entrar en una ficha y volver,
+  se restauran búsqueda, filtros, orden y la posición exacta del scroll. Los
+  enlaces con filtro (Panel/Métricas) siguen mandando sobre lo recordado.
+
 ## [1.3.0] - 2026-07-08
 
 ### Added

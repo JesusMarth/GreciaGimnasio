@@ -857,3 +857,22 @@ td { padding: 9px 12px; font-size: 13px; }
 @media (max-width: 1100px) {
   .met2-fila2 { grid-template-columns: 1fr; }
 }
+
+/* ============================================================
+   SOCIOS: botón "Filtros" con panel desplegable + marca "a mano"
+   ============================================================ */
+.filtros-toggle { display: inline-flex; align-items: center; gap: 7px; flex-shrink: 0; }
+.filtros-toggle.activos { border-color: var(--azul-500); color: var(--azul-700); background: var(--azul-soft); }
+.filtros-num { background: var(--azul-500); color: #fff; font-family: var(--mono); font-size: 10.5px; font-weight: 700; border-radius: 999px; min-width: 17px; height: 17px; display: inline-grid; place-items: center; padding: 0 4px; }
+.ft-chevron { display: inline-flex; transition: transform 0.2s ease; }
+
+.filtros-panel { max-height: 0; opacity: 0; overflow: hidden; transition: max-height 0.3s ease, opacity 0.25s ease; }
+.filtros-panel.open { max-height: 240px; opacity: 1; }
+.filtros-panel-inner { display: flex; align-items: center; gap: 12px 16px; flex-wrap: wrap; padding: 12px 18px; border-bottom: 1px solid var(--linea); background: rgba(20, 49, 75, 0.02); }
+
+/* Cuota "al día" sin ningún cobro registrado detrás (fecha puesta a dedo). */
+.mano-mini { font-family: var(--mono); font-size: 10px; color: var(--terracota); border: 1px dashed var(--terracota); border-radius: 999px; padding: 1px 7px; margin-left: 7px; vertical-align: middle; white-space: nowrap; }
+
+/* Enlace de acción dentro de un aviso (p. ej. "ver quiénes son" en Métricas). */
+.hint a.hint-accion { font-weight: 700; color: var(--azul-500); text-decoration: underline; text-underline-offset: 2px; }
+.hint a.hint-accion:hover { color: var(--azul-900); }

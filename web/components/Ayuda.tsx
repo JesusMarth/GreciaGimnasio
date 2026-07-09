@@ -85,16 +85,18 @@ export const AyudaSocios = () => (
     <h4>Buscar y filtrar</h4>
     <ul>
       <li><strong>Buscador</strong>: escribe nombre o teléfono y la lista se filtra sola.</li>
+      <li>El botón <strong>Filtros</strong> despliega el resto de filtros; su número azul dice cuántos tienes puestos.</li>
       <li><strong>Actividad</strong> (Gimnasio / Karate / Pilates): se combinan en “o” — marca Karate y Pilates y salen los de uno u otro.</li>
       <li><strong>Estado</strong>: Activos o Bajas.</li>
       <li><strong>Cuota</strong>: Pendientes (atrasados o sin pagar), Vencen pronto, Al día o Sin cuotas.</li>
+      <li><strong>Cobros → Apuntado a mano</strong>: los que están al día por una fecha puesta a dedo, sin ningún cobro registrado detrás (los que venían del archivador en papel). Son los del aviso ⚠ de Métricas y llevan la marca «a mano» en la lista: su dinero no sale en Ingresos hasta que les registres su siguiente pago.</li>
       <li><strong>Fecha de alta</strong>: abre una ventana con periodos rápidos (hoy, ayer, últimos 7 días, esta semana, este mes, este año) y, en “Más opciones”, un año entero o un rango exacto con calendario.</li>
       <li>Los filtros se <strong>suman</strong> entre sí; <strong>Limpiar filtros</strong> los quita todos. El export y “seleccionar todos” respetan lo filtrado.</li>
     </ul>
     <h4>Orden de la lista</h4>
     <p>Por defecto se ordena <strong>por apellido de la A a la Z</strong>, como el archivador de papel. Pulsa la cabecera <strong>Nombre</strong> para alternar a <strong>Z→A</strong>, o la cabecera <strong>Vence</strong> para ordenar por quién tiene la cuota más próxima a vencer.</p>
     <h4>Desplazamiento</h4>
-    <p>La lista tiene <strong>scroll propio</strong>: baja dentro de la tabla y se van cargando más socios solos (la pantalla no se mueve). Abajo se indica cuántos hay y cuántos se están mostrando.</p>
+    <p>La lista tiene <strong>scroll propio</strong>: baja dentro de la tabla y se van cargando más socios solos (la pantalla no se mueve). Abajo se indica cuántos hay y cuántos se están mostrando. Si entras en una ficha y vuelves, la lista <strong>se queda donde estaba</strong>: mismos filtros, misma búsqueda y misma posición.</p>
     <h4>Seleccionar y exportar</h4>
     <ul>
       <li>Las <strong>casillas</strong> de la izquierda te dejan elegir socios concretos (incluso de varias páginas). La casilla de la cabecera marca/desmarca todos los del filtro actual.</li>

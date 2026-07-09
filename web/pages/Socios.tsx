@@ -26,6 +26,21 @@ const OPC_SEXO = [
   { k: "hombre", t: "Hombre" },
   { k: "mujer", t: "Mujer" },
 ];
+// "Apuntado a mano" = al día por una fecha puesta a dedo, SIN cobro registrado que
+// la respalde (los del archivador). Es el mismo criterio del aviso ⚠ de Métricas.
+const OPC_COBROS = [{ k: "manual", t: "Apuntado a mano" }];
+
+// Cómo estaba la pantalla (filtros, orden, scroll) — para restaurarla al volver de
+// una ficha y no perder el sitio en la tabla. Vive en sessionStorage: se olvida al
+// cerrar la app, pero sobrevive a navegar entre pantallas.
+const KEY_UI = "gym_socios_ui";
+function leerUI(): any {
+  try {
+    return JSON.parse(sessionStorage.getItem(KEY_UI) || "null");
+  } catch {
+    return null;
+  }
+}
 
 // Orden de la tabla. Por defecto por apellido A→Z (como el archivador físico).
 type Orden = "apeAsc" | "apeDesc" | "vence";
@@ -54,21 +69,27 @@ function GrupoChips({ label, opciones, valor, onToggle }: { label: string; opcio
   );
 }
 
-type TipoFiltro = "act" | "est" | "cuo" | "sex";
+type TipoFiltro = "act" | "est" | "cuo" | "sex" | "cob";
 
 export function Socios() {
   const [params] = useSearchParams();
   const desdeUrl = (k: string) => new Set((params.get(k) || "").split(",").filter(Boolean));
+  // Si la URL trae filtros (enlaces desde el Panel o Métricas), mandan ellos; si no,
+  // se restaura cómo quedó la pantalla la última vez (al volver de una ficha).
+  const urlConFiltros = ["actividad", "estado", "cuota", "sexo", "cobros"].some((k) => params.get(k));
+  const [ui] = useState<any>(() => (urlConFiltros ? null : leerUI()));
 
   const [socios, setSocios] = useState<Socio[]>([]);
-  const [buscar, setBuscar] = useState("");
-  const [filtroAct, setFiltroAct] = useState<Set<string>>(() => desdeUrl("actividad"));
-  const [filtroEstado, setFiltroEstado] = useState<Set<string>>(() => desdeUrl("estado"));
-  const [filtroCuota, setFiltroCuota] = useState<Set<string>>(() => desdeUrl("cuota"));
-  const [filtroSexo, setFiltroSexo] = useState<Set<string>>(() => desdeUrl("sexo"));
-  const [filtroFecha, setFiltroFecha] = useState<RangoFecha>({ desde: null, hasta: null });
-  const [orden, setOrden] = useState<Orden>("apeAsc");
-  const [limite, setLimite] = useState(INICIAL); // scroll infinito: cuántas filas hay pintadas
+  const [buscar, setBuscar] = useState<string>(ui?.buscar ?? "");
+  const [filtroAct, setFiltroAct] = useState<Set<string>>(() => (ui ? new Set<string>(ui.act ?? []) : desdeUrl("actividad")));
+  const [filtroEstado, setFiltroEstado] = useState<Set<string>>(() => (ui ? new Set<string>(ui.est ?? []) : desdeUrl("estado")));
+  const [filtroCuota, setFiltroCuota] = useState<Set<string>>(() => (ui ? new Set<string>(ui.cuo ?? []) : desdeUrl("cuota")));
+  const [filtroSexo, setFiltroSexo] = useState<Set<string>>(() => (ui ? new Set<string>(ui.sex ?? []) : desdeUrl("sexo")));
+  const [filtroCobros, setFiltroCobros] = useState<Set<string>>(() => (ui ? new Set<string>(ui.cob ?? []) : desdeUrl("cobros")));
+  const [filtroFecha, setFiltroFecha] = useState<RangoFecha>(ui?.fecha ?? { desde: null, hasta: null });
+  const [orden, setOrden] = useState<Orden>(ui?.orden ?? "apeAsc");
+  const [limite, setLimite] = useState<number>(ui?.limite ?? INICIAL); // scroll infinito: cuántas filas hay pintadas
+  const [filtrosAbiertos, setFiltrosAbiertos] = useState<boolean>(() => ui?.abiertos ?? urlConFiltros);
   const [alto, setAlto] = useState(440); // alto del área con scroll (la página no scrollea)
   const [nuevo, setNuevo] = useState(false);
   const [error, setError] = useState("");
@@ -80,6 +101,9 @@ export function Socios() {
   const visIds = useRef<number[]>([]);
   const scrollRef = useRef<HTMLDivElement>(null);
   const nav = useNavigate();
+  // Última posición de scroll conocida (se guarda al salir para restaurarla al volver).
+  const ultimoScroll = useRef<number>(ui?.scrollTop ?? 0);
+  const snap = useRef<any>(null);
 
   function recargar(q = buscar) {
     api
@@ -97,9 +121,24 @@ export function Socios() {
   useEffect(() => () => window.clearTimeout(salTimer.current), []);
 
   // Filtrado cliente (lógica pura y testeada en web/filtros.pruebas.ts).
-  const filtros: FiltrosSocios = { actividades: [...filtroAct], estado: [...filtroEstado], cuota: [...filtroCuota], sexo: [...filtroSexo], fecha: filtroFecha };
+  const filtros: FiltrosSocios = { actividades: [...filtroAct], estado: [...filtroEstado], cuota: [...filtroCuota], sexo: [...filtroSexo], cobros: [...filtroCobros], fecha: filtroFecha };
   const sociosFiltrados = filtrarSocios(socios, filtros);
   const hayFiltro = buscar.trim() !== "" || hayFiltrosActivos(filtros);
+  const nFiltros = filtroAct.size + filtroEstado.size + filtroCuota.size + filtroSexo.size + filtroCobros.size + (filtroFecha.desde || filtroFecha.hasta ? 1 : 0);
+
+  // Foto del estado de la pantalla, siempre al día; al desmontar se guarda para
+  // que "Volver" desde una ficha te deje exactamente donde estabas.
+  snap.current = { buscar, act: [...filtroAct], est: [...filtroEstado], cuo: [...filtroCuota], sex: [...filtroSexo], cob: [...filtroCobros], fecha: filtroFecha, orden, limite, abiertos: filtrosAbiertos };
+  useEffect(
+    () => () => {
+      try {
+        sessionStorage.setItem(KEY_UI, JSON.stringify({ ...snap.current, scrollTop: ultimoScroll.current }));
+      } catch {
+        /* sin almacenamiento */
+      }
+    },
+    []
+  );
 
   // Orden: por apellido (A→Z o Z→A) o por vencimiento (quien vence antes primero).
   const sociosOrdenados =
@@ -123,11 +162,27 @@ export function Socios() {
   const visibles = listaBase.slice(0, limite);
   visIds.current = visibles.map((s) => s.id);
 
-  // Al cambiar filtros/búsqueda/orden: volver al principio y reiniciar el scroll infinito.
+  // Al cambiar filtros/búsqueda/orden: volver al principio y reiniciar el scroll
+  // infinito. En el primer render NO (podríamos estar restaurando el estado guardado).
+  const montado = useRef(false);
   useEffect(() => {
+    if (!montado.current) {
+      montado.current = true;
+      return;
+    }
     setLimite(INICIAL);
+    ultimoScroll.current = 0;
     if (scrollRef.current) scrollRef.current.scrollTop = 0;
-  }, [buscar, filtroAct, filtroEstado, filtroCuota, filtroSexo, filtroFecha, orden]);
+  }, [buscar, filtroAct, filtroEstado, filtroCuota, filtroSexo, filtroCobros, filtroFecha, orden]);
+
+  // Al volver de una ficha: recolocar el scroll donde estaba (cuando ya hay filas).
+  useEffect(() => {
+    if (!socios.length || !ultimoScroll.current) return;
+    const t = setTimeout(() => {
+      if (scrollRef.current) scrollRef.current.scrollTop = ultimoScroll.current;
+    }, 80);
+    return () => clearTimeout(t);
+  }, [socios.length]);
 
   // El área con scroll se ajusta a la pantalla (la página en sí no scrollea).
   useEffect(() => {
@@ -145,17 +200,22 @@ export function Socios() {
     }
     medir();
     const t = setTimeout(medir, 60);
+    // Al plegar/desplegar los filtros el área cambia de sitio: medir también al
+    // terminar la animación (~300 ms).
+    const t2 = setTimeout(medir, 340);
     window.addEventListener("resize", medir);
     return () => {
       clearTimeout(t);
+      clearTimeout(t2);
       window.removeEventListener("resize", medir);
     };
-  }, [socios.length]);
+  }, [socios.length, filtrosAbiertos]);
 
   // Scroll infinito: al acercarse al final, pinta el siguiente bloque.
   function alScroll() {
     const el = scrollRef.current;
     if (!el) return;
+    ultimoScroll.current = el.scrollTop;
     if (el.scrollTop + el.clientHeight >= el.scrollHeight - 240) {
       setLimite((l) => (l >= listaBase.length ? l : Math.min(listaBase.length, l + CHUNK)));
     }
@@ -173,6 +233,7 @@ export function Socios() {
       est: [filtroEstado, setFiltroEstado],
       cuo: [filtroCuota, setFiltroCuota],
       sex: [filtroSexo, setFiltroSexo],
+      cob: [filtroCobros, setFiltroCobros],
     };
     const [actual, setter] = actuales[tipo];
     const n = new Set(actual);
@@ -184,6 +245,7 @@ export function Socios() {
       estado: [...(tipo === "est" ? n : filtroEstado)],
       cuota: [...(tipo === "cuo" ? n : filtroCuota)],
       sexo: [...(tipo === "sex" ? n : filtroSexo)],
+      cobros: [...(tipo === "cob" ? n : filtroCobros)],
       fecha: filtroFecha,
     };
     const idsFuturos = new Set(filtrarSocios(socios, futuros).map((s) => s.id));
@@ -230,6 +292,7 @@ export function Socios() {
     setFiltroEstado(new Set());
     setFiltroCuota(new Set());
     setFiltroSexo(new Set());
+    setFiltroCobros(new Set());
     setFiltroFecha({ desde: null, hasta: null });
   }
 
@@ -257,25 +320,44 @@ export function Socios() {
       {error && <div className="error-banner">{error}</div>}
 
       <div className="card" style={{ overflow: "hidden" }}>
-        {/* Banda única: búsqueda + filtros + limpiar (con hueco reservado, no mueve nada) */}
+        {/* Banda: búsqueda + botón Filtros (despliega el panel) + limpiar */}
         <div className="filtros-banda">
           <div className="search">
             <span className="ico">⌕</span>
             <input value={buscar} onChange={(e) => setBuscar(e.target.value)} placeholder="Buscar por nombre, apellidos o teléfono…" />
           </div>
-          <span className="filtros-sep" aria-hidden="true" />
-          <GrupoChips label="Actividad" opciones={ACTIVIDADES.map((a) => ({ k: a, t: capitalizar(a) }))} valor={filtroAct} onToggle={(k) => alternaEn("act", k)} />
-          <span className="filtros-sep" aria-hidden="true" />
-          <GrupoChips label="Estado" opciones={OPC_ESTADO} valor={filtroEstado} onToggle={(k) => alternaEn("est", k)} />
-          <span className="filtros-sep" aria-hidden="true" />
-          <GrupoChips label="Cuota" opciones={OPC_CUOTA} valor={filtroCuota} onToggle={(k) => alternaEn("cuo", k)} />
-          <span className="filtros-sep" aria-hidden="true" />
-          <GrupoChips label="Sexo" opciones={OPC_SEXO} valor={filtroSexo} onToggle={(k) => alternaEn("sex", k)} />
-          <span className="filtros-sep" aria-hidden="true" />
-          <FiltroFecha rango={filtroFecha} onChange={(r) => setFiltroFecha(r)} />
+          <button
+            className={"btn sm filtros-toggle" + (filtrosAbiertos ? " abierto" : "") + (nFiltros > 0 ? " activos" : "")}
+            onClick={() => setFiltrosAbiertos((v) => !v)}
+            aria-expanded={filtrosAbiertos}
+          >
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              <path d="M3 5h18l-7 8v5.5l-4 2V13L3 5Z" />
+            </svg>
+            Filtros
+            {nFiltros > 0 && <span className="filtros-num">{nFiltros}</span>}
+            <span className="ft-chevron" style={{ transform: filtrosAbiertos ? "rotate(180deg)" : undefined }} aria-hidden="true">
+              <Chevron />
+            </span>
+          </button>
           <button className={"btn ghost sm limpiar-reservado" + (hayFiltro ? " on" : "")} onClick={limpiar} tabIndex={hayFiltro ? 0 : -1}>
             Limpiar filtros
           </button>
+        </div>
+        <div className={"filtros-panel" + (filtrosAbiertos ? " open" : "")} aria-hidden={!filtrosAbiertos}>
+          <div className="filtros-panel-inner">
+            <GrupoChips label="Actividad" opciones={ACTIVIDADES.map((a) => ({ k: a, t: capitalizar(a) }))} valor={filtroAct} onToggle={(k) => alternaEn("act", k)} />
+            <span className="filtros-sep" aria-hidden="true" />
+            <GrupoChips label="Estado" opciones={OPC_ESTADO} valor={filtroEstado} onToggle={(k) => alternaEn("est", k)} />
+            <span className="filtros-sep" aria-hidden="true" />
+            <GrupoChips label="Cuota" opciones={OPC_CUOTA} valor={filtroCuota} onToggle={(k) => alternaEn("cuo", k)} />
+            <span className="filtros-sep" aria-hidden="true" />
+            <GrupoChips label="Cobros" opciones={OPC_COBROS} valor={filtroCobros} onToggle={(k) => alternaEn("cob", k)} />
+            <span className="filtros-sep" aria-hidden="true" />
+            <GrupoChips label="Sexo" opciones={OPC_SEXO} valor={filtroSexo} onToggle={(k) => alternaEn("sex", k)} />
+            <span className="filtros-sep" aria-hidden="true" />
+            <FiltroFecha rango={filtroFecha} onChange={(r) => setFiltroFecha(r)} />
+          </div>
         </div>
 
         {listaBase.length === 0 ? (
@@ -345,6 +427,11 @@ export function Socios() {
                       </td>
                       <td>
                         <EstadoBadge estado={s.estadoResumen} />
+                        {s.suscripciones.some((x) => x.activa && x.coberturaSinCobro && (x.estado === "aldia" || x.estado === "pronto")) && (
+                          <span className="mano-mini" title="Al día por una fecha apuntada a mano: no hay ningún cobro registrado detrás (su dinero no sale en Ingresos).">
+                            a mano
+                          </span>
+                        )}
                       </td>
                       <td className="td-vence">{fecha(s.proximaExpiracion)}</td>
                       <td style={{ textAlign: "right", color: "var(--text-faint)" }}>›</td>
