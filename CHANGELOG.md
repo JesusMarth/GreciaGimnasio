@@ -12,6 +12,24 @@ y el proyecto usa [Versionado Semántico](https://semver.org/lang/es/) (SemVer):
 
 ## [Sin publicar]
 
+## [1.5.0] - 2026-07-09
+
+### Added
+- **Historial de movimientos por socio** (botón **«Movimientos»** en la ficha):
+  cada cobro, pago borrado, alta/edición/pausa/quitado de actividad, baja,
+  reactivación, ficha editada, recibo enviado y aviso por email queda apuntado
+  **con fecha y hora**. Si un día algo no cuadra, ahí se ve qué pasó y cuándo.
+  Al actualizar, el historial se **reconstruye una vez** con lo que la base de
+  datos conserva (altas, actividades, pagos y bajas con fecha), marcado como
+  «reconstruido»; lo borrado antes de esta versión no se puede recuperar.
+  Si se borra un socio, sus movimientos sobreviven con su nombre.
+
+### Changed
+- La marca «a mano» de la lista de Socios se sustituye por una **exclamación
+  ámbar** en una columna propia junto al nombre: significa «algo pasa con este
+  socio» (el detalle sale al pasar el ratón). Es genérica a propósito: cualquier
+  aviso nuevo que se añada en el futuro saldrá por el mismo sitio.
+
 ## [1.4.0] - 2026-07-08
 
 ### Added

@@ -1,6 +1,7 @@
 import { Router } from "express";
 import { db } from "../db.ts";
 import { hoyISO } from "../util.ts";
+import { registrarEvento } from "../eventos.ts";
 import { socioConResumen, type SocioRow } from "../queries.ts";
 
 export const sociosRouter = Router();
@@ -29,6 +30,14 @@ sociosRouter.get("/:id", (req, res) => {
   res.json(socioConResumen(s));
 });
 
+// Historial de movimientos del socio (cobros, borrados, altas, bajas, avisos…).
+sociosRouter.get("/:id/eventos", (req, res) => {
+  const filas = db
+    .prepare("SELECT id, fecha, tipo, detalle FROM eventos WHERE socio_id = ? ORDER BY fecha DESC, id DESC")
+    .all(req.params.id);
+  res.json(filas);
+});
+
 // Alta de socio.
 sociosRouter.post("/", (req, res) => {
   const { nombre, apellidos, telefono, email, dni, sexo, fechaAlta, fechaNacimiento, notas } = req.body ?? {};
@@ -53,6 +62,7 @@ sociosRouter.post("/", (req, res) => {
       hoyISO()
     );
   const s = db.prepare("SELECT * FROM socios WHERE id = ?").get(info.lastInsertRowid) as SocioRow;
+  registrarEvento(s.id, "alta", "Alta del socio");
   res.status(201).json(socioConResumen(s));
 });
 
@@ -86,11 +96,18 @@ sociosRouter.put("/:id", (req, res) => {
     s.id
   );
   const actualizado = db.prepare("SELECT * FROM socios WHERE id = ?").get(s.id) as SocioRow;
+  if (nuevoEstado !== s.estado) {
+    registrarEvento(s.id, nuevoEstado === "baja" ? "baja" : "reactivado", nuevoEstado === "baja" ? "Baja del socio" : "Socio reactivado");
+  } else {
+    registrarEvento(s.id, "ficha", "Ficha editada (datos personales)");
+  }
   res.json(socioConResumen(actualizado));
 });
 
-// Borrar socio (arrastra suscripciones y pagos por las FK en cascada).
+// Borrar socio (arrastra suscripciones y pagos por las FK en cascada). El evento
+// se apunta ANTES: sobrevive con socio_id a NULL y el nombre copiado.
 sociosRouter.delete("/:id", (req, res) => {
+  registrarEvento(req.params.id, "borrado", "Socio borrado con todo su historial de pagos y actividades");
   const info = db.prepare("DELETE FROM socios WHERE id = ?").run(req.params.id);
   if (info.changes === 0) return res.status(404).json({ error: "Socio no encontrado" });
   res.json({ ok: true });

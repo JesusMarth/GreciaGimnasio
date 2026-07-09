@@ -52,6 +52,33 @@ Replica el patrón con el que se añadió `dni` y el de los filtros existentes. 
 
 ## 📋 Registro (más reciente arriba)
 
+### 2026-07-09 (2) · Exclamación de aviso + historial de movimientos (v1.5.0)
+- **Feedback**: la marca «a mano» en la lista quedaba fea → sustituida por una
+  **exclamación ámbar** en columna propia junto al nombre, con semántica GENÉRICA
+  («algo pasa con este socio», detalle en el tooltip). `avisosDe(socio)` en
+  `Socios.tsx` es una lista abierta: los avisos futuros se añaden ahí y salen por
+  la misma exclamación. ⚠ La tabla usa `table-layout: fixed` con anchos por
+  `nth-child`: al insertar la columna hubo que recorrerlos (documentado en el CSS).
+- **Historial de movimientos** (petición del jefe: "que todo quede registrado"):
+  - Tabla `eventos` (socio_id `ON DELETE SET NULL` + `socio_nombre` copiado → el
+    historial sobrevive si se borra el socio) + `registrarEvento()` en
+    `server/eventos.ts` (try/catch: el historial nunca rompe la operación).
+  - Instrumentado: alta/edición de ficha/baja/reactivar/borrar socio · alta de
+    actividad (con los 3 arranques descritos) · edición con diff (cuota,
+    pagado-hasta a mano, actividad) · pausar/reactivar/quitar · **cobro** (importe,
+    método, líneas y cobertura) · **pago borrado** (con lo que valía y de cuándo
+    era) · recibo enviado · aviso por email.
+  - **Reconstrucción del pasado**: al estrenar la tabla (o al regenerar el mock),
+    `reconstruirEventos()` crea el historial desde lo que la BD conserva (altas,
+    actividades, pagos, bajas con fecha), marcado "(reconstruido)" y sin hora.
+    Lo borrado antes de v1.5 NO se puede recuperar salvo forense de backups.
+  - **UI**: botón **«Movimientos»** en la ficha → modal con línea de tiempo
+    (punto de color por tipo, fecha·hora en mono). GET `/api/socios/:id/eventos`.
+- Verificado en vivo (mock): cobro+borrado dejan eventos con hora; reconstruidos
+  sin hora; modal OK; exclamaciones en lista sin descuadrar columnas (fix de
+  anchos verificado). `test:ingresos` ampliado a **35 checks** (5 de eventos).
+  Publicado como **v1.5.0**.
+
 ### 2026-07-09 · Socios auditables: filtro «apuntado a mano» + navegación que no se pierde
 - **Contexto (jefe)**: v1.3.0 ya desplegada en el local con datos reales, pero "las
   cifras del papel y de la app no cuadran" y auditar era un castigo: al entrar en

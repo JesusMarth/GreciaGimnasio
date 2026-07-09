@@ -3,12 +3,33 @@ import { useNavigate, useParams, Link } from "react-router-dom";
 import { api } from "../api.ts";
 import { euros, fecha, estadoTexto, colorEstado, capitalizar, descargar } from "../format.ts";
 import { EstadoBadge } from "../components/Badges.tsx";
+import { Modal } from "../components/Modal.tsx";
 import { PagoModal } from "../components/PagoModal.tsx";
 import { SocioFormModal } from "../components/SocioFormModal.tsx";
 import { SuscripcionFormModal } from "../components/SuscripcionFormModal.tsx";
 import { useConfirm } from "../components/Confirmar.tsx";
 import { AyudaSocioDetalle } from "../components/Ayuda.tsx";
-import type { Pago, Socio, Suscripcion } from "../types.ts";
+import type { Evento, Pago, Socio, Suscripcion } from "../types.ts";
+
+// Color del punto de cada tipo de movimiento del historial.
+const COLOR_EVENTO: Record<string, string> = {
+  pago: "var(--verde)",
+  pago_borrado: "var(--rojo)",
+  actividad: "var(--azul-500)",
+  alta: "var(--azul-500)",
+  baja: "var(--rojo)",
+  reactivado: "var(--verde)",
+  recibo: "var(--oro)",
+  aviso: "var(--oro)",
+  ficha: "var(--gris)",
+  borrado: "var(--rojo)",
+};
+
+/** "2026-07-09 18:35" → "09/07/2026 · 18:35" (los reconstruidos no llevan hora). */
+function fechaHora(f: string): string {
+  const dia = fecha(f.slice(0, 10));
+  return f.length > 10 ? `${dia} · ${f.slice(11)}` : dia;
+}
 
 export function SocioDetalle() {
   const { id } = useParams();
@@ -23,6 +44,7 @@ export function SocioDetalle() {
   const [editando, setEditando] = useState(false);
   const [cobrar, setCobrar] = useState<{ pre?: number } | null>(null);
   const [subForm, setSubForm] = useState<{ sub?: Suscripcion } | null>(null);
+  const [movimientos, setMovimientos] = useState<Evento[] | null>(null); // null = modal cerrado
   const [avisoMsg, setAvisoMsg] = useState<{ ok: boolean; txt: string } | null>(null);
   const [enviando, setEnviando] = useState(false);
 
@@ -165,6 +187,13 @@ export function SocioDetalle() {
           <button className="btn" onClick={avisarPorEmail} disabled={enviando}>
             Avisar por email
           </button>
+          <button
+            className="btn"
+            title="Todo lo que se ha hecho con este socio: cobros, borrados, cambios…"
+            onClick={() => api.eventosDeSocio(socioId).then(setMovimientos).catch((e) => setAvisoMsg({ ok: false, txt: e.message }))}
+          >
+            Movimientos
+          </button>
           <button className="btn" onClick={() => setEditando(true)}>
             Editar
           </button>
@@ -283,6 +312,38 @@ export function SocioDetalle() {
         </div>
       </div>
 
+      {movimientos && (
+        <Modal
+          titulo={`Movimientos · ${socio.nombreCompleto}`}
+          onCerrar={() => setMovimientos(null)}
+          ancho
+          pie={
+            <button className="btn primary" onClick={() => setMovimientos(null)}>
+              Cerrar
+            </button>
+          }
+        >
+          <div className="modal-body">
+            {movimientos.length === 0 ? (
+              <div className="center-box">Sin movimientos apuntados todavía.</div>
+            ) : (
+              <div className="mov-lista">
+                {movimientos.map((e) => (
+                  <div key={e.id} className="mov-fila">
+                    <span className="mov-fecha">{fechaHora(e.fecha)}</span>
+                    <i className="pt" style={{ background: COLOR_EVENTO[e.tipo] ?? "var(--gris)", marginTop: 5 }} />
+                    <span className="mov-texto">{e.detalle}</span>
+                  </div>
+                ))}
+              </div>
+            )}
+            <div className="hint" style={{ marginTop: 10 }}>
+              Desde la versión 1.5 cada cobro, borrado o cambio queda apuntado aquí con su hora. Las líneas marcadas
+              «reconstruido» vienen de datos anteriores: se sabe el día, pero no la hora ni quién lo hizo.
+            </div>
+          </div>
+        </Modal>
+      )}
       {cobrar && (
         <PagoModal
           socioId={socioId}

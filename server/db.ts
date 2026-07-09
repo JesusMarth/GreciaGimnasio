@@ -21,6 +21,9 @@ aplicarConfig(db);
 function aplicarConfig(conn: Database.Database) {
   conn.pragma("journal_mode = WAL");
   conn.pragma("foreign_keys = ON");
+  // ¿Existía ya el historial de movimientos? (si no, tras crear el esquema se
+  // reconstruye una sola vez a partir de lo que la BD conserva).
+  const habiaEventos = !!conn.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name='eventos'").get();
   conn.exec(`
 CREATE TABLE IF NOT EXISTS socios (
   id               INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -84,6 +87,18 @@ CREATE TABLE IF NOT EXISTS config (
   valor TEXT
 );
 
+-- Historial de movimientos por socio (cobros, borrados, altas, bajas, avisos…).
+-- socio_nombre es copia: si el socio se borra, el evento sobrevive (socio_id NULL).
+CREATE TABLE IF NOT EXISTS eventos (
+  id           INTEGER PRIMARY KEY AUTOINCREMENT,
+  socio_id     INTEGER REFERENCES socios(id) ON DELETE SET NULL,
+  socio_nombre TEXT,
+  fecha        TEXT NOT NULL,                       -- "YYYY-MM-DD HH:MM" (o solo fecha si es reconstruido)
+  tipo         TEXT NOT NULL,                       -- alta | baja | reactivado | ficha | actividad | pago | pago_borrado | recibo | aviso | borrado
+  detalle      TEXT NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_eventos_socio ON eventos(socio_id);
 CREATE INDEX IF NOT EXISTS idx_suscripciones_socio ON suscripciones(socio_id);
 CREATE INDEX IF NOT EXISTS idx_pagos_socio ON pagos(socio_id);
 CREATE INDEX IF NOT EXISTS idx_pagos_fecha ON pagos(fecha);
@@ -145,6 +160,41 @@ CREATE INDEX IF NOT EXISTS idx_lineas_suscripcion ON pago_lineas(suscripcion_id)
     /* la columna ya existe */
   }
   sembrarTarifas(conn);
+  if (!habiaEventos) reconstruirEventos(conn);
+}
+
+/**
+ * Reconstruye el historial de movimientos a partir de lo que la BD conserva:
+ * altas, actividades apuntadas, pagos y bajas con fecha. Solo para socios que aún
+ * no tienen ningún evento (corre una vez al estrenar la tabla, y la usa el seed
+ * del mock). Lo borrado antes de existir el historial no se puede recuperar; esas
+ * líneas van marcadas como "(reconstruido)" y llevan fecha pero no hora.
+ */
+export function reconstruirEventos(conn: Database.Database = db) {
+  const ins = conn.prepare("INSERT INTO eventos (socio_id, socio_nombre, fecha, tipo, detalle) VALUES (?,?,?,?,?)");
+  const socios = conn
+    .prepare(
+      `SELECT s.id, s.nombre || CASE WHEN COALESCE(s.apellidos,'') <> '' THEN ' ' || s.apellidos ELSE '' END AS nombre,
+              s.fecha_alta, s.fecha_baja, s.estado
+       FROM socios s WHERE NOT EXISTS (SELECT 1 FROM eventos e WHERE e.socio_id = s.id)`
+    )
+    .all() as { id: number; nombre: string; fecha_alta: string; fecha_baja: string | null; estado: string }[];
+  const subsDe = conn.prepare("SELECT actividad, importe, creado_en FROM suscripciones WHERE socio_id = ?");
+  const pagosDe = conn.prepare("SELECT fecha, metodo, total FROM pagos WHERE socio_id = ? ORDER BY fecha, id");
+  const eur = (n: number) => `${(Math.round(n * 100) / 100).toString().replace(".", ",")} €`;
+  const tx = conn.transaction(() => {
+    for (const s of socios) {
+      ins.run(s.id, s.nombre, s.fecha_alta, "alta", "Alta del socio (reconstruido del historial)");
+      for (const su of subsDe.all(s.id) as { actividad: string; importe: number; creado_en: string }[]) {
+        ins.run(s.id, s.nombre, su.creado_en, "actividad", `Actividad ${su.actividad} apuntada, cuota de ${eur(su.importe)} (reconstruido)`);
+      }
+      for (const p of pagosDe.all(s.id) as { fecha: string; metodo: string; total: number }[]) {
+        ins.run(s.id, s.nombre, p.fecha, "pago", `Cobro de ${eur(p.total)} en ${p.metodo} (reconstruido)`);
+      }
+      if (s.estado === "baja" && s.fecha_baja) ins.run(s.id, s.nombre, s.fecha_baja, "baja", "Baja del socio (reconstruido)");
+    }
+  });
+  tx();
 }
 
 // Tarifas de ejemplo la primera vez (editables/borrables; solo para no empezar en blanco).

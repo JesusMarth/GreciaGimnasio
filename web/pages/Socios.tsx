@@ -30,6 +30,16 @@ const OPC_SEXO = [
 // la respalde (los del archivador). Es el mismo criterio del aviso ⚠ de Métricas.
 const OPC_COBROS = [{ k: "manual", t: "Apuntado a mano" }];
 
+/** Avisos del socio: cosas que conviene mirar ("algo pasa con este socio").
+ *  Es una lista abierta: hoy solo detecta la cobertura apuntada a mano, pero
+ *  cualquier aviso nuevo que se añada aquí sale solo en la exclamación. */
+function avisosDe(s: Socio): string[] {
+  const avisos: string[] = [];
+  if (s.suscripciones.some((x) => x.activa && x.coberturaSinCobro && (x.estado === "aldia" || x.estado === "pronto")))
+    avisos.push("Cubierto por una fecha apuntada a mano: no hay ningún cobro registrado detrás (no suma en Ingresos).");
+  return avisos;
+}
+
 // Cómo estaba la pantalla (filtros, orden, scroll) — para restaurarla al volver de
 // una ficha y no perder el sitio en la tabla. Vive en sessionStorage: se olvida al
 // cerrar la app, pero sobrevive a navegar entre pantallas.
@@ -373,6 +383,7 @@ export function Socios() {
                     <th style={{ width: 30 }}>
                       <input type="checkbox" checked={todosMarcados} onChange={alternarTodos} style={{ width: "auto" }} aria-label="Seleccionar todos" />
                     </th>
+                    <th style={{ width: 24 }} aria-label="Avisos"></th>
                     <th className="th-sort" onClick={() => setOrden((o) => (o === "apeAsc" ? "apeDesc" : "apeAsc"))} title="Ordenar por apellido (A→Z / Z→A)">
                       <span className="th-sort-inner">
                         Socio
@@ -410,6 +421,13 @@ export function Socios() {
                       <td onClick={(e) => e.stopPropagation()}>
                         <input type="checkbox" checked={sel.has(s.id)} onChange={() => alternar(s.id)} style={{ width: "auto" }} aria-label={`Seleccionar ${s.nombreCompleto}`} />
                       </td>
+                      <td className="td-aviso">
+                        {avisosDe(s).length > 0 && (
+                          <span className="aviso-flag" title={avisosDe(s).join("\n")} aria-label="Este socio tiene un aviso">
+                            !
+                          </span>
+                        )}
+                      </td>
                       <td>
                         <span className="nombre">{s.nombreCompleto}</span>
                         {s.estado === "baja" && <span className="badge gris" style={{ marginLeft: 8 }}>Baja</span>}
@@ -427,11 +445,6 @@ export function Socios() {
                       </td>
                       <td>
                         <EstadoBadge estado={s.estadoResumen} />
-                        {s.suscripciones.some((x) => x.activa && x.coberturaSinCobro && (x.estado === "aldia" || x.estado === "pronto")) && (
-                          <span className="mano-mini" title="Al día por una fecha apuntada a mano: no hay ningún cobro registrado detrás (su dinero no sale en Ingresos).">
-                            a mano
-                          </span>
-                        )}
                       </td>
                       <td className="td-vence">{fecha(s.proximaExpiracion)}</td>
                       <td style={{ textAlign: "right", color: "var(--text-faint)" }}>›</td>

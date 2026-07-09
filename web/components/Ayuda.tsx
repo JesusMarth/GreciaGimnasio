@@ -89,7 +89,8 @@ export const AyudaSocios = () => (
       <li><strong>Actividad</strong> (Gimnasio / Karate / Pilates): se combinan en “o” — marca Karate y Pilates y salen los de uno u otro.</li>
       <li><strong>Estado</strong>: Activos o Bajas.</li>
       <li><strong>Cuota</strong>: Pendientes (atrasados o sin pagar), Vencen pronto, Al día o Sin cuotas.</li>
-      <li><strong>Cobros → Apuntado a mano</strong>: los que están al día por una fecha puesta a dedo, sin ningún cobro registrado detrás (los que venían del archivador en papel). Son los del aviso ⚠ de Métricas y llevan la marca «a mano» en la lista: su dinero no sale en Ingresos hasta que les registres su siguiente pago.</li>
+      <li><strong>Cobros → Apuntado a mano</strong>: los que están al día por una fecha puesta a dedo, sin ningún cobro registrado detrás (los que venían del archivador en papel). Son los del aviso ⚠ de Métricas: su dinero no sale en Ingresos hasta que les registres su siguiente pago.</li>
+      <li>La <strong>exclamación ámbar</strong> junto al nombre significa «algo pasa con este socio»: pasa el ratón por encima para ver el detalle.</li>
       <li><strong>Fecha de alta</strong>: abre una ventana con periodos rápidos (hoy, ayer, últimos 7 días, esta semana, este mes, este año) y, en “Más opciones”, un año entero o un rango exacto con calendario.</li>
       <li>Los filtros se <strong>suman</strong> entre sí; <strong>Limpiar filtros</strong> los quita todos. El export y “seleccionar todos” respetan lo filtrado.</li>
     </ul>
@@ -124,6 +125,7 @@ export const AyudaSocioDetalle = () => (
     <ul>
       <li><strong>Registrar pago</strong>: cobra una o varias actividades a la vez.</li>
       <li><strong>Avisar por email</strong>: manda un recordatorio de lo que debe.</li>
+      <li><strong>Movimientos</strong>: el historial completo del socio — cada cobro, pago borrado, cambio de actividad, baja o aviso queda apuntado con su fecha y hora. Si algo no cuadra, aquí se ve qué pasó y cuándo. Lo anterior a la versión 1.5 aparece como «reconstruido»: se conoce el día pero no la hora.</li>
       <li><strong>Editar</strong>: cambia sus datos (nombre, teléfono, email, DNI…).</li>
       <li><strong>Dar de baja / Reactivar</strong>: lo saca de avisos y del panel sin borrarlo (queda guardado). Reactivar lo devuelve.</li>
       <li><strong>Borrar</strong>: elimina al socio y todo su historial. No se puede deshacer.</li>

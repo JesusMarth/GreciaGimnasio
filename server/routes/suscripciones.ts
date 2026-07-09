@@ -1,7 +1,11 @@
 import { Router } from "express";
 import { db } from "../db.ts";
 import { addMeses, hoyISO } from "../util.ts";
+import { registrarEvento } from "../eventos.ts";
 import { suscripcionConEstado, type SuscripcionRow } from "../queries.ts";
+
+const eur = (n: number) => `${(Math.round(n * 100) / 100).toString().replace(".", ",")} €`;
+const ddmm = (iso: string | null) => (iso ? `${iso.slice(8, 10)}/${iso.slice(5, 7)}/${iso.slice(0, 4)}` : "—");
 
 export const suscripcionesRouter = Router();
 
@@ -70,6 +74,14 @@ suscripcionesRouter.post("/socios/:id/suscripciones", (req, res) => {
   });
 
   const s = db.prepare("SELECT * FROM suscripciones WHERE id = ?").get(tx()) as SuscripcionRow;
+  const act = s.actividad;
+  if (cobro) {
+    registrarEvento(req.params.id, "pago", `Actividad ${act} añadida con su primer cobro: ${eur(imp)} en ${cobro.metodo} (cubre hasta ${ddmm(s.pagado_hasta)})`);
+  } else if (s.cobertura_manual) {
+    registrarEvento(req.params.id, "actividad", `Actividad ${act} añadida como «ya estaba pagado» hasta ${ddmm(s.cobertura_manual)} — fecha apuntada a mano, sin cobro registrado`);
+  } else {
+    registrarEvento(req.params.id, "actividad", `Actividad ${act} añadida, pendiente de su primer cobro (cuota de ${eur(imp)})`);
+  }
   res.status(201).json(suscripcionConEstado(s, hoy));
 });
 
@@ -99,12 +111,26 @@ suscripcionesRouter.put("/suscripciones/:id", (req, res) => {
     s.id
   );
   const actualizada = db.prepare("SELECT * FROM suscripciones WHERE id = ?").get(s.id) as SuscripcionRow;
+  // Historial: pausar/reactivar tiene su propia línea; el resto, solo lo que cambió.
+  const activaAntes = !!s.activa;
+  const activaAhora = !!actualizada.activa;
+  if (activaAntes !== activaAhora) {
+    registrarEvento(s.socio_id, "actividad", `Actividad ${actualizada.actividad} ${activaAhora ? "reactivada" : "pausada"}`);
+  }
+  const cambios: string[] = [];
+  if (actualizada.importe !== s.importe) cambios.push(`cuota ${eur(s.importe)} → ${eur(actualizada.importe)}`);
+  if (actualizada.pagado_hasta !== s.pagado_hasta)
+    cambios.push(`pagado hasta ${ddmm(s.pagado_hasta)} → ${ddmm(actualizada.pagado_hasta)} (a mano, sin cobro)`);
+  if (actualizada.actividad !== s.actividad) cambios.push(`actividad ${s.actividad} → ${actualizada.actividad}`);
+  if (cambios.length) registrarEvento(s.socio_id, "actividad", `Actividad ${actualizada.actividad} editada: ${cambios.join(" · ")}`);
   res.json(suscripcionConEstado(actualizada, hoyISO()));
 });
 
 // Borrar suscripcion.
 suscripcionesRouter.delete("/suscripciones/:id", (req, res) => {
+  const s = db.prepare("SELECT * FROM suscripciones WHERE id = ?").get(req.params.id) as SuscripcionRow | undefined;
   const info = db.prepare("DELETE FROM suscripciones WHERE id = ?").run(req.params.id);
   if (info.changes === 0) return res.status(404).json({ error: "Suscripcion no encontrada" });
+  if (s) registrarEvento(s.socio_id, "actividad", `Actividad ${s.actividad} quitada (cuota de ${eur(s.importe)}, cubría hasta ${ddmm(s.pagado_hasta)})`);
   res.json({ ok: true });
 });

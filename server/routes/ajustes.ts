@@ -3,6 +3,7 @@ import { db } from "../db.ts";
 import { socioConResumen, type SocioRow } from "../queries.ts";
 import { leerConfigEmail, guardarConfigEmail, emailConfigurado, leerDatosRecibo, guardarDatosRecibo } from "../config.ts";
 import { enviarCorreo } from "../correo.ts";
+import { registrarEvento } from "../eventos.ts";
 
 export const ajustesRouter = Router();
 
@@ -78,6 +79,7 @@ ajustesRouter.post("/avisos/email", async (req, res) => {
 
   try {
     await enviarCorreo(socio.email, `Recordatorio de cuota · ${firma}`, texto);
+    registrarEvento(socio.id, "aviso", `Aviso de cuotas pendientes enviado por email a ${socio.email} (${pendientes.length} cuota${pendientes.length === 1 ? "" : "s"})`);
     res.json({ ok: true, email: socio.email });
   } catch (e: any) {
     res.status(500).json({ error: "No se pudo enviar: " + (e?.message ?? e) });

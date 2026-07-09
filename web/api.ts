@@ -1,4 +1,4 @@
-import type { ConfigEmail, CopiaInfo, DatosRecibo, Dashboard, Metricas, Pago, Socio, Tarifa } from "./types.ts";
+import type { ConfigEmail, CopiaInfo, DatosRecibo, Dashboard, Evento, Metricas, Pago, Socio, Tarifa } from "./types.ts";
 
 async function req<T>(path: string, opts?: RequestInit): Promise<T> {
   const r = await fetch("/api" + path, {
@@ -40,6 +40,7 @@ export const api = {
   socios: (buscar?: string) =>
     req<Socio[]>("/socios" + (buscar ? `?buscar=${encodeURIComponent(buscar)}` : "")),
   socio: (id: number) => req<Socio>(`/socios/${id}`),
+  eventosDeSocio: (id: number) => req<Evento[]>(`/socios/${id}/eventos`),
   crearSocio: (data: Record<string, unknown>) => req<Socio>("/socios", { method: "POST", body: body(data) }),
   editarSocio: (id: number, data: Record<string, unknown>) =>
     req<Socio>(`/socios/${id}`, { method: "PUT", body: body(data) }),

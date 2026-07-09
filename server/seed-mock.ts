@@ -1,7 +1,7 @@
 // Rellena un entorno de PRUEBAS con datos de mentira. Se ejecuta con
 // GYM_DATA_DIR=data-mock (lo pone GymGrecia-MOCK.bat) para no tocar los datos reales.
 // Solo siembra si la base está vacía; para empezar de cero, borra la carpeta data-mock.
-import { db, DATA_DIR } from "./db.ts";
+import { db, DATA_DIR, reconstruirEventos } from "./db.ts";
 import { addMeses, hoyISO } from "./util.ts";
 
 const NOMBRES = [
@@ -107,6 +107,9 @@ const sembrar = db.transaction(() => {
   }
 });
 sembrar();
+// El historial de movimientos del mock se reconstruye de lo sembrado (como pasaría
+// en una BD real recién actualizada).
+reconstruirEventos(db);
 
 const n = (db.prepare("SELECT COUNT(*) AS n FROM socios").get() as { n: number }).n;
 const np = (db.prepare("SELECT COUNT(*) AS n FROM pagos").get() as { n: number }).n;

@@ -41,6 +41,13 @@ export interface PagoLinea {
   periodoHasta: string | null;
 }
 
+export interface Evento {
+  id: number;
+  fecha: string; // "YYYY-MM-DD HH:MM" (o solo fecha si es reconstruido)
+  tipo: string; // alta | baja | reactivado | ficha | actividad | pago | pago_borrado | recibo | aviso | borrado
+  detalle: string;
+}
+
 export interface Pago {
   id: number;
   fecha: string;

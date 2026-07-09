@@ -5,6 +5,7 @@ import type { SuscripcionRow } from "../queries.ts";
 import { generarReciboPDF, datosDelRecibo, eur, ddmmaaaa } from "../recibo.ts";
 import { enviarCorreo } from "../correo.ts";
 import { emailConfigurado, leerConfigEmail, leerDatosRecibo } from "../config.ts";
+import { registrarEvento } from "../eventos.ts";
 
 export const pagosRouter = Router();
 
@@ -89,6 +90,12 @@ pagosRouter.post("/", (req, res) => {
 
   try {
     const id = tx();
+    registrarEvento(
+      socioId,
+      "pago",
+      `Cobro de ${eur(total)} en ${metodoOk} (${fechaPago === hoyISO() ? "hoy" : "con fecha " + ddmmaaaa(fechaPago)}): ` +
+        preparadas.map((l) => `${l.actividad} ${eur(l.importe)}${l.hasta ? ` hasta ${ddmmaaaa(l.hasta)}` : ""}`).join(" · ")
+    );
     res.status(201).json({ id, total });
   } catch (e: any) {
     if (e && e.code && e.msg) return res.status(e.code).json({ error: e.msg });
@@ -123,6 +130,10 @@ pagosRouter.get("/de-socio/:id", (req, res) => {
 // Borrar un pago y recalcular la cobertura de las suscripciones afectadas (atómico).
 pagosRouter.delete("/:id", (req, res) => {
   const id = req.params.id;
+  // Datos del pago ANTES de borrarlo, para dejar constancia en el historial.
+  const pago = db.prepare("SELECT socio_id, fecha, metodo, total FROM pagos WHERE id = ?").get(id) as
+    | { socio_id: number; fecha: string; metodo: string; total: number }
+    | undefined;
   const subs = db.prepare("SELECT DISTINCT suscripcion_id FROM pago_lineas WHERE pago_id = ?").all(id) as {
     suscripcion_id: number | null;
   }[];
@@ -146,6 +157,12 @@ pagosRouter.delete("/:id", (req, res) => {
     return info.changes;
   });
   if (tx() === 0) return res.status(404).json({ error: "Pago no encontrado" });
+  if (pago)
+    registrarEvento(
+      pago.socio_id,
+      "pago_borrado",
+      `Se borró el pago de ${eur(pago.total)} del ${ddmmaaaa(pago.fecha)} (${pago.metodo}); la cobertura de sus cuotas se recalculó`
+    );
   res.json({ ok: true });
 });
 
@@ -185,6 +202,8 @@ pagosRouter.post("/:id/recibo/email", async (req, res) => {
       )}.\n\nUn saludo,\n${firma}`,
       [{ filename: `${datos.numero}.pdf`, content: pdf }]
     );
+    const p = db.prepare("SELECT socio_id FROM pagos WHERE id = ?").get(req.params.id) as { socio_id: number } | undefined;
+    if (p) registrarEvento(p.socio_id, "recibo", `${f.tipoDoc || "Recibo"} ${datos.numero} enviado por email a ${datos.socio.email}`);
     res.json({ ok: true, email: datos.socio.email });
   } catch (e: any) {
     res.status(500).json({ error: "No se pudo enviar: " + (e?.message ?? e) });

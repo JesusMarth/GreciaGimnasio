@@ -137,6 +137,17 @@ async function main() {
   await PUT(`/socios/${a.id}`, { estado: "activo" });
   mB = await GET(`/metricas?desde=${mes}&hasta=${mes}`);
   check("J) reactivar limpia la fecha de baja", mB.serie[mB.serie.length - 1].bajas, 0);
+
+  // K) Historial de movimientos: cada operación deja su línea.
+  const evC = (await GET(`/socios/${c.id}/eventos`)) as { tipo: string; detalle: string }[];
+  const tiposC = evC.map((e) => e.tipo);
+  check("K) alta del socio apuntada", tiposC.includes("alta"), true);
+  check("K) el cobro inicial del alta queda como pago", evC.filter((e) => e.tipo === "pago").length, 2);
+  const evB = (await GET(`/socios/${b.id}/eventos`)) as { tipo: string; detalle: string }[];
+  check("K) el pago borrado deja constancia", evB.some((e) => e.tipo === "pago_borrado"), true);
+  check("K) el alta 'ya estaba pagado' queda descrita", evB.some((e) => e.tipo === "actividad" && e.detalle.includes("ya estaba pagado")), true);
+  const evA = (await GET(`/socios/${a.id}/eventos`)) as { tipo: string }[];
+  check("K) baja y reactivación apuntadas", evA.some((e) => e.tipo === "baja") && evA.some((e) => e.tipo === "reactivado"), true);
 }
 
 main()
