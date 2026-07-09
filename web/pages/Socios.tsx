@@ -377,8 +377,8 @@ export function Socios() {
                         {avisosDe(s).length > 0 && (
                           <span className="aviso-flag" title={avisosDe(s).join("\n")} aria-label="Este socio tiene un aviso">
                             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="4" strokeLinecap="round" aria-hidden="true">
-                              <line x1="12" y1="4.5" x2="12" y2="13" />
-                              <line x1="12" y1="19" x2="12" y2="19.01" />
+                              <line x1="12" y1="6" x2="12" y2="13" />
+                              <line x1="12" y1="18" x2="12" y2="18.01" />
                             </svg>
                           </span>
                         )}
@@ -473,15 +473,14 @@ export function Socios() {
                   <button key={o.k} className={"chip" + (filtroAvisos.has(o.k) ? " on" : "")} onClick={() => alternaEn("avi", o.k)}>
                     <span className="aviso-flag chica" aria-hidden="true">
                       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="4" strokeLinecap="round">
-                        <line x1="12" y1="4.5" x2="12" y2="13" />
-                        <line x1="12" y1="19" x2="12" y2="19.01" />
+                        <line x1="12" y1="6" x2="12" y2="13" />
+                        <line x1="12" y1="18" x2="12" y2="18.01" />
                       </svg>
                     </span>
                     {o.t}
                   </button>
                 ))}
               </div>
-              <div className="fm-nota">Los que llevan la exclamación ámbar en la lista: algo conviene mirar (hoy: cubiertos por una fecha apuntada a mano, sin cobro registrado).</div>
             </div>
             <div className="fm-grupo">
               <span className="chip-label">Sexo</span>
@@ -492,7 +491,6 @@ export function Socios() {
                   </button>
                 ))}
               </div>
-              <div className="fm-nota">«Sin asignar»: socios sin sexo en la ficha (puede ser un olvido del alta).</div>
             </div>
             <div className="fm-grupo">
               <span className="chip-label">Fecha de alta</span>
@@ -500,7 +498,6 @@ export function Socios() {
                 <FiltroFecha rango={filtroFecha} onChange={(r) => setFiltroFecha(r)} />
               </div>
             </div>
-            <div className="hint">Los filtros se suman entre sí y la lista de detrás se actualiza al momento.</div>
           </div>
         </Modal>
       )}

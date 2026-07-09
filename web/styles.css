@@ -872,7 +872,6 @@ td { padding: 9px 12px; font-size: 13px; }
 /* Ventana de filtros: un grupo por línea, con su etiqueta y una nota si hace falta. */
 .fm-grupo { margin-bottom: 16px; }
 .fm-grupo .chip-label { display: block; margin-bottom: 7px; }
-.fm-nota { margin-top: 6px; color: var(--tinta-faint); font-size: 11.5px; line-height: 1.5; }
 .chip .aviso-flag.chica { width: 13px; height: 13px; margin-right: 5px; vertical-align: -2px; }
 .chip .aviso-flag.chica svg { width: 8px; height: 8px; }
 

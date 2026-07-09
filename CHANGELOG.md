@@ -12,6 +12,14 @@ y el proyecto usa [Versionado Semántico](https://semver.org/lang/es/) (SemVer):
 
 ## [Sin publicar]
 
+## [1.6.1] - 2026-07-09
+
+### Changed
+- La exclamación de aviso queda **centrada** dentro de su círculo (el trazo del
+  icono ahora es simétrico).
+- La ventana de filtros de Socios se deja **sin textos de ayuda**: solo los grupos
+  y sus opciones.
+
 ## [1.6.0] - 2026-07-09
 
 ### Added
