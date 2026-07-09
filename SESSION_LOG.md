@@ -52,6 +52,29 @@ Replica el patrón con el que se añadió `dni` y el de los filtros existentes. 
 
 ## 📋 Registro (más reciente arriba)
 
+### 2026-07-09 (3) · Feedback: exclamación SVG + filtros en ventana (v1.6.0)
+- **Exclamación**: el carácter «!» en Space Mono parecía un «1» y no centraba →
+  ahora es un **SVG** (línea+punto) dentro del círculo ámbar, centrado al píxel
+  (verificado por getBoundingClientRect). Documentado en el CSS.
+- **Filtros en ventana** (petición: "que abran una ventana, ordenados e
+  intuitivos"): el botón Filtros abre un **Modal** con cada grupo en su línea —
+  Actividad · Estado del socio · Estado de cuota · **Avisos** · Sexo · Fecha de
+  alta — con notas bajo Avisos/Sexo y pie «Limpiar todo» + **«Ver N socios»**
+  (recuento en vivo). El panel plegable anterior se eliminó (CSS incluido).
+  FiltroFecha abre su propio modal encima (modal sobre modal, funciona).
+- **Renombrado** «Cobros: apuntado a mano» → **«Avisos: Con aviso»**, y
+  `avisosDe(socio)` se movió a `web/filtros.ts` (pura y testeada): la exclamación
+  de la lista y el filtro comparten EXACTAMENTE el mismo criterio; los avisos
+  futuros se añaden en un solo sitio. URL del enlace de Métricas:
+  `/socios?avisos=con&estado=activo` (antes `cobros=manual`).
+- **Sexo → «Sin asignar»** (`sexo: ['sin']`): socios con sexo null (posible
+  olvido); `filtrarSocios` ahora trata null como grupo 'sin' (hombre/mujer siguen
+  excluyéndolo). +9 casos en test:filtros.
+- Verificado en vivo: modal con 6 grupos, recuento vivo (60 → 14 con aviso → 1
+  combinando sin-asignar), cuadre exacto ⚠ Métricas 14 = 14 filtrados, deep link
+  OK, exclamaciones centradas. typecheck + filtros + ingresos 35/35 + build.
+  Publicado como **v1.6.0**.
+
 ### 2026-07-09 (2) · Exclamación de aviso + historial de movimientos (v1.5.0)
 - **Feedback**: la marca «a mano» en la lista quedaba fea → sustituida por una
   **exclamación ámbar** en columna propia junto al nombre, con semántica GENÉRICA

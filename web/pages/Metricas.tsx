@@ -431,7 +431,7 @@ export function Metricas() {
             ⚠ {socios.coberturaManual} {socios.coberturaManual === 1 ? "socio está al día" : "socios están al día"} por una
             cobertura apuntada a mano (alta «ya estaba pagado»), sin ningún cobro registrado: ese dinero no aparece en
             Ingresos.{" "}
-            <Link className="hint-accion" to="/socios?cobros=manual&estado=activo">
+            <Link className="hint-accion" to="/socios?avisos=con&estado=activo">
               Ver quiénes son →
             </Link>
           </div>

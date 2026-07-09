@@ -3,10 +3,11 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 import { api, ACTIVIDADES } from "../api.ts";
 import { capitalizar, descargar, fecha } from "../format.ts";
 import { EstadoBadge } from "../components/Badges.tsx";
+import { Modal } from "../components/Modal.tsx";
 import { SocioFormModal } from "../components/SocioFormModal.tsx";
 import { AyudaSocios } from "../components/Ayuda.tsx";
 import { FiltroFecha } from "../components/FiltroFecha.tsx";
-import { filtrarSocios, hayFiltrosActivos, type FiltrosSocios, type RangoFecha } from "../filtros.ts";
+import { avisosDe, filtrarSocios, hayFiltrosActivos, type FiltrosSocios, type RangoFecha } from "../filtros.ts";
 import type { Socio } from "../types.ts";
 
 const INICIAL = 40; // filas que se pintan de entrada
@@ -25,20 +26,10 @@ const OPC_CUOTA = [
 const OPC_SEXO = [
   { k: "hombre", t: "Hombre" },
   { k: "mujer", t: "Mujer" },
+  { k: "sin", t: "Sin asignar" }, // posible olvido al dar el alta
 ];
-// "Apuntado a mano" = al día por una fecha puesta a dedo, SIN cobro registrado que
-// la respalde (los del archivador). Es el mismo criterio del aviso ⚠ de Métricas.
-const OPC_COBROS = [{ k: "manual", t: "Apuntado a mano" }];
-
-/** Avisos del socio: cosas que conviene mirar ("algo pasa con este socio").
- *  Es una lista abierta: hoy solo detecta la cobertura apuntada a mano, pero
- *  cualquier aviso nuevo que se añada aquí sale solo en la exclamación. */
-function avisosDe(s: Socio): string[] {
-  const avisos: string[] = [];
-  if (s.suscripciones.some((x) => x.activa && x.coberturaSinCobro && (x.estado === "aldia" || x.estado === "pronto")))
-    avisos.push("Cubierto por una fecha apuntada a mano: no hay ningún cobro registrado detrás (no suma en Ingresos).");
-  return avisos;
-}
+// "Con aviso" = socios con la exclamación ámbar (avisosDe en web/filtros.ts).
+const OPC_AVISOS = [{ k: "con", t: "Con aviso" }];
 
 // Cómo estaba la pantalla (filtros, orden, scroll) — para restaurarla al volver de
 // una ficha y no perder el sitio en la tabla. Vive en sessionStorage: se olvida al
@@ -66,27 +57,14 @@ function claveApellido(s: Socio): string {
   return (s.apellidos || s.nombre || "").trim();
 }
 
-function GrupoChips({ label, opciones, valor, onToggle }: { label: string; opciones: { k: string; t: string }[]; valor: Set<string>; onToggle: (k: string) => void }) {
-  return (
-    <div className="chips">
-      <span className="chip-label">{label}:</span>
-      {opciones.map((o) => (
-        <button key={o.k} className={"chip" + (valor.has(o.k) ? " on" : "")} onClick={() => onToggle(o.k)}>
-          {o.t}
-        </button>
-      ))}
-    </div>
-  );
-}
-
-type TipoFiltro = "act" | "est" | "cuo" | "sex" | "cob";
+type TipoFiltro = "act" | "est" | "cuo" | "sex" | "avi";
 
 export function Socios() {
   const [params] = useSearchParams();
   const desdeUrl = (k: string) => new Set((params.get(k) || "").split(",").filter(Boolean));
   // Si la URL trae filtros (enlaces desde el Panel o Métricas), mandan ellos; si no,
   // se restaura cómo quedó la pantalla la última vez (al volver de una ficha).
-  const urlConFiltros = ["actividad", "estado", "cuota", "sexo", "cobros"].some((k) => params.get(k));
+  const urlConFiltros = ["actividad", "estado", "cuota", "sexo", "avisos"].some((k) => params.get(k));
   const [ui] = useState<any>(() => (urlConFiltros ? null : leerUI()));
 
   const [socios, setSocios] = useState<Socio[]>([]);
@@ -95,11 +73,11 @@ export function Socios() {
   const [filtroEstado, setFiltroEstado] = useState<Set<string>>(() => (ui ? new Set<string>(ui.est ?? []) : desdeUrl("estado")));
   const [filtroCuota, setFiltroCuota] = useState<Set<string>>(() => (ui ? new Set<string>(ui.cuo ?? []) : desdeUrl("cuota")));
   const [filtroSexo, setFiltroSexo] = useState<Set<string>>(() => (ui ? new Set<string>(ui.sex ?? []) : desdeUrl("sexo")));
-  const [filtroCobros, setFiltroCobros] = useState<Set<string>>(() => (ui ? new Set<string>(ui.cob ?? []) : desdeUrl("cobros")));
+  const [filtroAvisos, setFiltroAvisos] = useState<Set<string>>(() => (ui ? new Set<string>(ui.avi ?? []) : desdeUrl("avisos")));
   const [filtroFecha, setFiltroFecha] = useState<RangoFecha>(ui?.fecha ?? { desde: null, hasta: null });
   const [orden, setOrden] = useState<Orden>(ui?.orden ?? "apeAsc");
   const [limite, setLimite] = useState<number>(ui?.limite ?? INICIAL); // scroll infinito: cuántas filas hay pintadas
-  const [filtrosAbiertos, setFiltrosAbiertos] = useState<boolean>(() => ui?.abiertos ?? urlConFiltros);
+  const [modalFiltros, setModalFiltros] = useState(false);
   const [alto, setAlto] = useState(440); // alto del área con scroll (la página no scrollea)
   const [nuevo, setNuevo] = useState(false);
   const [error, setError] = useState("");
@@ -131,14 +109,14 @@ export function Socios() {
   useEffect(() => () => window.clearTimeout(salTimer.current), []);
 
   // Filtrado cliente (lógica pura y testeada en web/filtros.pruebas.ts).
-  const filtros: FiltrosSocios = { actividades: [...filtroAct], estado: [...filtroEstado], cuota: [...filtroCuota], sexo: [...filtroSexo], cobros: [...filtroCobros], fecha: filtroFecha };
+  const filtros: FiltrosSocios = { actividades: [...filtroAct], estado: [...filtroEstado], cuota: [...filtroCuota], sexo: [...filtroSexo], avisos: [...filtroAvisos], fecha: filtroFecha };
   const sociosFiltrados = filtrarSocios(socios, filtros);
   const hayFiltro = buscar.trim() !== "" || hayFiltrosActivos(filtros);
-  const nFiltros = filtroAct.size + filtroEstado.size + filtroCuota.size + filtroSexo.size + filtroCobros.size + (filtroFecha.desde || filtroFecha.hasta ? 1 : 0);
+  const nFiltros = filtroAct.size + filtroEstado.size + filtroCuota.size + filtroSexo.size + filtroAvisos.size + (filtroFecha.desde || filtroFecha.hasta ? 1 : 0);
 
   // Foto del estado de la pantalla, siempre al día; al desmontar se guarda para
   // que "Volver" desde una ficha te deje exactamente donde estabas.
-  snap.current = { buscar, act: [...filtroAct], est: [...filtroEstado], cuo: [...filtroCuota], sex: [...filtroSexo], cob: [...filtroCobros], fecha: filtroFecha, orden, limite, abiertos: filtrosAbiertos };
+  snap.current = { buscar, act: [...filtroAct], est: [...filtroEstado], cuo: [...filtroCuota], sex: [...filtroSexo], avi: [...filtroAvisos], fecha: filtroFecha, orden, limite };
   useEffect(
     () => () => {
       try {
@@ -183,7 +161,7 @@ export function Socios() {
     setLimite(INICIAL);
     ultimoScroll.current = 0;
     if (scrollRef.current) scrollRef.current.scrollTop = 0;
-  }, [buscar, filtroAct, filtroEstado, filtroCuota, filtroSexo, filtroCobros, filtroFecha, orden]);
+  }, [buscar, filtroAct, filtroEstado, filtroCuota, filtroSexo, filtroAvisos, filtroFecha, orden]);
 
   // Al volver de una ficha: recolocar el scroll donde estaba (cuando ya hay filas).
   useEffect(() => {
@@ -210,16 +188,12 @@ export function Socios() {
     }
     medir();
     const t = setTimeout(medir, 60);
-    // Al plegar/desplegar los filtros el área cambia de sitio: medir también al
-    // terminar la animación (~300 ms).
-    const t2 = setTimeout(medir, 340);
     window.addEventListener("resize", medir);
     return () => {
       clearTimeout(t);
-      clearTimeout(t2);
       window.removeEventListener("resize", medir);
     };
-  }, [socios.length, filtrosAbiertos]);
+  }, [socios.length]);
 
   // Scroll infinito: al acercarse al final, pinta el siguiente bloque.
   function alScroll() {
@@ -243,7 +217,7 @@ export function Socios() {
       est: [filtroEstado, setFiltroEstado],
       cuo: [filtroCuota, setFiltroCuota],
       sex: [filtroSexo, setFiltroSexo],
-      cob: [filtroCobros, setFiltroCobros],
+      avi: [filtroAvisos, setFiltroAvisos],
     };
     const [actual, setter] = actuales[tipo];
     const n = new Set(actual);
@@ -255,7 +229,7 @@ export function Socios() {
       estado: [...(tipo === "est" ? n : filtroEstado)],
       cuota: [...(tipo === "cuo" ? n : filtroCuota)],
       sexo: [...(tipo === "sex" ? n : filtroSexo)],
-      cobros: [...(tipo === "cob" ? n : filtroCobros)],
+      avisos: [...(tipo === "avi" ? n : filtroAvisos)],
       fecha: filtroFecha,
     };
     const idsFuturos = new Set(filtrarSocios(socios, futuros).map((s) => s.id));
@@ -302,7 +276,7 @@ export function Socios() {
     setFiltroEstado(new Set());
     setFiltroCuota(new Set());
     setFiltroSexo(new Set());
-    setFiltroCobros(new Set());
+    setFiltroAvisos(new Set());
     setFiltroFecha({ desde: null, hasta: null });
   }
 
@@ -330,44 +304,22 @@ export function Socios() {
       {error && <div className="error-banner">{error}</div>}
 
       <div className="card" style={{ overflow: "hidden" }}>
-        {/* Banda: búsqueda + botón Filtros (despliega el panel) + limpiar */}
+        {/* Banda: búsqueda + botón Filtros (abre la ventana) + limpiar */}
         <div className="filtros-banda">
           <div className="search">
             <span className="ico">⌕</span>
             <input value={buscar} onChange={(e) => setBuscar(e.target.value)} placeholder="Buscar por nombre, apellidos o teléfono…" />
           </div>
-          <button
-            className={"btn sm filtros-toggle" + (filtrosAbiertos ? " abierto" : "") + (nFiltros > 0 ? " activos" : "")}
-            onClick={() => setFiltrosAbiertos((v) => !v)}
-            aria-expanded={filtrosAbiertos}
-          >
+          <button className={"btn sm filtros-toggle" + (nFiltros > 0 ? " activos" : "")} onClick={() => setModalFiltros(true)}>
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
               <path d="M3 5h18l-7 8v5.5l-4 2V13L3 5Z" />
             </svg>
             Filtros
             {nFiltros > 0 && <span className="filtros-num">{nFiltros}</span>}
-            <span className="ft-chevron" style={{ transform: filtrosAbiertos ? "rotate(180deg)" : undefined }} aria-hidden="true">
-              <Chevron />
-            </span>
           </button>
           <button className={"btn ghost sm limpiar-reservado" + (hayFiltro ? " on" : "")} onClick={limpiar} tabIndex={hayFiltro ? 0 : -1}>
             Limpiar filtros
           </button>
-        </div>
-        <div className={"filtros-panel" + (filtrosAbiertos ? " open" : "")} aria-hidden={!filtrosAbiertos}>
-          <div className="filtros-panel-inner">
-            <GrupoChips label="Actividad" opciones={ACTIVIDADES.map((a) => ({ k: a, t: capitalizar(a) }))} valor={filtroAct} onToggle={(k) => alternaEn("act", k)} />
-            <span className="filtros-sep" aria-hidden="true" />
-            <GrupoChips label="Estado" opciones={OPC_ESTADO} valor={filtroEstado} onToggle={(k) => alternaEn("est", k)} />
-            <span className="filtros-sep" aria-hidden="true" />
-            <GrupoChips label="Cuota" opciones={OPC_CUOTA} valor={filtroCuota} onToggle={(k) => alternaEn("cuo", k)} />
-            <span className="filtros-sep" aria-hidden="true" />
-            <GrupoChips label="Cobros" opciones={OPC_COBROS} valor={filtroCobros} onToggle={(k) => alternaEn("cob", k)} />
-            <span className="filtros-sep" aria-hidden="true" />
-            <GrupoChips label="Sexo" opciones={OPC_SEXO} valor={filtroSexo} onToggle={(k) => alternaEn("sex", k)} />
-            <span className="filtros-sep" aria-hidden="true" />
-            <FiltroFecha rango={filtroFecha} onChange={(r) => setFiltroFecha(r)} />
-          </div>
         </div>
 
         {listaBase.length === 0 ? (
@@ -424,7 +376,10 @@ export function Socios() {
                       <td className="td-aviso">
                         {avisosDe(s).length > 0 && (
                           <span className="aviso-flag" title={avisosDe(s).join("\n")} aria-label="Este socio tiene un aviso">
-                            !
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="4" strokeLinecap="round" aria-hidden="true">
+                              <line x1="12" y1="4.5" x2="12" y2="13" />
+                              <line x1="12" y1="19" x2="12" y2="19.01" />
+                            </svg>
                           </span>
                         )}
                       </td>
@@ -464,6 +419,91 @@ export function Socios() {
           </>
         )}
       </div>
+
+      {modalFiltros && (
+        <Modal
+          titulo="Filtrar socios"
+          onCerrar={() => setModalFiltros(false)}
+          pie={
+            <>
+              <button className="btn ghost" onClick={limpiar} disabled={nFiltros === 0}>
+                Limpiar todo
+              </button>
+              <button className="btn primary" onClick={() => setModalFiltros(false)}>
+                Ver {sociosFiltrados.length} socio{sociosFiltrados.length === 1 ? "" : "s"}
+              </button>
+            </>
+          }
+        >
+          <div className="modal-body">
+            <div className="fm-grupo">
+              <span className="chip-label">Actividad</span>
+              <div className="chips">
+                {ACTIVIDADES.map((a) => (
+                  <button key={a} className={"chip" + (filtroAct.has(a) ? " on" : "")} onClick={() => alternaEn("act", a)}>
+                    {capitalizar(a)}
+                  </button>
+                ))}
+              </div>
+            </div>
+            <div className="fm-grupo">
+              <span className="chip-label">Estado del socio</span>
+              <div className="chips">
+                {OPC_ESTADO.map((o) => (
+                  <button key={o.k} className={"chip" + (filtroEstado.has(o.k) ? " on" : "")} onClick={() => alternaEn("est", o.k)}>
+                    {o.t}
+                  </button>
+                ))}
+              </div>
+            </div>
+            <div className="fm-grupo">
+              <span className="chip-label">Estado de cuota</span>
+              <div className="chips">
+                {OPC_CUOTA.map((o) => (
+                  <button key={o.k} className={"chip" + (filtroCuota.has(o.k) ? " on" : "")} onClick={() => alternaEn("cuo", o.k)}>
+                    {o.t}
+                  </button>
+                ))}
+              </div>
+            </div>
+            <div className="fm-grupo">
+              <span className="chip-label">Avisos</span>
+              <div className="chips">
+                {OPC_AVISOS.map((o) => (
+                  <button key={o.k} className={"chip" + (filtroAvisos.has(o.k) ? " on" : "")} onClick={() => alternaEn("avi", o.k)}>
+                    <span className="aviso-flag chica" aria-hidden="true">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="4" strokeLinecap="round">
+                        <line x1="12" y1="4.5" x2="12" y2="13" />
+                        <line x1="12" y1="19" x2="12" y2="19.01" />
+                      </svg>
+                    </span>
+                    {o.t}
+                  </button>
+                ))}
+              </div>
+              <div className="fm-nota">Los que llevan la exclamación ámbar en la lista: algo conviene mirar (hoy: cubiertos por una fecha apuntada a mano, sin cobro registrado).</div>
+            </div>
+            <div className="fm-grupo">
+              <span className="chip-label">Sexo</span>
+              <div className="chips">
+                {OPC_SEXO.map((o) => (
+                  <button key={o.k} className={"chip" + (filtroSexo.has(o.k) ? " on" : "")} onClick={() => alternaEn("sex", o.k)}>
+                    {o.t}
+                  </button>
+                ))}
+              </div>
+              <div className="fm-nota">«Sin asignar»: socios sin sexo en la ficha (puede ser un olvido del alta).</div>
+            </div>
+            <div className="fm-grupo">
+              <span className="chip-label">Fecha de alta</span>
+              <div className="chips">
+                <FiltroFecha rango={filtroFecha} onChange={(r) => setFiltroFecha(r)} />
+              </div>
+            </div>
+            <div className="hint">Los filtros se suman entre sí y la lista de detrás se actualiza al momento.</div>
+          </div>
+        </Modal>
+      )}
 
       {nuevo && (
         <SocioFormModal

@@ -85,12 +85,12 @@ export const AyudaSocios = () => (
     <h4>Buscar y filtrar</h4>
     <ul>
       <li><strong>Buscador</strong>: escribe nombre o teléfono y la lista se filtra sola.</li>
-      <li>El botón <strong>Filtros</strong> despliega el resto de filtros; su número azul dice cuántos tienes puestos.</li>
+      <li>El botón <strong>Filtros</strong> abre una ventana con todos los filtros ordenados; su número azul dice cuántos tienes puestos.</li>
       <li><strong>Actividad</strong> (Gimnasio / Karate / Pilates): se combinan en “o” — marca Karate y Pilates y salen los de uno u otro.</li>
-      <li><strong>Estado</strong>: Activos o Bajas.</li>
-      <li><strong>Cuota</strong>: Pendientes (atrasados o sin pagar), Vencen pronto, Al día o Sin cuotas.</li>
-      <li><strong>Cobros → Apuntado a mano</strong>: los que están al día por una fecha puesta a dedo, sin ningún cobro registrado detrás (los que venían del archivador en papel). Son los del aviso ⚠ de Métricas: su dinero no sale en Ingresos hasta que les registres su siguiente pago.</li>
-      <li>La <strong>exclamación ámbar</strong> junto al nombre significa «algo pasa con este socio»: pasa el ratón por encima para ver el detalle.</li>
+      <li><strong>Estado del socio</strong>: Activos o Bajas.</li>
+      <li><strong>Estado de cuota</strong>: Pendientes (atrasados o sin pagar), Vencen pronto, Al día o Sin cuotas.</li>
+      <li><strong>Avisos → Con aviso</strong>: los que llevan la <strong>exclamación ámbar</strong> junto al nombre, que significa «algo conviene mirar en este socio» (pasa el ratón por la exclamación para ver el motivo). Hoy avisa de los cubiertos por una fecha apuntada a mano sin cobro registrado — los del ⚠ de Métricas.</li>
+      <li><strong>Sexo</strong>: Hombre, Mujer o <strong>Sin asignar</strong> (útil para cazar olvidos del alta y completar fichas).</li>
       <li><strong>Fecha de alta</strong>: abre una ventana con periodos rápidos (hoy, ayer, últimos 7 días, esta semana, este mes, este año) y, en “Más opciones”, un año entero o un rango exacto con calendario.</li>
       <li>Los filtros se <strong>suman</strong> entre sí; <strong>Limpiar filtros</strong> los quita todos. El export y “seleccionar todos” respetan lo filtrado.</li>
     </ul>

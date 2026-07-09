@@ -1,6 +1,6 @@
 // Pruebas de la lógica de filtros con datos mockeados. Ejecutar: npm run test:filtros
 import type { Socio, Suscripcion, EstadoCuota } from "./types.ts";
-import { filtrarSocios, grupoCuota, hayFiltrosActivos, rangoDePreset, rangoDeAnio, FILTROS_VACIOS, type FiltrosSocios } from "./filtros.ts";
+import { avisosDe, filtrarSocios, grupoCuota, hayFiltrosActivos, rangoDePreset, rangoDeAnio, FILTROS_VACIOS, type FiltrosSocios } from "./filtros.ts";
 
 // --- Mini arnés de aserciones ---
 let fallos = 0;
@@ -56,6 +56,8 @@ console.log("\n— filtrarSocios: sexo —");
 check("hombre → [1,4]", igual(ids(filtrarSocios(socios, F({ sexo: ["hombre"] }))), [1, 4]));
 check("mujer → [2,5]", igual(ids(filtrarSocios(socios, F({ sexo: ["mujer"] }))), [2, 5]));
 check("hombre+mujer → [1,2,4,5] (excluye sin sexo)", igual(ids(filtrarSocios(socios, F({ sexo: ["hombre", "mujer"] }))), [1, 2, 4, 5]));
+check("sin asignar → [3,6] (posibles olvidos)", igual(ids(filtrarSocios(socios, F({ sexo: ["sin"] }))), [3, 6]));
+check("mujer + sin asignar → [2,3,5,6]", igual(ids(filtrarSocios(socios, F({ sexo: ["mujer", "sin"] }))), [2, 3, 5, 6]));
 
 console.log("\n— filtrarSocios: fecha de alta (presets, hoy=2026-06-24) —");
 check("hoy → [1]", igual(ids(filtrarSocios(socios, F({ fecha: rangoDePreset("hoy", HOY) }))), [1]));
@@ -81,25 +83,27 @@ check("karate + alta este año → [2,4]", igual(ids(filtrarSocios(socios, F({ a
 check("rango personalizado 2026-06-18..2026-06-23 → [4,6]", igual(ids(filtrarSocios(socios, F({ fecha: { desde: "2026-06-18", hasta: "2026-06-23" } }))), [4, 6]));
 check("sin filtros → todos", igual(ids(filtrarSocios(socios, FILTROS_VACIOS)), [1, 2, 3, 4, 5, 6]));
 
-console.log("\n— filtrarSocios: cobros (cobertura apuntada a mano) —");
-const sociosMano: Socio[] = [
+console.log("\n— filtrarSocios: avisos ('aquí pasa algo') —");
+const sociosAviso: Socio[] = [
   soc(101, "2026-01-01", "activo", "aldia", [sub({ id: 11, coberturaSinCobro: true })]),
   soc(102, "2026-01-01", "activo", "aldia", [sub({ id: 12 })]),
   soc(103, "2026-01-01", "activo", "aldia", [sub({ id: 13, coberturaSinCobro: true, activa: false }), sub({ id: 14 })]),
   soc(104, "2026-01-01", "activo", "atrasado", [sub({ id: 15, coberturaSinCobro: true, estado: "atrasado", dias: -9 })]),
   soc(105, "2026-01-01", "activo", "pronto", [sub({ id: 16, coberturaSinCobro: true, estado: "pronto", dias: 3 })]),
 ];
-check("manual → cuota ACTIVA a mano y VIGENTE (al día o pronto)", igual(ids(filtrarSocios(sociosMano, F({ cobros: ["manual"] }))), [101, 105]));
-check("una cuota a mano INACTIVA no cuenta", !ids(filtrarSocios(sociosMano, F({ cobros: ["manual"] }))).includes(103));
-check("una cuota a mano ya VENCIDA no cuenta (es un atrasado normal)", !ids(filtrarSocios(sociosMano, F({ cobros: ["manual"] }))).includes(104));
-check("cobros vacío → todos", igual(ids(filtrarSocios(sociosMano, F({}))), [101, 102, 103, 104, 105]));
-check("manual + al día se combinan", igual(ids(filtrarSocios(sociosMano, F({ cobros: ["manual"], cuota: ["aldia"] }))), [101]));
+check("con aviso → cobertura a mano ACTIVA y VIGENTE (al día o pronto)", igual(ids(filtrarSocios(sociosAviso, F({ avisos: ["con"] }))), [101, 105]));
+check("una cuota a mano INACTIVA no avisa", !ids(filtrarSocios(sociosAviso, F({ avisos: ["con"] }))).includes(103));
+check("una cuota a mano ya VENCIDA no avisa (es un atrasado normal)", !ids(filtrarSocios(sociosAviso, F({ avisos: ["con"] }))).includes(104));
+check("avisos vacío → todos", igual(ids(filtrarSocios(sociosAviso, F({}))), [101, 102, 103, 104, 105]));
+check("con aviso + al día se combinan", igual(ids(filtrarSocios(sociosAviso, F({ avisos: ["con"], cuota: ["aldia"] }))), [101]));
+check("avisosDe: con motivo", avisosDe(sociosAviso[0]).length === 1);
+check("avisosDe: sin motivo", avisosDe(sociosAviso[1]).length === 0);
 
 console.log("\n— hayFiltrosActivos —");
 check("vacío → false", hayFiltrosActivos(FILTROS_VACIOS) === false);
 check("con actividad → true", hayFiltrosActivos(F({ actividades: ["karate"] })) === true);
 check("con sexo → true", hayFiltrosActivos(F({ sexo: ["hombre"] })) === true);
-check("con cobros → true", hayFiltrosActivos(F({ cobros: ["manual"] })) === true);
+check("con avisos → true", hayFiltrosActivos(F({ avisos: ["con"] })) === true);
 check("con fecha → true", hayFiltrosActivos(F({ fecha: { desde: "2026-01-01", hasta: null } })) === true);
 
 console.log(fallos === 0 ? `\n✅ Todas las pruebas OK (${0} fallos)` : `\n❌ ${fallos} prueba(s) fallan`);

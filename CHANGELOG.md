@@ -12,6 +12,24 @@ y el proyecto usa [Versionado Semántico](https://semver.org/lang/es/) (SemVer):
 
 ## [Sin publicar]
 
+## [1.6.0] - 2026-07-09
+
+### Added
+- **Sexo → «Sin asignar»** en los filtros de Socios: encuentra a los socios sin
+  sexo en la ficha (suele ser un olvido del alta) para poder completarlos.
+
+### Changed
+- **Los filtros de Socios se abren ahora en una ventana propia**, con cada grupo
+  en su línea y ordenado (Actividad · Estado del socio · Estado de cuota · Avisos
+  · Sexo · Fecha de alta), notas explicativas y un botón que dice en vivo cuántos
+  socios saldrán («Ver N socios»).
+- El filtro «Cobros → Apuntado a mano» pasa a llamarse **«Avisos → Con aviso»**:
+  filtra a los socios con la exclamación ámbar («algo conviene mirar»), el mismo
+  criterio la lleve quien la lleve — si mañana la exclamación avisa de más cosas,
+  el filtro las incluye solo.
+- La exclamación de aviso ahora es un **icono dibujado y centrado** (antes era un
+  carácter de texto que parecía un «1»).
+
 ## [1.5.0] - 2026-07-09
 
 ### Added
