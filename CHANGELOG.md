@@ -12,6 +12,12 @@ y el proyecto usa [Versionado Semántico](https://semver.org/lang/es/) (SemVer):
 
 ## [Sin publicar]
 
+## [1.6.2] - 2026-07-09
+
+### Changed
+- La exclamación de aviso queda **centrada también dentro de la píldora «Con
+  aviso»** del filtro (icono y texto alineados).
+
 ## [1.6.1] - 2026-07-09
 
 ### Changed

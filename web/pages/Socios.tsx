@@ -470,7 +470,7 @@ export function Socios() {
               <span className="chip-label">Avisos</span>
               <div className="chips">
                 {OPC_AVISOS.map((o) => (
-                  <button key={o.k} className={"chip" + (filtroAvisos.has(o.k) ? " on" : "")} onClick={() => alternaEn("avi", o.k)}>
+                  <button key={o.k} className={"chip chip-aviso" + (filtroAvisos.has(o.k) ? " on" : "")} onClick={() => alternaEn("avi", o.k)}>
                     <span className="aviso-flag chica" aria-hidden="true">
                       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="4" strokeLinecap="round">
                         <line x1="12" y1="6" x2="12" y2="13" />

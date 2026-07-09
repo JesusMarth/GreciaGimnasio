@@ -872,7 +872,9 @@ td { padding: 9px 12px; font-size: 13px; }
 /* Ventana de filtros: un grupo por línea, con su etiqueta y una nota si hace falta. */
 .fm-grupo { margin-bottom: 16px; }
 .fm-grupo .chip-label { display: block; margin-bottom: 7px; }
-.chip .aviso-flag.chica { width: 13px; height: 13px; margin-right: 5px; vertical-align: -2px; }
+/* Chip con la exclamación: flex para que icono y texto queden centrados entre sí. */
+.chip-aviso { display: inline-flex; align-items: center; gap: 6px; }
+.chip .aviso-flag.chica { width: 14px; height: 14px; }
 .chip .aviso-flag.chica svg { width: 8px; height: 8px; }
 
 /* Aviso del socio: "algo pasa con este socio" (columna estrecha junto al nombre).
