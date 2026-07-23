@@ -12,6 +12,13 @@ y el proyecto usa [Versionado Semántico](https://semver.org/lang/es/) (SemVer):
 
 ## [Sin publicar]
 
+## [1.7.1] - 2026-07-23
+
+### Fixed
+- La tabla de Socios volvía a cuadrar sus columnas: al añadir «Último pago» los
+  anchos fijos por posición (CSS `nth-child`) quedaron corridos — «Vence» salía
+  cortado y la flecha final se comía el espacio sobrante de la derecha.
+
 ## [1.7.0] - 2026-07-23
 
 ### Added
