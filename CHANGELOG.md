@@ -12,6 +12,26 @@ y el proyecto usa [Versionado Semántico](https://semver.org/lang/es/) (SemVer):
 
 ## [Sin publicar]
 
+## [1.7.0] - 2026-07-23
+
+### Added
+- **Columna «Último pago»** en la lista de Socios: el importe del último cobro
+  registrado de cada socio (con la fecha al pasar el ratón). También sale en el
+  **Excel de socios** (importe + fecha), para poder repartir por cuota a fin de mes.
+- El **Excel de socios se rediseña** para leerse a simple vista: la hoja «Socios»
+  gana **autofiltro en la cabecera**, filas alternas sombreadas, el estado de cuota
+  en color y una columna «Detalle último pago» (si un cobro juntó varias
+  actividades, se ve de qué se compone: «Gimnasio 35 € + Karate 30 €»); y se añade
+  la hoja **«Por cuota»**: los socios agrupados por el importe de su último pago,
+  con resumen de cuántos hay en cada cuota (los sin cobros, en su propio grupo).
+- **Filtro «Último pago»** en la ventana de Filtros: solo se ofrecen los importes
+  que alguien está pagando ahora mismo (si nadie tiene un último pago de 300 €,
+  300 € no aparece). Se combina con el resto de filtros y con el export.
+
+### Changed
+- **«Vence pronto» pasa de 7 a 5 días**: una cuota se marca en ámbar cuando le
+  quedan 5 días o menos (avisos, Panel y textos de ayuda actualizados).
+
 ## [1.6.3] - 2026-07-09
 
 ### Changed

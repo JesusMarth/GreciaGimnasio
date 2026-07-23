@@ -1,6 +1,6 @@
 // Pruebas de la lógica de filtros con datos mockeados. Ejecutar: npm run test:filtros
 import type { Socio, Suscripcion, EstadoCuota } from "./types.ts";
-import { avisosDe, filtrarSocios, grupoCuota, hayFiltrosActivos, rangoDePreset, rangoDeAnio, FILTROS_VACIOS, type FiltrosSocios } from "./filtros.ts";
+import { avisosDe, claveImporte, filtrarSocios, grupoCuota, hayFiltrosActivos, importesUltimoPago, rangoDePreset, rangoDeAnio, FILTROS_VACIOS, type FiltrosSocios } from "./filtros.ts";
 
 // --- Mini arnés de aserciones ---
 let fallos = 0;
@@ -15,8 +15,8 @@ const igual = (a: number[], b: number[]) => a.length === b.length && a.every((x,
 function sub(over: Partial<Suscripcion>): Suscripcion {
   return { id: 1, socioId: 1, actividad: "gimnasio", etiqueta: null, importe: 30, periodicidad: "mensual", pagadoHasta: null, coberturaSinCobro: false, activa: true, notas: null, estado: "aldia", dias: 30, ...over };
 }
-function soc(id: number, fechaAlta: string, estado: string, estadoResumen: EstadoCuota | null, subs: Suscripcion[], sexo: string | null = null): Socio {
-  return { id, nombre: "Socio", apellidos: String(id), nombreCompleto: "Socio " + id, telefono: null, email: null, dni: null, sexo, fechaAlta, fechaNacimiento: null, estado, notas: null, suscripciones: subs, estadoResumen, proximaExpiracion: null };
+function soc(id: number, fechaAlta: string, estado: string, estadoResumen: EstadoCuota | null, subs: Suscripcion[], sexo: string | null = null, ultimoPago: { fecha: string; total: number } | null = null): Socio {
+  return { id, nombre: "Socio", apellidos: String(id), nombreCompleto: "Socio " + id, telefono: null, email: null, dni: null, sexo, fechaAlta, fechaNacimiento: null, estado, notas: null, suscripciones: subs, estadoResumen, proximaExpiracion: null, ultimoPago };
 }
 
 const HOY = "2026-06-24"; // miércoles
@@ -99,11 +99,31 @@ check("con aviso + al día se combinan", igual(ids(filtrarSocios(sociosAviso, F(
 check("avisosDe: con motivo", avisosDe(sociosAviso[0]).length === 1);
 check("avisosDe: sin motivo", avisosDe(sociosAviso[1]).length === 0);
 
+console.log("\n— filtrarSocios: último pago —");
+const sociosPago: Socio[] = [
+  soc(201, "2026-01-01", "activo", "aldia", [sub({})], null, { fecha: "2026-06-01", total: 35 }),
+  soc(202, "2026-01-01", "activo", "aldia", [sub({})], null, { fecha: "2026-06-10", total: 30 }),
+  soc(203, "2026-01-01", "activo", "aldia", [sub({})], null, { fecha: "2026-05-20", total: 35 }),
+  soc(204, "2026-01-01", "activo", "aldia", [sub({})], null, { fecha: "2026-04-02", total: 180 }),
+  soc(205, "2026-01-01", "activo", "pendiente", [sub({})], null, null), // nunca pagó
+  soc(206, "2026-01-01", "activo", "aldia", [sub({})], null, { fecha: "2026-06-15", total: 32.5 }),
+];
+check("importe 35 → [201,203]", igual(ids(filtrarSocios(sociosPago, F({ pagos: ["35"] }))), [201, 203]));
+check("importe 30 o 180 (OR) → [202,204]", igual(ids(filtrarSocios(sociosPago, F({ pagos: ["30", "180"] }))), [202, 204]));
+check("con decimales (32.5) → [206]", igual(ids(filtrarSocios(sociosPago, F({ pagos: [claveImporte(32.5)] }))), [206]));
+check("sin último pago nunca coincide", !ids(filtrarSocios(sociosPago, F({ pagos: ["35", "30", "180"] }))).includes(205));
+check("pagos vacío → todos", igual(ids(filtrarSocios(sociosPago, F({}))), [201, 202, 203, 204, 205, 206]));
+check("se combina con cuota (35 + pendiente) → []", igual(ids(filtrarSocios(sociosPago, F({ pagos: ["35"], cuota: ["pendiente"] }))), []));
+check("importesUltimoPago: distintos y ordenados", JSON.stringify(importesUltimoPago(sociosPago)) === JSON.stringify([30, 32.5, 35, 180]));
+check("importesUltimoPago: sin cobros → []", JSON.stringify(importesUltimoPago([sociosPago[4]])) === JSON.stringify([]));
+check("claveImporte estable (35 → '35', 32.5 → '32.5')", claveImporte(35) === "35" && claveImporte(32.5) === "32.5");
+
 console.log("\n— hayFiltrosActivos —");
 check("vacío → false", hayFiltrosActivos(FILTROS_VACIOS) === false);
 check("con actividad → true", hayFiltrosActivos(F({ actividades: ["karate"] })) === true);
 check("con sexo → true", hayFiltrosActivos(F({ sexo: ["hombre"] })) === true);
 check("con avisos → true", hayFiltrosActivos(F({ avisos: ["con"] })) === true);
+check("con pagos → true", hayFiltrosActivos(F({ pagos: ["35"] })) === true);
 check("con fecha → true", hayFiltrosActivos(F({ fecha: { desde: "2026-01-01", hasta: null } })) === true);
 
 console.log(fallos === 0 ? `\n✅ Todas las pruebas OK (${0} fallos)` : `\n❌ ${fallos} prueba(s) fallan`);

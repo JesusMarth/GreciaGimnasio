@@ -1,7 +1,7 @@
-import ExcelJS from "exceljs";
+﻿import ExcelJS from "exceljs";
 import { db } from "./db.ts";
 import { socioConResumen, type SocioRow } from "./queries.ts";
-import { diffDias } from "./util.ts";
+import { diffDias, hoyISO } from "./util.ts";
 import { ddmmaaaa } from "./recibo.ts";
 
 const ESTADO_TXT: Record<string, string> = {
@@ -13,6 +13,24 @@ const ESTADO_TXT: Record<string, string> = {
 const cap = (s: string) => (s ? s.charAt(0).toUpperCase() + s.slice(1) : s);
 const sexoTxt = (s: string | null) => (s === "hombre" ? "Hombre" : s === "mujer" ? "Mujer" : "");
 const EUR = '#,##0.00" €"';
+
+/** "30 €" / "32,50 €" para textos (las columnas numéricas ya usan el formato EUR). */
+const importeTxt = (n: number) => (Number.isInteger(n) ? `${n} €` : `${n.toFixed(2).replace(".", ",")} €`);
+
+// Colores del estado de cuota (mismo semáforo que la app) y rellenos de apoyo.
+const COLOR_ESTADO: Record<string, string> = {
+  aldia: "FF1E7B34", // verde
+  pronto: "FF9C6F00", // ámbar
+  atrasado: "FFC00000", // rojo
+  pendiente: "FF6A329F", // morado (sin pagar)
+};
+const FILL_ZEBRA: ExcelJS.Fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FFF2F6FC" } };
+const FILL_GRUPO: ExcelJS.Fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FFEFE3C6" } };
+const FILL_SUBCAB: ExcelJS.Fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FFEDEDED" } };
+
+function pintaEstadoCuota(cell: ExcelJS.Cell, estado: string | null) {
+  if (estado && COLOR_ESTADO[estado]) cell.font = { color: { argb: COLOR_ESTADO[estado] }, bold: true };
+}
 
 function estilaCabecera(ws: ExcelJS.Worksheet) {
   const h = ws.getRow(1);
@@ -28,7 +46,14 @@ async function aBuffer(wb: ExcelJS.Workbook): Promise<Buffer> {
   return Buffer.isBuffer(data) ? data : Buffer.from(data);
 }
 
-/** Listado de socios (todos, o solo los ids indicados). Una hoja resumen. */
+/**
+ * Listado de socios (todos, o solo los ids indicados). Dos hojas:
+ *  - "Socios": una fila por socio, con autofiltro en la cabecera (el jefe puede
+ *    quedarse con "los de 35 €" desde el propio Excel) y el desglose del último
+ *    pago (si un cobro juntó gimnasio + karate, se ve de qué se compone).
+ *  - "Por cuota": los mismos socios agrupados por el importe de su último pago,
+ *    con recuento por grupo — la foto de fin de mes a simple vista.
+ */
 export async function libroSocios(ids?: number[]): Promise<Buffer> {
   let filas: SocioRow[];
   const ORDEN = "ORDER BY apellidos COLLATE NOCASE, nombre COLLATE NOCASE";
@@ -40,7 +65,20 @@ export async function libroSocios(ids?: number[]): Promise<Buffer> {
   }
   const socios = filas.map((s) => socioConResumen(s));
 
+  // "Gimnasio 30 € + Karate 32 €": de qué actividades se compone el último cobro.
+  const lineasStmt = db.prepare("SELECT actividad, importe FROM pago_lineas WHERE pago_id = ? ORDER BY id");
+  const detalleUltimoPago = (s: (typeof socios)[number]): string =>
+    s.ultimoPago
+      ? (lineasStmt.all(s.ultimoPago.id) as { actividad: string; importe: number }[])
+          .map((l) => `${cap(l.actividad)} ${importeTxt(l.importe)}`)
+          .join(" + ")
+      : "";
+  const actividadesTxt = (s: (typeof socios)[number]): string =>
+    s.suscripciones.filter((x) => x.activa).map((x) => cap(x.actividad)).join(", ");
+
   const wb = new ExcelJS.Workbook();
+
+  // Hoja 1 · Socios (una fila por socio, con autofiltro)
   const ws = wb.addWorksheet("Socios");
   ws.columns = [
     { header: "Apellidos", key: "apellidos", width: 22 },
@@ -51,13 +89,16 @@ export async function libroSocios(ids?: number[]): Promise<Buffer> {
     { header: "Email", key: "email", width: 26 },
     { header: "Estado", key: "estado", width: 10 },
     { header: "Alta", key: "alta", width: 12 },
-    { header: "Actividades activas", key: "acts", width: 28 },
+    { header: "Actividades activas", key: "acts", width: 26 },
     { header: "Cuota activa", key: "cuota", width: 13, style: { numFmt: EUR } },
+    { header: "Último pago", key: "ultimoPago", width: 13, style: { numFmt: EUR } },
+    { header: "Detalle último pago", key: "ultimoPagoDetalle", width: 30 },
+    { header: "Fecha último pago", key: "ultimoPagoFecha", width: 17 },
     { header: "Estado cuota", key: "cuotaEstado", width: 14 },
   ];
-  for (const s of socios) {
+  socios.forEach((s, i) => {
     const activas = s.suscripciones.filter((x) => x.activa);
-    ws.addRow({
+    const row = ws.addRow({
       apellidos: s.apellidos ?? "",
       nombre: s.nombre,
       dni: s.dni ?? "",
@@ -66,12 +107,85 @@ export async function libroSocios(ids?: number[]): Promise<Buffer> {
       email: s.email ?? "",
       estado: s.estado === "baja" ? "Baja" : "Activo",
       alta: ddmmaaaa(s.fechaAlta),
-      acts: activas.map((x) => cap(x.actividad)).join(", "),
+      acts: actividadesTxt(s),
       cuota: activas.reduce((acc, x) => acc + x.importe, 0),
+      ultimoPago: s.ultimoPago ? s.ultimoPago.total : "",
+      ultimoPagoDetalle: detalleUltimoPago(s),
+      ultimoPagoFecha: s.ultimoPago ? ddmmaaaa(s.ultimoPago.fecha) : "",
       cuotaEstado: s.estadoResumen ? ESTADO_TXT[s.estadoResumen] : "Sin cuotas",
     });
-  }
+    pintaEstadoCuota(row.getCell("cuotaEstado"), s.estadoResumen);
+    if (i % 2 === 1) for (let c = 1; c <= ws.columns.length; c++) row.getCell(c).fill = FILL_ZEBRA;
+  });
+  ws.autoFilter = { from: { row: 1, column: 1 }, to: { row: 1, column: ws.columns.length } };
   estilaCabecera(ws);
+
+  // Hoja 2 · Por cuota (agrupados por el importe del último pago)
+  const hoja = wb.addWorksheet("Por cuota");
+  [22, 18, 14, 26, 30, 17, 14].forEach((w, i) => (hoja.getColumn(i + 1).width = w));
+  const NCOLS = 7;
+  const filaTitulo = (texto: string, opts: { size?: number; fill?: ExcelJS.Fill; gris?: boolean } = {}) => {
+    const r = hoja.addRow([texto]);
+    for (let c = 1; c <= NCOLS; c++) {
+      if (opts.fill) r.getCell(c).fill = opts.fill;
+    }
+    hoja.mergeCells(r.number, 1, r.number, NCOLS);
+    r.getCell(1).font = opts.gris ? { color: { argb: "FF808080" }, size: 10 } : { bold: true, size: opts.size ?? 12 };
+    return r;
+  };
+
+  filaTitulo("Socios por último pago", { size: 14 });
+  filaTitulo(`${socios.length} socio${socios.length === 1 ? "" : "s"} · generado el ${ddmmaaaa(hoyISO())}`, { gris: true });
+
+  // Grupos: cada importe de último pago → sus socios; aparte, los sin cobro.
+  const grupos = new Map<number, typeof socios>();
+  const sinCobro: typeof socios = [];
+  for (const s of socios) {
+    if (!s.ultimoPago) {
+      sinCobro.push(s);
+      continue;
+    }
+    const arr = grupos.get(s.ultimoPago.total) ?? [];
+    arr.push(s);
+    grupos.set(s.ultimoPago.total, arr);
+  }
+  const importes = [...grupos.keys()].sort((a, b) => a - b);
+
+  // Resumen arriba: cuántos socios hay en cada cuota.
+  hoja.addRow([]);
+  const cab = hoja.addRow(["Último pago", "Socios"]);
+  for (const c of [1, 2]) {
+    cab.getCell(c).font = { bold: true, color: { argb: "FFFFFFFF" } };
+    cab.getCell(c).fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FF1F5BB8" } };
+  }
+  for (const imp of importes) hoja.addRow([importeTxt(imp), grupos.get(imp)!.length]);
+  if (sinCobro.length) hoja.addRow(["Sin cobros", sinCobro.length]);
+
+  // Una sección por importe, con sus socios (ya vienen ordenados por apellido).
+  const seccion = (titulo: string, lista: typeof socios) => {
+    hoja.addRow([]);
+    filaTitulo(titulo, { fill: FILL_GRUPO });
+    const sub = hoja.addRow(["Apellidos", "Nombre", "Teléfono", "Actividades activas", "Detalle último pago", "Fecha último pago", "Estado cuota"]);
+    for (let c = 1; c <= NCOLS; c++) {
+      sub.getCell(c).font = { bold: true };
+      sub.getCell(c).fill = FILL_SUBCAB;
+    }
+    for (const s of lista) {
+      const r = hoja.addRow([
+        s.apellidos ?? "",
+        s.nombre + (s.estado === "baja" ? " (baja)" : ""),
+        s.telefono ?? "",
+        actividadesTxt(s),
+        detalleUltimoPago(s),
+        s.ultimoPago ? ddmmaaaa(s.ultimoPago.fecha) : "",
+        s.estadoResumen ? ESTADO_TXT[s.estadoResumen] : "Sin cuotas",
+      ]);
+      pintaEstadoCuota(r.getCell(NCOLS), s.estadoResumen);
+    }
+  };
+  for (const imp of importes) seccion(`${importeTxt(imp)} · ${grupos.get(imp)!.length} socio${grupos.get(imp)!.length === 1 ? "" : "s"}`, grupos.get(imp)!);
+  if (sinCobro.length) seccion(`Sin cobros registrados · ${sinCobro.length} socio${sinCobro.length === 1 ? "" : "s"}`, sinCobro);
+
   return aBuffer(wb);
 }
 

@@ -31,6 +31,7 @@ export interface Socio {
   suscripciones: Suscripcion[];
   estadoResumen: EstadoCuota | null;
   proximaExpiracion: string | null; // ISO; la cuota activa que vence antes (null si no hay)
+  ultimoPago: { fecha: string; total: number } | null; // último cobro real (tabla pagos); null si nunca pagó
 }
 
 export interface PagoLinea {

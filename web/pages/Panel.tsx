@@ -124,7 +124,7 @@ export function Panel() {
           <div className="bar" />
           <div className="label">Vencen pronto</div>
           <div className="value">{cPronto}</div>
-          <div className="nota">En 7 días o menos</div>
+          <div className="nota">En 5 días o menos</div>
         </div>
         <div className="stat verde clic" onClick={() => nav("/socios?cuota=aldia")} title="Ver estos socios">
           <div className="bar" />
@@ -155,7 +155,7 @@ export function Panel() {
 
       <div className="cols">
         <Columna titulo="Por cobrar / atrasados" color="rojo" items={data.porCobrar} onCobrar={setCobrar} onAvisar={avisar} avisadoId={avisadoId} verMas="/socios?cuota=pendiente" vacio="Nadie pendiente. 🎉" />
-        <Columna titulo="Vencen pronto" color="ambar" items={data.pronto} onCobrar={setCobrar} onAvisar={avisar} avisadoId={avisadoId} verMas="/socios?cuota=pronto" vacio="Nada vence esta semana." />
+        <Columna titulo="Vencen pronto" color="ambar" items={data.pronto} onCobrar={setCobrar} onAvisar={avisar} avisadoId={avisadoId} verMas="/socios?cuota=pronto" vacio="Nada vence en los próximos días." />
         <Columna titulo="Al día" color="verde" items={data.aldia} onCobrar={setCobrar} onAvisar={avisar} avisadoId={avisadoId} verMas="/socios?cuota=aldia" vacio="Sin cuotas al día todavía." />
       </div>
 

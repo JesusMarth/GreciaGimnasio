@@ -36,6 +36,7 @@ export interface SuscripcionRow {
 // si se restaura una copia y se reabre la conexión, no queda un statement colgando
 // de la conexión antigua.
 const SQL_SUBS_DE_SOCIO = "SELECT * FROM suscripciones WHERE socio_id = ? ORDER BY activa DESC, actividad";
+const SQL_ULTIMO_PAGO = "SELECT id, fecha, total FROM pagos WHERE socio_id = ? ORDER BY fecha DESC, id DESC LIMIT 1";
 
 /** Suscripcion enriquecida con su estado calculado. */
 export function suscripcionConEstado(s: SuscripcionRow, hoy: string) {
@@ -68,6 +69,10 @@ export function socioConResumen(s: SocioRow, hoy = hoyISO()) {
   // como texto. Si ninguna activa tiene fecha (sin activas o todas sin pagar): null.
   const fechasActivas = activas.map((x) => x.pagadoHasta).filter((d): d is string => !!d);
   const proximaExpiracion = fechasActivas.length ? fechasActivas.reduce((a, b) => (a < b ? a : b)) : null;
+  // Último cobro real del socio (tabla pagos): alimenta la columna "Último pago"
+  // de la lista, su filtro por importe y el Excel (que usa `id` para desglosar
+  // las líneas del cobro). null si nunca se le cobró en la app.
+  const ultimoPago = (db.prepare(SQL_ULTIMO_PAGO).get(s.id) as { id: number; fecha: string; total: number } | undefined) ?? null;
   return {
     id: s.id,
     nombre: s.nombre,
@@ -84,5 +89,6 @@ export function socioConResumen(s: SocioRow, hoy = hoyISO()) {
     suscripciones: subs,
     estadoResumen: peorEstado(estadosActivos),
     proximaExpiracion,
+    ultimoPago,
   };
 }

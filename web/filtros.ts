@@ -13,10 +13,27 @@ export interface FiltrosSocios {
   cuota: string[]; // grupos: 'pendiente' | 'pronto' | 'aldia' | 'sin'; vacío = todos
   sexo: string[]; // 'hombre' | 'mujer' | 'sin' (sin asignar); vacío = todos
   avisos: string[]; // 'con' → socios con algún aviso (la exclamación ámbar de la lista)
+  pagos: string[]; // importes del ÚLTIMO pago, como claveImporte(); OR; vacío = todos
   fecha: RangoFecha; // sobre la fecha de alta
 }
 
-export const FILTROS_VACIOS: FiltrosSocios = { actividades: [], estado: [], cuota: [], sexo: [], avisos: [], fecha: { desde: null, hasta: null } };
+export const FILTROS_VACIOS: FiltrosSocios = { actividades: [], estado: [], cuota: [], sexo: [], avisos: [], pagos: [], fecha: { desde: null, hasta: null } };
+
+/** Clave canónica de un importe para filtrar (35 → "35", 32.5 → "32.5"). */
+export function claveImporte(n: number): string {
+  return String(n);
+}
+
+/**
+ * Importes de último pago EN USO ahora mismo (distintos, de mayor a menor).
+ * Alimenta el filtro "Último pago": si nadie tiene un último pago de 300 €,
+ * 300 € no aparece — no tiene sentido filtrar por algo que no usa nadie.
+ */
+export function importesUltimoPago(socios: Socio[]): number[] {
+  const set = new Set<number>();
+  for (const s of socios) if (s.ultimoPago) set.add(s.ultimoPago.total);
+  return [...set].sort((a, b) => a - b);
+}
 
 /**
  * Avisos del socio ("aquí pasa algo"). Lista ABIERTA y compartida: la exclamación
@@ -47,6 +64,7 @@ export function hayFiltrosActivos(f: FiltrosSocios): boolean {
     f.cuota.length > 0 ||
     f.sexo.length > 0 ||
     f.avisos.length > 0 ||
+    f.pagos.length > 0 ||
     f.fecha.desde !== null ||
     f.fecha.hasta !== null
   );
@@ -59,6 +77,7 @@ export function filtrarSocios(socios: Socio[], f: FiltrosSocios): Socio[] {
     if (f.cuota.length && !f.cuota.includes(grupoCuota(s.estadoResumen))) return false;
     if (f.sexo.length && !f.sexo.includes(s.sexo ?? "sin")) return false; // 'sin' = sin asignar (posible olvido)
     if (f.avisos.includes("con") && avisosDe(s).length === 0) return false;
+    if (f.pagos.length && !(s.ultimoPago && f.pagos.includes(claveImporte(s.ultimoPago.total)))) return false;
     if (f.fecha.desde && s.fechaAlta < f.fecha.desde) return false;
     if (f.fecha.hasta && s.fechaAlta > f.fecha.hasta) return false;
     return true;

@@ -24,7 +24,7 @@ export function diffDias(aISO: string, bISO: string): number {
 }
 
 /** Dias de antelacion con que se considera "vence pronto". */
-export const UMBRAL_PRONTO = 7;
+export const UMBRAL_PRONTO = 5;
 
 export type EstadoCuota = "aldia" | "pronto" | "atrasado" | "pendiente";
 

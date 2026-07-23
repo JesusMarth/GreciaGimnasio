@@ -1,13 +1,13 @@
 import { useEffect, useRef, useState, type Dispatch, type SetStateAction } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { api, ACTIVIDADES } from "../api.ts";
-import { capitalizar, descargar, fecha } from "../format.ts";
+import { capitalizar, descargar, euros, fecha } from "../format.ts";
 import { EstadoBadge } from "../components/Badges.tsx";
 import { Modal } from "../components/Modal.tsx";
 import { SocioFormModal } from "../components/SocioFormModal.tsx";
 import { AyudaSocios } from "../components/Ayuda.tsx";
 import { FiltroFecha } from "../components/FiltroFecha.tsx";
-import { avisosDe, filtrarSocios, hayFiltrosActivos, type FiltrosSocios, type RangoFecha } from "../filtros.ts";
+import { avisosDe, claveImporte, filtrarSocios, hayFiltrosActivos, importesUltimoPago, type FiltrosSocios, type RangoFecha } from "../filtros.ts";
 import type { Socio } from "../types.ts";
 
 const INICIAL = 40; // filas que se pintan de entrada
@@ -56,14 +56,14 @@ function claveApellido(s: Socio): string {
   return (s.apellidos || s.nombre || "").trim();
 }
 
-type TipoFiltro = "act" | "est" | "cuo" | "sex" | "avi";
+type TipoFiltro = "act" | "est" | "cuo" | "sex" | "avi" | "pag";
 
 export function Socios() {
   const [params] = useSearchParams();
   const desdeUrl = (k: string) => new Set((params.get(k) || "").split(",").filter(Boolean));
   // Si la URL trae filtros (enlaces desde el Panel o Métricas), mandan ellos; si no,
   // se restaura cómo quedó la pantalla la última vez (al volver de una ficha).
-  const urlConFiltros = ["actividad", "estado", "cuota", "sexo", "avisos"].some((k) => params.get(k));
+  const urlConFiltros = ["actividad", "estado", "cuota", "sexo", "avisos", "pago"].some((k) => params.get(k));
   const [ui] = useState<any>(() => (urlConFiltros ? null : leerUI()));
 
   const [socios, setSocios] = useState<Socio[]>([]);
@@ -73,6 +73,7 @@ export function Socios() {
   const [filtroCuota, setFiltroCuota] = useState<Set<string>>(() => (ui ? new Set<string>(ui.cuo ?? []) : desdeUrl("cuota")));
   const [filtroSexo, setFiltroSexo] = useState<Set<string>>(() => (ui ? new Set<string>(ui.sex ?? []) : desdeUrl("sexo")));
   const [filtroAvisos, setFiltroAvisos] = useState<Set<string>>(() => (ui ? new Set<string>(ui.avi ?? []) : desdeUrl("avisos")));
+  const [filtroPago, setFiltroPago] = useState<Set<string>>(() => (ui ? new Set<string>(ui.pag ?? []) : desdeUrl("pago")));
   const [filtroFecha, setFiltroFecha] = useState<RangoFecha>(ui?.fecha ?? { desde: null, hasta: null });
   const [orden, setOrden] = useState<Orden>(ui?.orden ?? "apeAsc");
   const [limite, setLimite] = useState<number>(ui?.limite ?? INICIAL); // scroll infinito: cuántas filas hay pintadas
@@ -108,15 +109,17 @@ export function Socios() {
   useEffect(() => () => window.clearTimeout(salTimer.current), []);
 
   // Filtrado cliente (lógica pura y testeada en web/filtros.pruebas.ts).
-  const filtros: FiltrosSocios = { actividades: [...filtroAct], estado: [...filtroEstado], cuota: [...filtroCuota], sexo: [...filtroSexo], avisos: [...filtroAvisos], fecha: filtroFecha };
+  const filtros: FiltrosSocios = { actividades: [...filtroAct], estado: [...filtroEstado], cuota: [...filtroCuota], sexo: [...filtroSexo], avisos: [...filtroAvisos], pagos: [...filtroPago], fecha: filtroFecha };
   const sociosFiltrados = filtrarSocios(socios, filtros);
   const hayFiltro = buscar.trim() !== "" || hayFiltrosActivos(filtros);
   // El aviso ("!") tiene su propio botón fuera de la ventana, no cuenta en el nº de la ventana.
-  const nFiltros = filtroAct.size + filtroEstado.size + filtroCuota.size + filtroSexo.size + (filtroFecha.desde || filtroFecha.hasta ? 1 : 0);
+  const nFiltros = filtroAct.size + filtroEstado.size + filtroCuota.size + filtroSexo.size + filtroPago.size + (filtroFecha.desde || filtroFecha.hasta ? 1 : 0);
+  // Importes de último pago EN USO (para el filtro "Último pago": solo lo que existe).
+  const importesEnUso = importesUltimoPago(socios);
 
   // Foto del estado de la pantalla, siempre al día; al desmontar se guarda para
   // que "Volver" desde una ficha te deje exactamente donde estabas.
-  snap.current = { buscar, act: [...filtroAct], est: [...filtroEstado], cuo: [...filtroCuota], sex: [...filtroSexo], avi: [...filtroAvisos], fecha: filtroFecha, orden, limite };
+  snap.current = { buscar, act: [...filtroAct], est: [...filtroEstado], cuo: [...filtroCuota], sex: [...filtroSexo], avi: [...filtroAvisos], pag: [...filtroPago], fecha: filtroFecha, orden, limite };
   useEffect(
     () => () => {
       try {
@@ -161,7 +164,7 @@ export function Socios() {
     setLimite(INICIAL);
     ultimoScroll.current = 0;
     if (scrollRef.current) scrollRef.current.scrollTop = 0;
-  }, [buscar, filtroAct, filtroEstado, filtroCuota, filtroSexo, filtroAvisos, filtroFecha, orden]);
+  }, [buscar, filtroAct, filtroEstado, filtroCuota, filtroSexo, filtroAvisos, filtroPago, filtroFecha, orden]);
 
   // Al volver de una ficha: recolocar el scroll donde estaba (cuando ya hay filas).
   useEffect(() => {
@@ -218,6 +221,7 @@ export function Socios() {
       cuo: [filtroCuota, setFiltroCuota],
       sex: [filtroSexo, setFiltroSexo],
       avi: [filtroAvisos, setFiltroAvisos],
+      pag: [filtroPago, setFiltroPago],
     };
     const [actual, setter] = actuales[tipo];
     const n = new Set(actual);
@@ -230,6 +234,7 @@ export function Socios() {
       cuota: [...(tipo === "cuo" ? n : filtroCuota)],
       sexo: [...(tipo === "sex" ? n : filtroSexo)],
       avisos: [...(tipo === "avi" ? n : filtroAvisos)],
+      pagos: [...(tipo === "pag" ? n : filtroPago)],
       fecha: filtroFecha,
     };
     const idsFuturos = new Set(filtrarSocios(socios, futuros).map((s) => s.id));
@@ -277,6 +282,7 @@ export function Socios() {
     setFiltroCuota(new Set());
     setFiltroSexo(new Set());
     setFiltroAvisos(new Set());
+    setFiltroPago(new Set());
     setFiltroFecha({ desde: null, hasta: null });
   }
 
@@ -364,6 +370,7 @@ export function Socios() {
                     </th>
                     <th>Teléfono</th>
                     <th>Actividades</th>
+                    <th>Último pago</th>
                     <th>Estado cuota</th>
                     <th className="th-sort" onClick={() => setOrden((o) => (o === "vence" ? "apeAsc" : "vence"))} title="Ordenar por quién vence antes">
                       <span className="th-sort-inner">
@@ -411,6 +418,9 @@ export function Socios() {
                           ))}
                           {s.suscripciones.filter((x) => x.activa).length === 0 && <span className="muted">—</span>}
                         </div>
+                      </td>
+                      <td className="td-pago" title={s.ultimoPago ? `Cobrado el ${fecha(s.ultimoPago.fecha)}` : "Sin cobros registrados"}>
+                        {s.ultimoPago ? euros(s.ultimoPago.total) : <span className="muted">—</span>}
                       </td>
                       <td>
                         <EstadoBadge estado={s.estadoResumen} />
@@ -479,6 +489,23 @@ export function Socios() {
                   </button>
                 ))}
               </div>
+            </div>
+            <div className="fm-grupo">
+              <span className="chip-label">Último pago</span>
+              {importesEnUso.length === 0 && filtroPago.size === 0 ? (
+                <span className="muted">Aún no hay cobros registrados.</span>
+              ) : (
+                <div className="chips">
+                  {/* Importes en uso + los ya marcados (por si un filtro guardado apunta a un importe que ya nadie usa: sin su chip no se podría quitar). */}
+                  {[...new Set([...importesEnUso.map(claveImporte), ...filtroPago])]
+                    .sort((a, b) => Number(a) - Number(b))
+                    .map((k) => (
+                      <button key={k} className={"chip" + (filtroPago.has(k) ? " on" : "")} onClick={() => alternaEn("pag", k)}>
+                        {euros(Number(k))}
+                      </button>
+                    ))}
+                </div>
+              )}
             </div>
             <div className="fm-grupo">
               <span className="chip-label">Sexo</span>

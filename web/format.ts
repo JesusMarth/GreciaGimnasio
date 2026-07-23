@@ -30,7 +30,7 @@ export const ESTADO_LABEL: Record<EstadoCuota, string> = {
 export const EXPLICA_ESTADO: Record<EstadoCuota, string> = {
   pendiente: "Nunca ha pagado esta cuota (socio nuevo o aún sin cobrar).",
   atrasado: "Pagó antes, pero su cuota ya venció. Toca renovar.",
-  pronto: "Su cuota vence en 7 días o menos.",
+  pronto: "Su cuota vence en 5 días o menos.",
   aldia: "Cuota pagada y al corriente.",
 };
 

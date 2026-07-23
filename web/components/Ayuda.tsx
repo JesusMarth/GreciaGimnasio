@@ -37,7 +37,7 @@ export const AyudaPanel = () => (
     <h4>Los cuatro marcadores de arriba</h4>
     <ul>
       <li><strong>Por cobrar</strong>: cuotas atrasadas o sin pagar. Es lo que toca reclamar.</li>
-      <li><strong>Vencen pronto</strong>: cuotas que caducan en los próximos 7 días.</li>
+      <li><strong>Vencen pronto</strong>: cuotas que caducan en los próximos 5 días.</li>
       <li><strong>Al día</strong>: cuotas pagadas y al corriente.</li>
       <li><strong>Ingresos del mes</strong>: lo cobrado este mes. Está oculto por privacidad; pulsa el <strong>ojo</strong> para mostrarlo u ocultarlo (recuerda tu elección).</li>
     </ul>
@@ -52,7 +52,7 @@ export const AyudaPanel = () => (
     <ul>
       <li><strong>Sin pagar</strong> (morado): nunca ha pagado — socio nuevo o aún sin cobrar.</li>
       <li><strong>Atrasado</strong> (rojo): pagó antes, pero su cuota ya venció.</li>
-      <li><strong>Vence pronto</strong> (ámbar): le quedan 7 días o menos.</li>
+      <li><strong>Vence pronto</strong> (ámbar): le quedan 5 días o menos.</li>
       <li><strong>Al día</strong> (verde): pagada y al corriente.</li>
     </ul>
     <p>Pincha un marcador de arriba (Por cobrar / Vencen pronto / Al día) o un “+ N más” para ver esos socios en la lista, ya filtrados.</p>
@@ -90,6 +90,7 @@ export const AyudaSocios = () => (
       <li><strong>Estado del socio</strong>: Activos o Bajas.</li>
       <li><strong>Estado de cuota</strong>: Pendientes (atrasados o sin pagar), Vencen pronto, Al día o Sin cuotas.</li>
       <li>El botón <strong>«!»</strong> (al lado de Filtros) deja solo los socios con la <strong>exclamación ámbar</strong> junto al nombre, que significa «algo conviene mirar en este socio» (pasa el ratón por la exclamación para ver el motivo). Hoy avisa de los cubiertos por una fecha apuntada a mano sin cobro registrado — los del ⚠ de Métricas.</li>
+      <li><strong>Último pago</strong>: filtra por el importe del último cobro de cada socio (la columna «Último pago» de la lista). Solo aparecen los importes que alguien está pagando ahora mismo. Útil a fin de mes: filtra los de 35 €, los de 30 €, los del bono de 180 €… y exporta ese Excel.</li>
       <li><strong>Sexo</strong>: Hombre, Mujer o <strong>Sin asignar</strong> (útil para cazar olvidos del alta y completar fichas).</li>
       <li><strong>Fecha de alta</strong>: abre una ventana con periodos rápidos (hoy, ayer, últimos 7 días, esta semana, este mes, este año) y, en “Más opciones”, un año entero o un rango exacto con calendario.</li>
       <li>Los filtros se <strong>suman</strong> entre sí; <strong>Limpiar filtros</strong> los quita todos. El export y “seleccionar todos” respetan lo filtrado.</li>
@@ -102,6 +103,7 @@ export const AyudaSocios = () => (
     <ul>
       <li>Las <strong>casillas</strong> de la izquierda te dejan elegir socios concretos (incluso de varias páginas). La casilla de la cabecera marca/desmarca todos los del filtro actual.</li>
       <li><strong>Exportar Excel</strong> se adapta: si tienes casillas marcadas exporta <strong>esos</strong>; si no, exporta <strong>lo que ves</strong> según el filtro; sin filtro, exporta <strong>todos</strong>. El número entre paréntesis te dice cuántos saldrán.</li>
+      <li>El Excel trae <strong>dos hojas</strong>: «Socios» (una fila por socio, con filtros de Excel ya puestos en la cabecera y el desglose de su último pago) y <strong>«Por cuota»</strong> (los mismos socios agrupados por lo que pagaron la última vez, con el recuento de cada grupo — la foto de fin de mes).</li>
     </ul>
     <h4>Más</h4>
     <ul>
@@ -112,7 +114,7 @@ export const AyudaSocios = () => (
     <ul>
       <li><strong>Sin pagar</strong> (morado): nunca ha pagado esa cuota — socio nuevo o aún sin cobrar.</li>
       <li><strong>Atrasado</strong> (rojo): pagó antes, pero su cuota ya venció. Toca renovar.</li>
-      <li><strong>Vence pronto</strong> (ámbar): le quedan 7 días o menos.</li>
+      <li><strong>Vence pronto</strong> (ámbar): le quedan 5 días o menos.</li>
       <li><strong>Al día</strong> (verde): pagada y al corriente.</li>
       <li><strong>Sin cuotas</strong> (gris): no tiene ninguna actividad activa.</li>
     </ul>

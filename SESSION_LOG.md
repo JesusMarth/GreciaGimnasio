@@ -46,7 +46,7 @@ Replica el patrón con el que se añadió `dni` y el de los filtros existentes. 
 - App **local, offline, un solo PC**, usuario no técnico. Todo el estado en **un archivo** `data/gymgrecia.db`; portabilidad = copiar la carpeta `data`. `GYM_DATA_DIR` cambia esa carpeta (lo usa el mock).
 - **Recibo** por defecto (no factura); IVA sin desglosar salvo configuración. Validez fiscal/IVA → a confirmar con el gestor.
 - Avisos: descartado el **bot de WhatsApp** (viola ToS, riesgo de baneo); elegido **email automático** (SMTP). El `wa.me` manual queda como opción si algún día se quiere.
-- `actividad` se guarda en minúsculas y se muestra capitalizada. Los **estados de cuota se calculan** (no se guardan): "Sin pagar" = morado (nunca pagó) · "Atrasado" = rojo (venció) · "Vence pronto" = ámbar (≤7 días) · "Al día" = verde.
+- `actividad` se guarda en minúsculas y se muestra capitalizada. Los **estados de cuota se calculan** (no se guardan): "Sin pagar" = morado (nunca pagó) · "Atrasado" = rojo (venció) · "Vence pronto" = ámbar (≤5 días) · "Al día" = verde.
 - ⚠️ **Al añadir dependencias**: con el `.npmrc` de proyecto ya se instala del npm público y el lock queda portable. Si alguna vez reaparece `inditex` en `package-lock.json`, arreglar con:
   `sed -i 's|https://inditex.jfrog.io/artifactory/api/npm/node-public/|https://registry.npmjs.org/|g' package-lock.json`
 
