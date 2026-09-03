@@ -209,7 +209,18 @@ export function Desplegable({ value, onChange, opciones, disabled, placeholder =
             id={listaId}
             role="listbox"
             className={"dd-lista" + (pos.arriba ? " arriba" : "") + (cerrando ? " cerrando" : "")}
-            style={{ left: pos.left, top: pos.arriba ? undefined : pos.top + 4, bottom: pos.arriba ? window.innerHeight - pos.top + 4 : undefined, width: pos.width, maxHeight: altoMax }}
+            // La lista mide como mínimo lo que su caja y puede ser más ancha (hasta 520 px
+            // o el borde de la ventana) para que las opciones largas se lean enteras; la
+            // caja, en cambio, nunca crece.
+            style={{
+              left: pos.left,
+              top: pos.arriba ? undefined : pos.top + 4,
+              bottom: pos.arriba ? window.innerHeight - pos.top + 4 : undefined,
+              minWidth: pos.width,
+              maxWidth: Math.max(pos.width, Math.min(520, window.innerWidth - pos.left - 12)),
+              width: "max-content",
+              maxHeight: altoMax,
+            }}
             onKeyDown={teclado}
             tabIndex={-1}
           >

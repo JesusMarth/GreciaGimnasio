@@ -23,7 +23,8 @@ export interface Suscripcion {
   actividad: string;
   etiqueta: string | null;
   importe: number;
-  periodicidad: string; // mensual | bono
+  periodicidad: string; // mensual (cuota por tiempo) | bono (sesiones)
+  meses: number; // cuota por tiempo: meses que cubre cada cobro (1 mensual · 3 trimestral · 6 semestral · 12 anual)
   pagadoHasta: string | null; // null en bonos por sesiones (no caducan por fecha)
   coberturaSinCobro: boolean; // la cobertura vigente se apuntó a mano (ningún cobro la respalda)
   activa: boolean;
@@ -91,6 +92,7 @@ export interface Tarifa {
   importe: number;
   periodicidad: string;
   sesiones: number | null; // sesiones por bono (solo tarifas de tipo bono)
+  meses: number; // duración de la cuota por tiempo (1, 3, 6, 12…)
 }
 
 export interface DashItem {

@@ -75,7 +75,8 @@ pagosRouter.post("/", (req, res) => {
         // Por defecto: extiende desde la cobertura vigente; si caduco, desde la fecha del pago.
         const base = sub.pagado_hasta && sub.pagado_hasta > fechaPago ? sub.pagado_hasta : fechaPago;
         if (!desde) desde = base;
-        if (!hasta) hasta = addMeses(base, l.meses && l.meses > 0 ? Math.min(l.meses, 120) : 1);
+        // Sin `meses` explícitos, el cobro cubre la duración de la cuota (anual = 12).
+        if (!hasta) hasta = addMeses(base, l.meses && l.meses > 0 ? Math.min(l.meses, 120) : sub.meses || 1);
       }
     }
     return { suscripcionId: l.suscripcionId ?? null, actividad, concepto, importe, desde, hasta, sesiones, sub };

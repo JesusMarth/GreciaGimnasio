@@ -51,7 +51,7 @@ export function avisosDe(s: Socio): string[] {
   if (cubiertas.some((x) => x.esBono))
     avisos.push("Bono cubierto solo por sesiones apuntadas a mano (del papelito): no hay ningún cobro registrado detrás (no suma en Ingresos).");
   if (s.suscripciones.some((x) => x.activa && x.bonoSinConfigurar))
-    avisos.push("Bono apuntado como si fuera una cuota mensual (antes de la versión 1.8): edítalo e indica cuántas sesiones trae para llevar la cuenta por sesiones.");
+    avisos.push("«Bono» apuntado antes de la versión 1.8: edítalo y di qué es de verdad — una cuota por tiempo (p. ej. anual de 324 €) o un bono de sesiones. Mientras tanto sigue funcionando por fecha.");
   return avisos;
 }
 

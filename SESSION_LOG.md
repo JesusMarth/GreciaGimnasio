@@ -66,6 +66,29 @@ Opción futura si quisieran la BD "de verdad" en la nube: Turso/libSQL (réplica
 
 ## 📋 Registro (más reciente arriba)
 
+### 2026-09-03 (4) · v1.9.0 publicada · cuotas con duración (anual/semestral) · desplegables anchos
+- **Publicada v1.9.0** (copia por email).
+- **Feedback del jefe**: "nos hemos cargado los bonos de 324 € (año) y 180 € (6
+  meses): NO son bonos, son cuotas con duración". En la 1.8 esos `periodicidad='bono'`
+  antiguos quedaban como «bono sin configurar» pidiendo sesiones (mal consejo).
+  Solución: columna **`meses`** en `suscripciones` y `tarifas` (aditiva, default 1):
+  una cuota por tiempo es mensual (1), trimestral (3), semestral (6) o anual (12);
+  el importe es por periodo y cada cobro cubre `meses` por defecto (POST /pagos
+  sin `meses` → `sub.meses`; `cobroInicial.meses` default = duración). Los bonos
+  legado se **reclasifican** desde Editar (tipo desbloqueado solo para ellos):
+  «cuota por tiempo» → conserva fecha y cobros, desaparece el aviso; «bono de
+  sesiones» → lo de la 1.8. `duracionTxt` en `texto.ts` y `format.ts`.
+- **Tarifas personalizadas / cobro único**: duración en Tarifas y en el alta;
+  «Cobrar ahora» del alta tiene «Meses que cubre» (1,2,3,4,6,12 ∪ duración) e
+  importe libre; PagoModal igual (`opcionesMeses`). Textos de ayuda dicen que no
+  hace falta tarifa para un precio único.
+- **Desplegables**: la lista ya no corta con «…»: `min-width` = caja,
+  `width: max-content` hasta 520 px o el borde de la ventana, y las opciones
+  envuelven (`white-space: normal`). La caja sigue sin crecer.
+- Tests: ingresos **85/85** (S: anual 324 con cobro por defecto de 12 meses, cobro
+  libre de 3 meses/90 €, duración 0 → 400; T: bono legado 324 € reclasificado como
+  anual con fecha y cobro intactos).
+
 ### 2026-09-03 (3) · v1.8.0 publicada · copia de seguridad por email
 - **Publicada v1.8.0** (bonos por sesiones + QA + desplegables + refactor).
 - **Copia fuera del PC** (petición del jefe: "si el ordenador revienta se pierde

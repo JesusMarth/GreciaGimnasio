@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { api, ACTIVIDADES } from "../api.ts";
-import { euros, capitalizar } from "../format.ts";
+import { euros, capitalizar, duracionTxt, opcionesMeses } from "../format.ts";
 import { Modal } from "../components/Modal.tsx";
 import { Desplegable } from "../components/Desplegable.tsx";
 import { useConfirm } from "../components/Confirmar.tsx";
@@ -70,7 +70,7 @@ export function Tarifas() {
                     <span className="pill-act">{capitalizar(t.actividad)}</span>
                   </td>
                   <td className="cifra">{euros(t.importe)}</td>
-                  <td className="muted">{t.periodicidad === "bono" ? (t.sesiones ? `Bono · ${t.sesiones} sesiones` : "Bono · sin sesiones (edítala)") : "Mensual"}</td>
+                  <td className="muted">{t.periodicidad === "bono" ? (t.sesiones ? `Bono · ${t.sesiones} sesiones` : "Bono · sin sesiones (edítala)") : duracionTxt(t.meses || 1)}</td>
                   <td style={{ textAlign: "right" }}>
                     <button className="btn sm" onClick={() => setForm({ t })}>
                       Editar
@@ -102,6 +102,7 @@ function TarifaForm({ tarifa, onCerrar, onHecho }: { tarifa?: Tarifa; onCerrar: 
   const [importe, setImporte] = useState<number>(tarifa?.importe ?? 0);
   const [periodicidad, setPeriodicidad] = useState(tarifa?.periodicidad ?? "mensual");
   const [sesiones, setSesiones] = useState<number>(tarifa?.sesiones ?? 20);
+  const [meses, setMeses] = useState<number>(tarifa?.meses ?? 1);
   const [error, setError] = useState("");
   const [guardando, setGuardando] = useState(false);
 
@@ -116,7 +117,7 @@ function TarifaForm({ tarifa, onCerrar, onHecho }: { tarifa?: Tarifa; onCerrar: 
     }
     setGuardando(true);
     setError("");
-    const datos = { nombre, actividad, importe: Number(importe), periodicidad, sesiones: periodicidad === "bono" ? sesiones : null };
+    const datos = { nombre, actividad, importe: Number(importe), periodicidad, sesiones: periodicidad === "bono" ? sesiones : null, meses: periodicidad === "bono" ? 1 : meses };
     try {
       if (tarifa) await api.editarTarifa(tarifa.id, datos);
       else await api.crearTarifa(datos);
@@ -168,18 +169,28 @@ function TarifaForm({ tarifa, onCerrar, onHecho }: { tarifa?: Tarifa; onCerrar: 
               value={periodicidad}
               onChange={setPeriodicidad}
               opciones={[
-                { value: "mensual", label: "Cuota mensual" },
+                { value: "mensual", label: "Cuota por tiempo" },
                 { value: "bono", label: "Bono de sesiones" },
               ]}
             />
           </div>
-          {periodicidad === "bono" && (
+          {periodicidad === "bono" ? (
             <div className="field">
               <label>Sesiones por bono *</label>
               <input type="number" step="1" min="1" value={sesiones} onChange={(e) => setSesiones(Number(e.target.value))} />
             </div>
+          ) : (
+            <div className="field">
+              <label>Duración</label>
+              <Desplegable value={String(meses)} onChange={(v) => setMeses(Number(v))} opciones={opcionesMeses(meses)} />
+            </div>
           )}
         </div>
+        {periodicidad !== "bono" && (
+          <div className="hint">
+            El importe es por {meses === 1 ? "mes" : meses === 12 ? "año" : `${meses} meses`} ({duracionTxt(meses).toLowerCase()}). P. ej. «Anual gimnasio» · 12 meses · 324 €.
+          </div>
+        )}
       </div>
     </Modal>
   );

@@ -192,6 +192,22 @@ CREATE INDEX IF NOT EXISTS idx_lineas_suscripcion ON pago_lineas(suscripcion_id)
   } catch {
     /* la columna ya existe */
   }
+  // --- Cuotas con duración (v1.10) -------------------------------------------
+  // Una cuota por tiempo puede ser mensual (1), trimestral (3), semestral (6) o
+  // anual (12): `meses` es lo que cubre cada cobro por defecto (el importe es por
+  // ese periodo). Las filas existentes quedan a 1 = mensual, como hasta ahora.
+  // Los "bonos" antiguos que en realidad eran un año pagado (324 €) se
+  // reclasifican desde la ficha como cuota por tiempo, sin tocar fechas ni cobros.
+  try {
+    conn.exec("ALTER TABLE suscripciones ADD COLUMN meses INTEGER NOT NULL DEFAULT 1");
+  } catch {
+    /* la columna ya existe */
+  }
+  try {
+    conn.exec("ALTER TABLE tarifas ADD COLUMN meses INTEGER NOT NULL DEFAULT 1");
+  } catch {
+    /* la columna ya existe */
+  }
   conn.exec(`
 CREATE TABLE IF NOT EXISTS asistencias (
   id             INTEGER PRIMARY KEY AUTOINCREMENT,

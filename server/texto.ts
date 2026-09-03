@@ -41,6 +41,10 @@ export const ESTADO_TXT_BONO: Record<string, string> = {
   pendiente: "Sin bono",
 };
 
+/** Duración de una cuota por tiempo: 1 → "Mensual", 3 → "Trimestral", 6 → "Semestral", 12 → "Anual". */
+export const duracionTxt = (meses: number): string =>
+  meses === 12 ? "Anual" : meses === 6 ? "Semestral" : meses === 3 ? "Trimestral" : meses === 1 ? "Mensual" : `Cada ${meses} meses`;
+
 /** Etiqueta de estado según sea cuota por fecha o bono por sesiones. */
 export const estadoTxt = (estado: string | null, bono: boolean): string =>
   estado ? ((bono ? ESTADO_TXT_BONO : ESTADO_TXT)[estado] ?? estado) : "Sin cuotas";

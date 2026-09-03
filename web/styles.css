@@ -973,7 +973,7 @@ td { padding: 9px 12px; font-size: 13px; }
   display: flex; align-items: center; gap: 8px; padding: 8px 10px; border-radius: calc(var(--radio) - 3px);
   font-size: 13.5px; color: var(--tinta); cursor: pointer; transition: background-color 0.12s ease, color 0.12s ease;
 }
-.dd-op .txt { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.dd-op .txt { flex: 1; min-width: 0; white-space: normal; overflow-wrap: anywhere; line-height: 1.35; }
 .dd-op.activa { background: var(--azul-soft); color: var(--azul-900); }
 .dd-op.sel { font-weight: 700; }
 .dd-op .check { flex-shrink: 0; color: var(--azul-500); }

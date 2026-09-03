@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { useNavigate, useParams, Link } from "react-router-dom";
 import { api } from "../api.ts";
-import { euros, fecha, estadoTexto, colorEstado, capitalizar, descargar, hoyISO } from "../format.ts";
+import { euros, fecha, estadoTexto, colorEstado, capitalizar, descargar, duracionTxt, hoyISO } from "../format.ts";
 import { EstadoBadge } from "../components/Badges.tsx";
 import { Modal } from "../components/Modal.tsx";
 import { PagoModal } from "../components/PagoModal.tsx";
@@ -615,6 +615,7 @@ function SubCard({
         <div>
           <span className="pill-act">{capitalizar(sub.actividad)}</span>
           {sub.esBono && <span className="badge gris" style={{ marginLeft: 8 }}>Bono {sub.sesionesPorBono} ses.</span>}
+          {!sub.esBono && sub.meses > 1 && <span className="badge gris" style={{ marginLeft: 8 }}>{duracionTxt(sub.meses)}</span>}
           {sub.etiqueta && <span style={{ marginLeft: 8, fontWeight: 600 }}>{sub.etiqueta}</span>}
         </div>
         <strong className="cifra">{euros(sub.importe)}</strong>
@@ -658,8 +659,9 @@ function SubCard({
       )}
       {sub.bonoSinConfigurar && sub.activa && (
         <div className="aviso-banner" style={{ marginTop: 10, marginBottom: 0 }}>
-          Este bono se apuntó como cuota mensual (con fecha). Pulsa <strong>Editar</strong> e indica sus sesiones para llevarlo como el
-          papelito: el cobro ya registrado contará como un bono completo.
+          «Bono» de antes de la versión 1.8: sigue funcionando por fecha, pero pulsa <strong>Editar</strong> y di qué es: una{" "}
+          <strong>cuota por tiempo</strong> (p. ej. anual de 324 €: nada cambia, solo queda bien clasificada) o un{" "}
+          <strong>bono de sesiones</strong> (el cobro ya registrado contará como un bono completo).
         </div>
       )}
       <div className="acciones" style={{ marginTop: 10 }}>

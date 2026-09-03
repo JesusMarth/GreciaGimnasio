@@ -2,7 +2,7 @@ import { Router } from "express";
 import { db } from "../db.ts";
 import { addMeses, hoyISO } from "../util.ts";
 import { registrarEvento } from "../eventos.ts";
-import { ddmmaaaa as ddmm, eurCorto as eur, ISO, metodoValido } from "../texto.ts";
+import { ddmmaaaa as ddmm, duracionTxt, eurCorto as eur, ISO, metodoValido } from "../texto.ts";
 import { esBonoPorSesiones, sesionesDe, suscripcionConEstado, type SuscripcionRow } from "../queries.ts";
 
 
@@ -41,6 +41,8 @@ suscripcionesRouter.post("/socios/:id/suscripciones", (req, res) => {
   if (esBono && !sesionesPorBono) return res.status(400).json({ error: "Indica cuántas sesiones trae el bono (p. ej. 20)" });
   const sesionesManual = esBono ? (enteroOpcional(req.body?.sesionesManual) ?? 0) : 0;
   if (esBono) pagadoHasta = null; // un bono por sesiones no tiene fecha de cobertura
+  // Cuota por tiempo: meses que cubre cada cobro (1 mensual · 3 · 6 · 12 anual).
+  const mesesCuota = esBono ? 1 : Math.min(Math.max(enteroOpcional(req.body?.meses) || 1, 1), 24);
 
   const hoy = hoyISO();
   let cobro: { metodo: string; fecha: string; meses: number } | null = null;
@@ -48,7 +50,8 @@ suscripcionesRouter.post("/socios/:id/suscripciones", (req, res) => {
     const fecha = cobroInicial.fecha || hoy;
     if (!ISO.test(String(fecha))) return res.status(400).json({ error: "Fecha del cobro no válida" });
     if (String(fecha) > hoy) return res.status(400).json({ error: "La fecha del cobro no puede ser futura" });
-    const meses = Math.min(Math.max(Number(cobroInicial.meses) || 1, 1), 120);
+    // Por defecto el primer cobro cubre la duración de la cuota (un anual, 12 meses).
+    const meses = Math.min(Math.max(Number(cobroInicial.meses) || mesesCuota, 1), 120);
     const metodo = metodoValido(cobroInicial.metodo);
     cobro = { metodo, fecha, meses };
   }
@@ -57,8 +60,8 @@ suscripcionesRouter.post("/socios/:id/suscripciones", (req, res) => {
     const ph = pagadoHasta || null;
     const info = db
       .prepare(
-        `INSERT INTO suscripciones (socio_id, actividad, etiqueta, importe, periodicidad, pagado_hasta, cobertura_manual, sesiones_por_bono, sesiones_manual, activa, notas, creado_en)
-         VALUES (?,?,?,?,?,?,?,?,?,1,?,?)`
+        `INSERT INTO suscripciones (socio_id, actividad, etiqueta, importe, periodicidad, pagado_hasta, cobertura_manual, sesiones_por_bono, sesiones_manual, meses, activa, notas, creado_en)
+         VALUES (?,?,?,?,?,?,?,?,?,?,1,?,?)`
       )
       .run(
         req.params.id,
@@ -70,6 +73,7 @@ suscripcionesRouter.post("/socios/:id/suscripciones", (req, res) => {
         ph, // lo puesto a mano en el alta es, por definición, cobertura sin cobro
         sesionesPorBono,
         sesionesManual,
+        mesesCuota,
         notas || null,
         hoy
       );
@@ -108,11 +112,11 @@ suscripcionesRouter.post("/socios/:id/suscripciones", (req, res) => {
       registrarEvento(req.params.id, "actividad", `Bono de ${act} añadido (${sesionesPorBono} sesiones por ${eur(imp)}), pendiente de su primer cobro`);
     }
   } else if (cobro) {
-    registrarEvento(req.params.id, "pago", `Actividad ${act} añadida con su primer cobro: ${eur(imp)} en ${cobro.metodo} (cubre hasta ${ddmm(s.pagado_hasta)})`);
+    registrarEvento(req.params.id, "pago", `Actividad ${act} (${duracionTxt(mesesCuota).toLowerCase()}) añadida con su primer cobro: ${eur(imp)} en ${cobro.metodo} (cubre hasta ${ddmm(s.pagado_hasta)})`);
   } else if (s.cobertura_manual) {
-    registrarEvento(req.params.id, "actividad", `Actividad ${act} añadida como «ya estaba pagado» hasta ${ddmm(s.cobertura_manual)} — fecha apuntada a mano, sin cobro registrado`);
+    registrarEvento(req.params.id, "actividad", `Actividad ${act} (${duracionTxt(mesesCuota).toLowerCase()}) añadida como «ya estaba pagado» hasta ${ddmm(s.cobertura_manual)} — fecha apuntada a mano, sin cobro registrado`);
   } else {
-    registrarEvento(req.params.id, "actividad", `Actividad ${act} añadida, pendiente de su primer cobro (cuota de ${eur(imp)})`);
+    registrarEvento(req.params.id, "actividad", `Actividad ${act} (${duracionTxt(mesesCuota).toLowerCase()}) añadida, pendiente de su primer cobro (cuota de ${eur(imp)})`);
   }
   res.status(201).json(suscripcionConEstado(s, hoy));
 });
@@ -127,6 +131,14 @@ suscripcionesRouter.put("/suscripciones/:id", (req, res) => {
   if (pagadoHasta && !ISO.test(String(pagadoHasta))) return res.status(400).json({ error: "Fecha 'pagado hasta' no válida" });
   const nuevaPeriodicidad = periodicidad === "bono" || periodicidad === "mensual" ? periodicidad : s.periodicidad;
   const seraBono = nuevaPeriodicidad === "bono";
+  // Duración de la cuota por tiempo (solo si viene; en bonos no aplica y queda a 1).
+  let meses = s.meses ?? 1;
+  if (req.body?.meses !== undefined) {
+    const n = enteroOpcional(req.body.meses);
+    if (!n || n > 24) return res.status(400).json({ error: "La duración debe ser de 1 a 24 meses" });
+    meses = n;
+  }
+  if (seraBono) meses = 1;
   // Sesiones del bono: solo se tocan si vienen en la petición (y solo tienen
   // sentido en un bono). Un bono antiguo (sin sesiones) puede seguir sin ellas,
   // pero si se mandan tienen que valer: un bono ya configurado no se "desconfigura".
@@ -175,7 +187,7 @@ suscripcionesRouter.put("/suscripciones/:id", (req, res) => {
       db.prepare("UPDATE pago_lineas SET sesiones = ? WHERE suscripcion_id = ? AND sesiones IS NULL").run(sesionesPorBono, s.id);
     }
     db.prepare(
-      `UPDATE suscripciones SET actividad=?, etiqueta=?, importe=?, periodicidad=?, pagado_hasta=?, cobertura_manual=?, sesiones_por_bono=?, sesiones_manual=?, activa=?, notas=? WHERE id=?`
+      `UPDATE suscripciones SET actividad=?, etiqueta=?, importe=?, periodicidad=?, pagado_hasta=?, cobertura_manual=?, sesiones_por_bono=?, sesiones_manual=?, meses=?, activa=?, notas=? WHERE id=?`
     ).run(
       actividad ? String(actividad).trim().toLowerCase() : s.actividad,
       etiqueta ?? s.etiqueta,
@@ -185,6 +197,7 @@ suscripcionesRouter.put("/suscripciones/:id", (req, res) => {
       coberturaManual,
       sesionesPorBono,
       sesionesManual,
+      meses,
       activa === undefined ? s.activa : activa ? 1 : 0,
       notas ?? s.notas,
       s.id
@@ -212,7 +225,14 @@ suscripcionesRouter.put("/suscripciones/:id", (req, res) => {
     cambios.push(`pagado hasta ${ddmm(s.pagado_hasta)} → ${ddmm(actualizada.pagado_hasta)} (a mano, sin cobro)`);
   if (actualizada.actividad !== s.actividad) cambios.push(`actividad ${s.actividad} → ${actualizada.actividad}`);
   if (actualizada.periodicidad !== s.periodicidad)
-    cambios.push(actualizada.periodicidad === "bono" ? "pasa de cuota mensual a bono por sesiones" : "pasa de bono a cuota mensual");
+    cambios.push(
+      actualizada.periodicidad === "bono"
+        ? "pasa de cuota por tiempo a bono por sesiones"
+        : s.sesiones_por_bono
+          ? `pasa de bono de sesiones a cuota por tiempo (${duracionTxt(actualizada.meses).toLowerCase()})`
+          : `«bono» de antes de la versión 1.8 reclasificado como cuota por tiempo (${duracionTxt(actualizada.meses).toLowerCase()}); fechas y cobros intactos`
+    );
+  else if ((actualizada.meses ?? 1) !== (s.meses ?? 1)) cambios.push(`duración ${duracionTxt(s.meses ?? 1).toLowerCase()} → ${duracionTxt(actualizada.meses).toLowerCase()}`);
   if (esBonoPorSesiones(actualizada)) {
     const ses = sesionesDe(actualizada);
     if (!eraBonoPorSesiones && s.periodicidad === "bono")

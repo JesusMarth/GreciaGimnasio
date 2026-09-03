@@ -69,6 +69,20 @@ export function estadoTexto(estado: EstadoCuota, dias: number | null, sesiones?:
   return `Al día · quedan ${dias} días`;
 }
 
+/** Duración de una cuota por tiempo: 1 → "Mensual", 3 → "Trimestral", 6 → "Semestral", 12 → "Anual". */
+export function duracionTxt(meses: number): string {
+  return meses === 12 ? "Anual" : meses === 6 ? "Semestral" : meses === 3 ? "Trimestral" : meses === 1 ? "Mensual" : `Cada ${meses} meses`;
+}
+
+/** Opciones de duración para desplegables (incluye siempre la actual aunque sea rara). */
+export const DURACIONES = [1, 3, 6, 12];
+export function opcionesMeses(actual?: number, extra: number[] = []): { value: string; label: string }[] {
+  const set = new Set<number>([...DURACIONES, ...extra, ...(actual ? [actual] : [])]);
+  return [...set]
+    .sort((a, b) => a - b)
+    .map((m) => ({ value: String(m), label: `${m} mes${m === 1 ? "" : "es"}${[3, 6, 12].includes(m) ? ` (${duracionTxt(m).toLowerCase()})` : ""}` }));
+}
+
 export function capitalizar(s: string): string {
   return s ? s.charAt(0).toUpperCase() + s.slice(1) : s;
 }

@@ -3,7 +3,7 @@ import { Modal } from "./Modal.tsx";
 import { Plegable } from "./Plegable.tsx";
 import { Desplegable } from "./Desplegable.tsx";
 import { api, ACTIVIDADES, METODOS } from "../api.ts";
-import { capitalizar, euros, hoyISO } from "../format.ts";
+import { capitalizar, duracionTxt, euros, hoyISO, opcionesMeses } from "../format.ts";
 import type { Suscripcion, Tarifa } from "../types.ts";
 
 interface Props {
@@ -23,22 +23,27 @@ type Arranque = "pendiente" | "cobrar" | "papel";
 const SESIONES_POR_DEFECTO = 20;
 
 // Flujo del formulario (para que no se puedan mezclar cosas):
-//  1. Primero se elige el TIPO (cuota mensual / bono de sesiones).
+//  1. Primero se elige el TIPO: cuota por tiempo (mensual, trimestral, semestral,
+//     anual…) o bono de sesiones.
 //  2. Las tarifas que se ofrecen son SOLO las de ese tipo; cambiar el tipo
-//     descarta la tarifa elegida (y lo que precargó).
-//  3. En edición el tipo NO se cambia: una cuota mensual con meses cobrados no
-//     puede convertirse en bono (ni al revés) sin liar la cuenta; para eso se
-//     quita la actividad y se añade otra.
+//     descarta la tarifa elegida (y lo que precargó). La tarifa es solo un atajo:
+//     importe, duración y meses del cobro son libres (sin guardar nada).
+//  3. En edición el tipo NO se cambia (una cuota con meses cobrados no puede
+//     convertirse en bono sin liar la cuenta). Excepción: los «bonos» de antes de
+//     la versión 1.8, que no se sabe qué eran: ahí sí se elige (cuota por tiempo,
+//     p. ej. un anual de 324 €, o bono de sesiones).
 export function SuscripcionFormModal({ socioId, suscripcion, onCerrar, onHecho }: Props) {
   const [actividad, setActividad] = useState(suscripcion?.actividad ?? "gimnasio");
   const [etiqueta, setEtiqueta] = useState(suscripcion?.etiqueta ?? "");
   const [importe, setImporte] = useState<number>(suscripcion?.importe ?? 0);
   const [periodicidad, setPeriodicidad] = useState(suscripcion?.periodicidad ?? "mensual");
+  const [meses, setMeses] = useState<number>(suscripcion?.meses ?? 1);
   const [pagadoHasta, setPagadoHasta] = useState(suscripcion?.pagadoHasta ?? "");
   const [activa, setActiva] = useState(suscripcion?.activa ?? true);
   const [arranque, setArranque] = useState<Arranque>("pendiente");
   const [fechaCobro, setFechaCobro] = useState(hoyISO());
   const [metodo, setMetodo] = useState("efectivo");
+  const [mesesCobro, setMesesCobro] = useState<number>(suscripcion?.meses ?? 1);
   // Bonos por sesiones
   const [sesionesPorBono, setSesionesPorBono] = useState<number>(suscripcion?.sesionesPorBono ?? SESIONES_POR_DEFECTO);
   const [sesionesManual, setSesionesManual] = useState<number>(suscripcion?.sesionesManual ?? 0);
@@ -50,6 +55,8 @@ export function SuscripcionFormModal({ socioId, suscripcion, onCerrar, onHecho }
 
   const esBono = periodicidad === "bono";
   const editando = !!suscripcion;
+  const legado = !!suscripcion?.bonoSinConfigurar; // «bono» de antes de v1.8: hay que decir qué es
+  const tipoBloqueado = editando && !legado;
 
   useEffect(() => {
     if (!suscripcion) api.tarifas().then(setTarifas).catch(() => {});
@@ -67,6 +74,10 @@ export function SuscripcionFormModal({ socioId, suscripcion, onCerrar, onHecho }
     setEtiqueta(t.nombre);
     setImporte(t.importe);
     if (t.periodicidad === "bono") setSesionesPorBono(t.sesiones ?? SESIONES_POR_DEFECTO);
+    else {
+      setMeses(t.meses || 1);
+      setMesesCobro(t.meses || 1);
+    }
   }
 
   function cambiarTipo(nuevo: string) {
@@ -80,6 +91,12 @@ export function SuscripcionFormModal({ socioId, suscripcion, onCerrar, onHecho }
     }
     if (nuevo === "bono") setSesionesPorBono(SESIONES_POR_DEFECTO);
     if (arranque === "papel") setArranque("pendiente"); // el "ya estaba pagado" se expresa distinto en cada tipo
+  }
+
+  function cambiarDuracion(v: string) {
+    const n = Number(v);
+    setMeses(n);
+    setMesesCobro(n); // el primer cobro cubre la duración, salvo que se cambie a mano
   }
 
   async function guardar() {
@@ -115,6 +132,7 @@ export function SuscripcionFormModal({ socioId, suscripcion, onCerrar, onHecho }
       activa,
     };
     if (esBono) datos.sesionesPorBono = sesionesPorBono;
+    else datos.meses = meses;
     if (suscripcion) {
       // Un bono por sesiones no tiene fecha: no se manda pagadoHasta (se conserva
       // en la BD tal cual estuviera, sin tocarla).
@@ -127,7 +145,7 @@ export function SuscripcionFormModal({ socioId, suscripcion, onCerrar, onHecho }
         if (esBono) datos.sesionesManual = sesionesPapel;
         else datos.pagadoHasta = pagadoHasta;
       }
-      if (arranque === "cobrar") datos.cobroInicial = { metodo, fecha: fechaCobro };
+      if (arranque === "cobrar") datos.cobroInicial = { metodo, fecha: fechaCobro, meses: esBono ? undefined : mesesCobro };
     }
     try {
       if (suscripcion) await api.editarSuscripcion(suscripcion.id, datos);
@@ -145,6 +163,7 @@ export function SuscripcionFormModal({ socioId, suscripcion, onCerrar, onHecho }
     actividad && !ACTIVIDADES.includes(actividad) ? [...ACTIVIDADES, actividad] : ACTIVIDADES;
 
   const ses = suscripcion?.sesiones ?? null;
+  const etiquetaImporte = esBono ? "Precio del bono (€) *" : meses === 1 ? "Importe al mes (€) *" : `Importe por ${duracionTxt(meses).toLowerCase() === "anual" ? "año" : `${meses} meses`} (€) *`;
 
   return (
     <Modal
@@ -168,11 +187,12 @@ export function SuscripcionFormModal({ socioId, suscripcion, onCerrar, onHecho }
       <div className="modal-body">
         {error && <div className="error-banner">{error}</div>}
 
-        {suscripcion?.bonoSinConfigurar && (
+        {legado && (
           <div className="aviso-banner">
-            Este bono se apuntó como si fuera una cuota mensual (con fecha). Indica abajo cuántas sesiones trae y pasará a
-            llevarse por sesiones: el cobro que ya tiene registrado contará como un bono completo y no se toca ningún pago
-            ni fecha. Después, pica desde su ficha las sesiones que ya haya usado.
+            Este «bono» se apuntó antes de la versión 1.8 y la app no sabe qué es. Elige el tipo: si es una <strong>cuota por
+            tiempo</strong> (p. ej. un año pagado por 324 € o seis meses por 180 €), pon su duración y seguirá exactamente como
+            hasta ahora, con su fecha y sus cobros intactos. Si es un <strong>bono de sesiones</strong>, indica sus sesiones y el
+            cobro ya registrado contará como un bono completo.
           </div>
         )}
 
@@ -183,9 +203,9 @@ export function SuscripcionFormModal({ socioId, suscripcion, onCerrar, onHecho }
             <Desplegable
               value={periodicidad}
               onChange={cambiarTipo}
-              disabled={editando}
+              disabled={tipoBloqueado}
               opciones={[
-                { value: "mensual", label: "Cuota mensual" },
+                { value: "mensual", label: "Cuota por tiempo (mensual, trimestral, anual…)" },
                 { value: "bono", label: "Bono de sesiones" },
               ]}
             />
@@ -201,7 +221,7 @@ export function SuscripcionFormModal({ socioId, suscripcion, onCerrar, onHecho }
                   { value: "", label: tarifasDelTipo.length === 0 ? "No hay tarifas de este tipo" : "Elegir para precargar…" },
                   ...tarifasDelTipo.map((t) => ({
                     value: String(t.id),
-                    label: `${t.nombre} · ${capitalizar(t.actividad)}${t.periodicidad === "bono" && t.sesiones ? ` · ${t.sesiones} ses.` : ""}`,
+                    label: `${t.nombre} · ${capitalizar(t.actividad)} · ${t.periodicidad === "bono" ? `${t.sesiones} sesiones` : duracionTxt(t.meses || 1).toLowerCase()}`,
                     extra: `${t.importe} €`,
                   })),
                 ]}
@@ -209,7 +229,7 @@ export function SuscripcionFormModal({ socioId, suscripcion, onCerrar, onHecho }
             </div>
           )}
         </div>
-        {editando && !suscripcion?.bonoSinConfigurar && (
+        {tipoBloqueado && (
           <div className="hint" style={{ marginTop: -6, marginBottom: 10 }}>
             El tipo no se cambia una vez creada: para pasar de cuota a bono (o al revés), quita esta actividad y añade otra.
           </div>
@@ -221,27 +241,32 @@ export function SuscripcionFormModal({ socioId, suscripcion, onCerrar, onHecho }
             <Desplegable value={actividad} onChange={setActividad} opciones={opcionesActividad.map((a) => ({ value: a, label: capitalizar(a) }))} />
           </div>
           <div className="field">
-            <label>{esBono ? "Precio del bono (€) *" : "Importe (€) *"}</label>
+            <label>{etiquetaImporte}</label>
             <input type="number" step="0.01" min="0" value={importe} onChange={(e) => setImporte(Number(e.target.value))} />
           </div>
         </div>
 
-        <div className="field">
-          <label>Etiqueta / descripción</label>
-          <input value={etiqueta} onChange={(e) => setEtiqueta(e.target.value)} placeholder={esBono ? "p. ej. Bono 20 sesiones" : "p. ej. Karate juvenil, Gimnasio familiar…"} />
+        <div className="row2">
+          <div className="field">
+            <label>Etiqueta / descripción</label>
+            <input value={etiqueta} onChange={(e) => setEtiqueta(e.target.value)} placeholder={esBono ? "p. ej. Bono 20 sesiones" : "p. ej. Karate juvenil, Anual gimnasio…"} />
+          </div>
+          <div className="field">
+            <label>{esBono ? "Sesiones por bono *" : "Duración de la cuota"}</label>
+            {esBono ? (
+              <input type="number" step="1" min="1" value={sesionesPorBono} onChange={(e) => setSesionesPorBono(Number(e.target.value))} />
+            ) : (
+              <Desplegable value={String(meses)} onChange={cambiarDuracion} opciones={opcionesMeses(meses)} />
+            )}
+          </div>
         </div>
-
-        {/* Lo que aparece y desaparece va en <Plegable>: el modal crece y se encoge con animación. */}
-        <Plegable>
-          {esBono && (
-            <div className="row2">
-              <div className="field">
-                <label>Sesiones por bono *</label>
-                <input type="number" step="1" min="1" value={sesionesPorBono} onChange={(e) => setSesionesPorBono(Number(e.target.value))} />
-              </div>
-            </div>
-          )}
-        </Plegable>
+        {!esBono && (
+          <div className="hint" style={{ marginTop: -6, marginBottom: 12 }}>
+            {meses === 1
+              ? "Cada cobro cubre un mes (en el cobro puedes cambiar los meses y el importe libremente)."
+              : `Cada cobro cubre ${meses} meses por ${euros(Number(importe) || 0)}. En el cobro puedes cambiar meses e importe libremente.`}
+          </div>
+        )}
 
         {!suscripcion && (
           <Plegable>
@@ -268,7 +293,7 @@ export function SuscripcionFormModal({ socioId, suscripcion, onCerrar, onHecho }
 
             {arranque === "cobrar" && (
               <>
-                <div className="row2">
+                <div className={esBono ? "row2" : "row3"}>
                   <div className="field">
                     <label>Fecha del cobro</label>
                     <input type="date" value={fechaCobro} max={hoyISO()} onChange={(e) => setFechaCobro(e.target.value)} />
@@ -277,11 +302,17 @@ export function SuscripcionFormModal({ socioId, suscripcion, onCerrar, onHecho }
                     <label>Método</label>
                     <Desplegable value={metodo} onChange={setMetodo} opciones={METODOS.map((m) => ({ value: m, label: capitalizar(m) }))} />
                   </div>
+                  {!esBono && (
+                    <div className="field">
+                      <label>Meses que cubre</label>
+                      <Desplegable value={String(mesesCobro)} onChange={(v) => setMesesCobro(Number(v))} opciones={opcionesMeses(mesesCobro, [2, 4])} />
+                    </div>
+                  )}
                 </div>
                 <div className="hint">
                   {esBono
                     ? `Se apunta un cobro de ${euros(Number(importe) || 0)} por un bono de ${sesionesPorBono || "N"} sesiones: cuenta en Ingresos y en su historial, con recibo.`
-                    : `Se apunta un cobro de ${euros(Number(importe) || 0)} (1 mes): cuenta en Ingresos y en su historial, con recibo. ¿Te paga varios meses? Cóbralos luego con «Registrar pago».`}
+                    : `Se apunta un cobro de ${euros(Number(importe) || 0)} que cubre ${mesesCobro} mes${mesesCobro === 1 ? "" : "es"} desde hoy: cuenta en Ingresos y en su historial, con recibo. Si te paga otra cantidad o más meses, cámbialo aquí mismo.`}
                 </div>
               </>
             )}
@@ -354,7 +385,8 @@ export function SuscripcionFormModal({ socioId, suscripcion, onCerrar, onHecho }
           </div>
         )}
         <div className="hint">
-          El importe es libre: pon lo que pague de verdad (con su oferta, descuento familiar o por edad ya aplicados).
+          El importe es libre: pon lo que pague de verdad (con su oferta, descuento familiar o por edad ya aplicados). No hace
+          falta crear una tarifa para un precio único.
         </div>
       </div>
     </Modal>

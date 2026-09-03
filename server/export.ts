@@ -2,7 +2,7 @@
 import { db } from "./db.ts";
 import { socioConResumen, type SocioRow } from "./queries.ts";
 import { diffDias, hoyISO } from "./util.ts";
-import { cap, ddmmaaaa, estadoTxt } from "./texto.ts";
+import { cap, ddmmaaaa, duracionTxt, estadoTxt } from "./texto.ts";
 
 const sexoTxt = (s: string | null) => (s === "hombre" ? "Hombre" : s === "mujer" ? "Mujer" : "");
 const EUR = '#,##0.00" €"';
@@ -229,7 +229,7 @@ export async function libroSocio(id: number): Promise<Buffer> {
       act: cap(s.actividad),
       etq: s.etiqueta ?? "",
       imp: s.importe,
-      per: s.esBono ? `Bono ${s.sesionesPorBono} sesiones` : s.periodicidad === "bono" ? "Bono" : "Mensual",
+      per: s.esBono ? `Bono ${s.sesionesPorBono} sesiones` : s.periodicidad === "bono" ? "Bono (antiguo, sin clasificar)" : duracionTxt(s.meses),
       ph: s.sesiones ? `Quedan ${s.sesiones.restantes} (usadas ${s.sesiones.usadas})` : s.pagadoHasta ? ddmmaaaa(s.pagadoHasta) : "—",
       est: estadoTxt(s.estado, s.esBono),
       activa: s.activa ? "Sí" : "No",

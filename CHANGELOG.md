@@ -12,6 +12,23 @@ y el proyecto usa [Versionado Semántico](https://semver.org/lang/es/) (SemVer):
 
 ## [Sin publicar]
 
+### Added
+- **Cuotas con duración**: una cuota por tiempo puede ser mensual, trimestral,
+  semestral o anual (el importe es por ese periodo y cada cobro lo cubre entero:
+  «Anual gimnasio · 12 meses · 324 €», «Semestral · 6 meses · 180 €»). Se elige
+  en Tarifas y al añadir la actividad; en «Cobrar ahora» y en «Registrar pago» los
+  meses y el importe son libres (alguien que paga 3 meses con descuento se apunta
+  sin crear ninguna tarifa).
+
+### Fixed
+- Los **«bonos» apuntados antes de la 1.8 que en realidad eran un año o seis meses
+  pagados** ya no se tratan como bonos de sesiones: al editarlos se elige qué son
+  (cuota por tiempo con su duración, o bono de sesiones). Como cuota por tiempo
+  siguen exactamente igual, con su fecha y sus cobros intactos; solo desaparece el
+  aviso.
+- Las opciones de los desplegables se leen enteras: la lista puede ser más ancha
+  que su caja y el texto largo se envuelve, en vez de cortarse con «…».
+
 ## [1.9.0] - 2026-09-03
 
 ### Added

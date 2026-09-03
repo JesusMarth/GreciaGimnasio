@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { Modal } from "./Modal.tsx";
 import { Desplegable } from "./Desplegable.tsx";
 import { api, METODOS } from "../api.ts";
-import { euros, hoyISO, capitalizar } from "../format.ts";
+import { euros, hoyISO, capitalizar, duracionTxt, opcionesMeses } from "../format.ts";
 import type { Suscripcion } from "../types.ts";
 
 interface LineaUI {
@@ -48,7 +48,7 @@ export function PagoModal({ socioId, socioNombre, suscripcionIdPre, onCerrar, on
             etiqueta: x.etiqueta,
             importe: x.importe,
             importeBase: x.importe,
-            meses: 1,
+            meses: x.meses || 1, // por defecto el cobro cubre la duración de la cuota (anual = 12)
             bonos: 1,
             esBono: x.esBono,
             sesionesPorBono: x.sesionesPorBono,
@@ -146,7 +146,10 @@ export function PagoModal({ socioId, socioNombre, suscripcionIdPre, onCerrar, on
                         {l.etiqueta && l.etiqueta !== `Bono ${l.sesionesPorBono} sesiones` ? ` · ${l.etiqueta}` : ""}
                       </div>
                     ) : (
-                      l.etiqueta && <div className="lp-sub">{l.etiqueta}</div>
+                      <div className="lp-sub">
+                        {l.etiqueta ? `${l.etiqueta} · ` : ""}
+                        {duracionTxt(l.meses).toLowerCase()}
+                      </div>
                     )}
                   </div>
                   <div className="field" style={{ margin: 0 }}>
@@ -175,8 +178,8 @@ export function PagoModal({ socioId, socioNombre, suscripcionIdPre, onCerrar, on
                       <Desplegable
                         value={String(l.meses)}
                         onChange={(v) => set(i, { meses: Number(v) })}
-                        title="Meses que cubre"
-                        opciones={[1, 2, 3, 6, 12].map((m) => ({ value: String(m), label: `${m} mes${m === 1 ? "" : "es"}` }))}
+                        title="Meses que cubre este cobro (libre, no hace falta tarifa)"
+                        opciones={opcionesMeses(l.meses, [2, 4])}
                       />
                     )}
                   </div>
@@ -194,7 +197,8 @@ export function PagoModal({ socioId, socioNombre, suscripcionIdPre, onCerrar, on
               <span className="cifra">{euros(total)}</span>
             </div>
             <div className="hint">
-              Tú escribes el importe acordado de cada concepto. La app no calcula ofertas ni descuentos: guarda lo que cobras.
+              Importe y meses son libres en cada cobro: si alguien paga 3 meses con descuento, pon ese importe y «3 meses», sin crear
+              ninguna tarifa. La app no calcula ofertas: guarda lo que cobras.
               {incluidas.some((l) => l.esBono) && " Los bonos suman sus sesiones al contador del socio (no caducan por fecha)."}
             </div>
           </>

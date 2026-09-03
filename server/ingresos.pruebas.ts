@@ -288,12 +288,52 @@ async function main() {
   check("Q3) configurado: 20 sesiones a mano, sigue al día y marcado «a mano»", [s.suscripciones[0].sesiones.manual, s.suscripciones[0].sesiones.restantes, s.suscripciones[0].estado, s.suscripciones[0].coberturaSinCobro], [20, 20, "aldia", true]);
   check("Q3) sin ingresos nuevos", await ingresosMes(), base + 180);
 
+  // S) CUOTAS CON DURACIÓN: un anual de 324 € cubre 12 meses por cobro; un semestral, 6.
+  const sAnual = await POST("/socios", { nombre: "Sonia", apellidos: "Anual", fechaAlta: hoy });
+  const anual = await POST(`/socios/${sAnual.id}/suscripciones`, { actividad: "gimnasio", importe: 324, periodicidad: "mensual", meses: 12, cobroInicial: { metodo: "efectivo" } });
+  check("S) la cuota guarda su duración (12 meses)", anual.meses, 12);
+  check("S) el primer cobro cubre un año entero", anual.pagadoHasta, addMeses(hoy, 12));
+  check("S) 324 € entran en ingresos como un cobro normal", await ingresosMes(), base + 180 + 324);
+  await POST("/pagos", { socioId: sAnual.id, lineas: [{ suscripcionId: anual.id, importe: 324 }] });
+  s = await GET(`/socios/${sAnual.id}`);
+  check("S) un cobro sin meses explícitos cubre la duración de la cuota (otro año)", s.suscripciones[0].pagadoHasta, addMeses(hoy, 24));
+  await POST("/pagos", { socioId: sAnual.id, lineas: [{ suscripcionId: anual.id, importe: 90, meses: 3 }] });
+  s = await GET(`/socios/${sAnual.id}`);
+  check("S) importe y meses libres en el cobro (3 meses por 90 €, sin tarifa)", s.suscripciones[0].pagadoHasta, addMeses(hoy, 27));
+  const malDur = await fetch(API + `/suscripciones/${anual.id}`, { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ meses: 0 }) });
+  check("S) duración 0 → 400", malDur.status, 400);
+
+  // T) «Bono» de antes de v1.8 que en realidad era un AÑO pagado (324 €): se reclasifica
+  //    como cuota por tiempo sin tocar su fecha ni su cobro.
+  const t = await POST("/socios", { nombre: "Tomás", apellidos: "Anualviejo", fechaAlta: hoy });
+  const phT = addMeses(hoy, 11);
+  {
+    const bd = new Database(join(DATA, "gymgrecia.db"));
+    const subT = bd
+      .prepare("INSERT INTO suscripciones (socio_id, actividad, etiqueta, importe, periodicidad, pagado_hasta, cobertura_manual, activa, notas, creado_en) VALUES (?,?,?,?,'bono',?,NULL,1,NULL,?)")
+      .run(t.id, "gimnasio", "Anual", 324, phT, hoy).lastInsertRowid;
+    const pagoT = bd.prepare("INSERT INTO pagos (socio_id, fecha, metodo, total, notas, creado_en) VALUES (?,?,?,?,NULL,?)").run(t.id, addMeses(hoy, -1), "efectivo", 324, hoy).lastInsertRowid;
+    bd.prepare("INSERT INTO pago_lineas (pago_id, suscripcion_id, actividad, concepto, importe, periodo_desde, periodo_hasta) VALUES (?,?,?,?,?,?,?)").run(pagoT, subT, "gimnasio", "Anual", 324, addMeses(hoy, -1), phT);
+    bd.close();
+  }
+  s = await GET(`/socios/${t.id}`);
+  check("T) antes: bono antiguo por fecha, al día", [s.suscripciones[0].bonoSinConfigurar, s.suscripciones[0].estado, s.suscripciones[0].pagadoHasta], [true, "aldia", phT]);
+  await PUT(`/suscripciones/${s.suscripciones[0].id}`, { periodicidad: "mensual", meses: 12 });
+  s = await GET(`/socios/${t.id}`);
+  check("T) reclasificado como cuota anual: sin aviso, misma fecha, mismo estado", [s.suscripciones[0].bonoSinConfigurar, s.suscripciones[0].esBono, s.suscripciones[0].meses, s.suscripciones[0].pagadoHasta, s.suscripciones[0].estado], [false, false, 12, phT, "aldia"]);
+  const pagosT = await GET(`/pagos/de-socio/${t.id}`);
+  check("T) su cobro de 324 € sigue intacto", [pagosT.length, pagosT[0].total, pagosT[0].lineas[0].periodoHasta], [1, 324, phT]);
+  await POST("/pagos", { socioId: t.id, lineas: [{ suscripcionId: s.suscripciones[0].id, importe: 324 }] });
+  s = await GET(`/socios/${t.id}`);
+  check("T) el siguiente cobro encadena otro año desde su fecha", s.suscripciones[0].pagadoHasta, addMeses(phT, 12));
+
   // R) Cuota MENSUAL que pasa a bono: sus meses cobrados NO cuentan como sesiones.
   s = await GET(`/socios/${c.id}`); // Carlos: pilates mensual con 2 pagos
   await PUT(`/suscripciones/${s.suscripciones[0].id}`, { periodicidad: "bono", sesionesPorBono: 10 });
   s = await GET(`/socios/${c.id}`);
   check("R) mensual → bono arranca a 0 sesiones (sin bono)", [s.suscripciones[0].sesiones.compradas, s.suscripciones[0].estado], [0, "pendiente"]);
-  check("R) sus pagos siguen contando en ingresos", await ingresosMes(), base + 180);
+  // (S y T sumaron 324+324+90 y 324 con fecha de hoy; el de T de hace un mes no entra en este mes)
+  check("R) sus pagos siguen contando en ingresos", await ingresosMes(), base + 180 + 738 + 324);
   await PUT(`/suscripciones/${s.suscripciones[0].id}`, { periodicidad: "mensual" });
   s = await GET(`/socios/${c.id}`);
   check("R) y vuelta a mensual recupera su fecha", [s.suscripciones[0].esBono, s.suscripciones[0].pagadoHasta], [false, addMeses(hoy, 2)]);

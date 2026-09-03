@@ -29,6 +29,7 @@ export interface SuscripcionRow {
   cobertura_manual: string | null; // cobertura puesta a mano (sin cobro registrado)
   sesiones_por_bono: number | null; // bono por sesiones: sesiones que trae cada bono (null = por fecha)
   sesiones_manual: number; // sesiones del papelito apuntadas a mano (sin cobro)
+  meses: number; // cuota por tiempo: meses que cubre cada cobro (1 mensual · 3 · 6 · 12 anual)
   activa: number;
   notas: string | null;
   creado_en: string;
@@ -90,6 +91,7 @@ export function suscripcionConEstado(s: SuscripcionRow, hoy: string) {
     etiqueta: s.etiqueta,
     importe: s.importe,
     periodicidad: s.periodicidad,
+    meses: s.meses ?? 1,
     pagadoHasta: esBono ? null : s.pagado_hasta,
     // true = la cobertura vigente esta puesta a mano, ningun cobro llega hasta ahi
     // (pagado_hasta solo iguala a cobertura_manual cuando ningun pago la supera).

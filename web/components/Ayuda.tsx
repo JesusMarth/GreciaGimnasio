@@ -138,6 +138,7 @@ export const AyudaSocioDetalle = () => (
     <ul>
       <li>Cada actividad (gimnasio, karate, pilates…) tiene su importe y su estado.</li>
       <li><strong>Cobrar</strong> / <strong>Editar</strong> esa actividad, <strong>Pausar</strong> (deja de contar sin borrarla) o <strong>Quitar</strong>.</li>
+      <li>Una cuota puede ser <strong>por tiempo</strong> (mensual, trimestral, semestral o anual: el importe es por ese periodo y cada cobro lo cubre entero, p. ej. un anual de 324 €) o un <strong>bono de sesiones</strong>. En cada cobro puedes cambiar el importe y los meses libremente: no hace falta crear una tarifa para un precio único.</li>
       <li><strong>+ Añadir actividad</strong> para sumarle una nueva. Elige cómo empieza: <strong>Queda pendiente</strong> (le cobrarás después), <strong>Cobrar ahora</strong> (apunta el primer pago de verdad: cuenta en Ingresos y genera recibo) o <strong>Ya estaba pagado</strong> (venía pagado del archivador: solo cuadra su estado, sin apuntar cobro).</li>
       <li>Si una cuota pone <strong>«apuntado a mano»</strong>, su fecha de cobertura se puso a dedo y no hay ningún cobro registrado detrás: por eso ese dinero no sale en Ingresos.</li>
     </ul>
@@ -164,7 +165,8 @@ export const AyudaTarifas = () => (
   <Ayuda titulo="Tarifas, explicado">
     <p>Las tarifas son <strong>plantillas de precio</strong> para no reescribir importes al dar de alta cuotas. Son orientativas: el precio real de cada socio se fija en su ficha y puede ser distinto (ofertas, descuentos…).</p>
     <ul>
-      <li><strong>+ Nueva tarifa</strong>: crea una plantilla (nombre, actividad, importe, tipo). Si es un <strong>bono de sesiones</strong>, indica cuántas sesiones trae (p. ej. 20); al usarla en una ficha se precarga todo.</li>
+      <li><strong>+ Nueva tarifa</strong>: crea una plantilla (nombre, actividad, importe, tipo). Una <strong>cuota por tiempo</strong> lleva su duración (mensual, trimestral, semestral, anual: «Anual gimnasio · 12 meses · 324 €»); un <strong>bono de sesiones</strong>, cuántas sesiones trae (p. ej. 20). Al usarla en una ficha se precarga todo.</li>
+      <li>Las tarifas son solo un atajo: en cada cobro el importe y los meses son libres, así que un precio único (alguien que paga 3 meses con descuento) se apunta directamente sin crear tarifa.</li>
       <li><strong>Editar</strong> / <strong>Borrar</strong> en cada fila.</li>
     </ul>
     <p>Al crear una cuota a un socio puedes “partir de una tarifa” para precargar el importe.</p>
