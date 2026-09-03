@@ -15,10 +15,19 @@ export function Plegable({ children, duracion = 220 }: { children: ReactNode; du
     if (!el) return;
     const medir = () => setAlto(el.offsetHeight);
     medir();
+    // Cambios de tamaño que no vienen de un re-render del padre (fuentes, imágenes…).
     const ro = new ResizeObserver(medir);
     ro.observe(el);
     return () => ro.disconnect();
   }, []);
+
+  // Tras CADA render (el padre cambió el contenido) se re-mide en el mismo frame:
+  // así la transición arranca al instante y no depende de que el ResizeObserver
+  // llegue a tiempo (en pestañas en segundo plano el navegador lo retrasa).
+  useLayoutEffect(() => {
+    const el = interior.current;
+    if (el && el.offsetHeight !== alto) setAlto(el.offsetHeight);
+  });
 
   return (
     <div

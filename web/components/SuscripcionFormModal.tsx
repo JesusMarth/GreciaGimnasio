@@ -185,6 +185,8 @@ export function SuscripcionFormModal({ socioId, suscripcion, onCerrar, onHecho }
       }
     >
       <div className="modal-body">
+        {/* Todo el cuerpo dentro de un Plegable: cualquier cambio de contenido (tipo, tarifa, chips, textos) anima el alto en vez de saltar. */}
+        <Plegable>
         {error && <div className="error-banner">{error}</div>}
 
         {legado && (
@@ -269,7 +271,7 @@ export function SuscripcionFormModal({ socioId, suscripcion, onCerrar, onHecho }
         )}
 
         {!suscripcion && (
-          <Plegable>
+          <div>
             <div className="field">
               <label>Primer pago</label>
               <div className="chips" role="group" aria-label="Primer pago">
@@ -342,7 +344,7 @@ export function SuscripcionFormModal({ socioId, suscripcion, onCerrar, onHecho }
                 </div>
               </>
             )}
-          </Plegable>
+          </div>
         )}
 
         {suscripcion && !esBono && (
@@ -388,6 +390,7 @@ export function SuscripcionFormModal({ socioId, suscripcion, onCerrar, onHecho }
           El importe es libre: pon lo que pague de verdad (con su oferta, descuento familiar o por edad ya aplicados). No hace
           falta crear una tarifa para un precio único.
         </div>
+        </Plegable>
       </div>
     </Modal>
   );

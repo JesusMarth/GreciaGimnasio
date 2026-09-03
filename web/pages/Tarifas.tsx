@@ -3,6 +3,7 @@ import { api, ACTIVIDADES } from "../api.ts";
 import { euros, capitalizar, duracionTxt, opcionesMeses } from "../format.ts";
 import { Modal } from "../components/Modal.tsx";
 import { Desplegable } from "../components/Desplegable.tsx";
+import { Plegable } from "../components/Plegable.tsx";
 import { useConfirm } from "../components/Confirmar.tsx";
 import { AyudaTarifas } from "../components/Ayuda.tsx";
 import type { Tarifa } from "../types.ts";
@@ -147,6 +148,7 @@ function TarifaForm({ tarifa, onCerrar, onHecho }: { tarifa?: Tarifa; onCerrar: 
       }
     >
       <div className="modal-body">
+        <Plegable>
         {error && <div className="error-banner">{error}</div>}
         <div className="field">
           <label>Nombre *</label>
@@ -191,6 +193,7 @@ function TarifaForm({ tarifa, onCerrar, onHecho }: { tarifa?: Tarifa; onCerrar: 
             El importe es por {meses === 1 ? "mes" : meses === 12 ? "año" : `${meses} meses`} ({duracionTxt(meses).toLowerCase()}). P. ej. «Anual gimnasio» · 12 meses · 324 €.
           </div>
         )}
+        </Plegable>
       </div>
     </Modal>
   );
