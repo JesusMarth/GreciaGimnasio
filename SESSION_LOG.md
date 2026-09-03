@@ -24,7 +24,7 @@ token de solo lectura en `update-token.txt`). `CHANGELOG.md` manual.
 
 ### B) Sexo del socio + filtro ✅ HECHO (v1.6.0) · C) Historial de movimientos ✅ HECHO (v1.5.0) · D) Bonos por sesiones ✅ PUBLICADO como **v1.8.0** (2026-09-03)
 
-### F) Copia de seguridad por email ✅ HECHO (2026-09-03, sin publicar aún)  ← SIGUIENTE: publicar 1.9.0 y BOOTSTRAP en el local
+### F) Copia de seguridad por email ✅ PUBLICADO como **v1.9.0** (2026-09-03)  ← SIGUIENTE: BOOTSTRAP en el local
 Implementado y probado (`npm run test:copias`, 28 checks). Para que funcione en el
 PC del gimnasio hay que hacer UNA VEZ (lo hace el dev con el jefe):
 1. En Gmail de `gimnasiogrecialospalacios@gmail.com`: verificación en dos pasos →

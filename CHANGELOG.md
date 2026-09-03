@@ -12,6 +12,8 @@ y el proyecto usa [Versionado Semántico](https://semver.org/lang/es/) (SemVer):
 
 ## [Sin publicar]
 
+## [1.9.0] - 2026-09-03
+
 ### Added
 - **Copia de seguridad fuera del PC, por email**: cada día, al cerrar la app, la
   base de datos entera se envía adjunta al correo del gimnasio
