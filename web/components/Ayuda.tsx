@@ -54,6 +54,7 @@ export const AyudaPanel = () => (
       <li><strong>Atrasado</strong> (rojo): pagó antes, pero su cuota ya venció.</li>
       <li><strong>Vence pronto</strong> (ámbar): le quedan 5 días o menos.</li>
       <li><strong>Al día</strong> (verde): pagada y al corriente.</li>
+      <li>Los <strong>bonos de sesiones</strong> siguen el mismo semáforo, pero por sesiones: en ámbar cuando quedan 3 o menos y en rojo cuando está agotado. Aquí se cobran; para picar sesiones ve a la ficha del socio.</li>
     </ul>
     <p>Pincha un marcador de arriba (Por cobrar / Vencen pronto / Al día) o un “+ N más” para ver esos socios en la lista, ya filtrados.</p>
   </Ayuda>
@@ -89,14 +90,14 @@ export const AyudaSocios = () => (
       <li><strong>Actividad</strong> (Gimnasio / Karate / Pilates): se combinan en “o” — marca Karate y Pilates y salen los de uno u otro.</li>
       <li><strong>Estado del socio</strong>: Activos o Bajas.</li>
       <li><strong>Estado de cuota</strong>: Pendientes (atrasados o sin pagar), Vencen pronto, Al día o Sin cuotas.</li>
-      <li>El botón <strong>«!»</strong> (al lado de Filtros) deja solo los socios con la <strong>exclamación ámbar</strong> junto al nombre, que significa «algo conviene mirar en este socio» (pasa el ratón por la exclamación para ver el motivo). Hoy avisa de los cubiertos por una fecha apuntada a mano sin cobro registrado — los del ⚠ de Métricas.</li>
+      <li>El botón <strong>«!»</strong> (al lado de Filtros) deja solo los socios con la <strong>exclamación ámbar</strong> junto al nombre, que significa «algo conviene mirar en este socio» (pasa el ratón por la exclamación para ver el motivo). Avisa de: cuotas cubiertas por una fecha apuntada a mano sin cobro registrado (los del ⚠ de Métricas), bonos sostenidos solo por sesiones del papelito, y bonos apuntados antes de la versión 1.8 a los que falta indicar sus sesiones.</li>
       <li><strong>Último pago</strong>: filtra por el importe del último cobro de cada socio (la columna «Último pago» de la lista). Solo aparecen los importes que alguien está pagando ahora mismo. Útil a fin de mes: filtra los de 35 €, los de 30 €, los del bono de 180 €… y exporta ese Excel.</li>
       <li><strong>Sexo</strong>: Hombre, Mujer o <strong>Sin asignar</strong> (útil para cazar olvidos del alta y completar fichas).</li>
       <li><strong>Fecha de alta</strong>: abre una ventana con periodos rápidos (hoy, ayer, últimos 7 días, esta semana, este mes, este año) y, en “Más opciones”, un año entero o un rango exacto con calendario.</li>
       <li>Los filtros se <strong>suman</strong> entre sí; <strong>Limpiar filtros</strong> los quita todos. El export y “seleccionar todos” respetan lo filtrado.</li>
     </ul>
     <h4>Orden de la lista</h4>
-    <p>Por defecto se ordena <strong>por apellido de la A a la Z</strong>, como el archivador de papel. Pulsa la cabecera <strong>Nombre</strong> para alternar a <strong>Z→A</strong>, o la cabecera <strong>Vence</strong> para ordenar por quién tiene la cuota más próxima a vencer.</p>
+    <p>Por defecto se ordena <strong>por apellido de la A a la Z</strong>, como el archivador de papel. Pulsa la cabecera <strong>Socio</strong> para alternar a <strong>Z→A</strong>, o la cabecera <strong>Vence</strong> para ordenar por quién tiene la cuota más próxima a vencer (los bonos agotados o con pocas sesiones se colocan entre los más urgentes).</p>
     <h4>Desplazamiento</h4>
     <p>La lista tiene <strong>scroll propio</strong>: baja dentro de la tabla y se van cargando más socios solos (la pantalla no se mueve). Abajo se indica cuántos hay y cuántos se están mostrando. Si entras en una ficha y vuelves, la lista <strong>se queda donde estaba</strong>: mismos filtros, misma búsqueda y misma posición.</p>
     <h4>Seleccionar y exportar</h4>
@@ -117,6 +118,7 @@ export const AyudaSocios = () => (
       <li><strong>Vence pronto</strong> (ámbar): le quedan 5 días o menos.</li>
       <li><strong>Al día</strong> (verde): pagada y al corriente.</li>
       <li><strong>Sin cuotas</strong> (gris): no tiene ninguna actividad activa.</li>
+      <li>Los <strong>bonos de sesiones</strong> no tienen fecha: en la columna «Vence» sale cuántas sesiones le quedan (p. ej. «12 ses.»), y el semáforo es el mismo (ámbar con 3 o menos, rojo agotado).</li>
     </ul>
   </Ayuda>
 );
@@ -139,6 +141,15 @@ export const AyudaSocioDetalle = () => (
       <li><strong>+ Añadir actividad</strong> para sumarle una nueva. Elige cómo empieza: <strong>Queda pendiente</strong> (le cobrarás después), <strong>Cobrar ahora</strong> (apunta el primer pago de verdad: cuenta en Ingresos y genera recibo) o <strong>Ya estaba pagado</strong> (venía pagado del archivador: solo cuadra su estado, sin apuntar cobro).</li>
       <li>Si una cuota pone <strong>«apuntado a mano»</strong>, su fecha de cobertura se puso a dedo y no hay ningún cobro registrado detrás: por eso ese dinero no sale en Ingresos.</li>
     </ul>
+    <h4>Bonos de sesiones (el papelito de puntos)</h4>
+    <ul>
+      <li>Un <strong>bono</strong> no caduca por fecha: son N sesiones (p. ej. 20 por 60 €) que se van gastando. La tarjeta muestra en grande cuántas <strong>quedan</strong>.</li>
+      <li><strong>Picar sesión</strong>: cada vez que el socio viene, le quita una sesión. Siempre te pide confirmación, y después aparece un botón <strong>Deshacer</strong> por si te has equivocado.</li>
+      <li><strong>Sesiones</strong>: la lista de todas las sesiones picadas (con día y hora), para deshacer cualquiera o apuntar una visita de otro día.</li>
+      <li><strong>Cobrar bono</strong>: le vende un bono nuevo y suma sus sesiones a las que le queden. Puede cobrar 2 o 3 de golpe.</li>
+      <li>Estados: <strong>Con sesiones</strong> (verde) · <strong>Quedan pocas</strong> (ámbar, 3 o menos) · <strong>Agotado</strong> (rojo, sin sesiones o a deber) · <strong>Sin bono</strong> (morado, nunca compró).</li>
+      <li>Si un bono se apuntó antes de la versión 1.8, tiene fecha en vez de sesiones y lleva un aviso: pulsa <strong>Editar</strong>, indica sus sesiones y el cobro ya registrado contará como un bono completo. Nada de lo cobrado cambia.</li>
+    </ul>
     <h4>Historial de pagos</h4>
     <ul>
       <li><strong>Recibo PDF</strong>: abre el justificante de ese pago (puedes guardarlo o imprimirlo).</li>
@@ -153,7 +164,7 @@ export const AyudaTarifas = () => (
   <Ayuda titulo="Tarifas, explicado">
     <p>Las tarifas son <strong>plantillas de precio</strong> para no reescribir importes al dar de alta cuotas. Son orientativas: el precio real de cada socio se fija en su ficha y puede ser distinto (ofertas, descuentos…).</p>
     <ul>
-      <li><strong>+ Nueva tarifa</strong>: crea una plantilla (nombre, actividad, importe, tipo).</li>
+      <li><strong>+ Nueva tarifa</strong>: crea una plantilla (nombre, actividad, importe, tipo). Si es un <strong>bono de sesiones</strong>, indica cuántas sesiones trae (p. ej. 20); al usarla en una ficha se precarga todo.</li>
       <li><strong>Editar</strong> / <strong>Borrar</strong> en cada fila.</li>
     </ul>
     <p>Al crear una cuota a un socio puedes “partir de una tarifa” para precargar el importe.</p>

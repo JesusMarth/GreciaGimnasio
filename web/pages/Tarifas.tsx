@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { api, ACTIVIDADES } from "../api.ts";
 import { euros, capitalizar } from "../format.ts";
 import { Modal } from "../components/Modal.tsx";
+import { Desplegable } from "../components/Desplegable.tsx";
 import { useConfirm } from "../components/Confirmar.tsx";
 import { AyudaTarifas } from "../components/Ayuda.tsx";
 import type { Tarifa } from "../types.ts";
@@ -69,7 +70,7 @@ export function Tarifas() {
                     <span className="pill-act">{capitalizar(t.actividad)}</span>
                   </td>
                   <td className="cifra">{euros(t.importe)}</td>
-                  <td className="muted">{t.periodicidad === "bono" ? "Bono" : "Mensual"}</td>
+                  <td className="muted">{t.periodicidad === "bono" ? (t.sesiones ? `Bono · ${t.sesiones} sesiones` : "Bono · sin sesiones (edítala)") : "Mensual"}</td>
                   <td style={{ textAlign: "right" }}>
                     <button className="btn sm" onClick={() => setForm({ t })}>
                       Editar
@@ -100,6 +101,7 @@ function TarifaForm({ tarifa, onCerrar, onHecho }: { tarifa?: Tarifa; onCerrar: 
   const [actividad, setActividad] = useState(tarifa?.actividad ?? "gimnasio");
   const [importe, setImporte] = useState<number>(tarifa?.importe ?? 0);
   const [periodicidad, setPeriodicidad] = useState(tarifa?.periodicidad ?? "mensual");
+  const [sesiones, setSesiones] = useState<number>(tarifa?.sesiones ?? 20);
   const [error, setError] = useState("");
   const [guardando, setGuardando] = useState(false);
 
@@ -108,9 +110,13 @@ function TarifaForm({ tarifa, onCerrar, onHecho }: { tarifa?: Tarifa; onCerrar: 
       setError("Nombre y actividad son obligatorios.");
       return;
     }
+    if (periodicidad === "bono" && (!Number.isInteger(sesiones) || sesiones < 1)) {
+      setError("Indica cuántas sesiones trae el bono.");
+      return;
+    }
     setGuardando(true);
     setError("");
-    const datos = { nombre, actividad, importe: Number(importe), periodicidad };
+    const datos = { nombre, actividad, importe: Number(importe), periodicidad, sesiones: periodicidad === "bono" ? sesiones : null };
     try {
       if (tarifa) await api.editarTarifa(tarifa.id, datos);
       else await api.crearTarifa(datos);
@@ -148,25 +154,31 @@ function TarifaForm({ tarifa, onCerrar, onHecho }: { tarifa?: Tarifa; onCerrar: 
         <div className="row2">
           <div className="field">
             <label>Actividad *</label>
-            <select value={actividad} onChange={(e) => setActividad(e.target.value)}>
-              {opcionesActividad.map((a) => (
-                <option key={a} value={a}>
-                  {capitalizar(a)}
-                </option>
-              ))}
-            </select>
+            <Desplegable value={actividad} onChange={setActividad} opciones={opcionesActividad.map((a) => ({ value: a, label: capitalizar(a) }))} />
           </div>
           <div className="field">
             <label>Importe (€) *</label>
             <input type="number" step="0.01" min="0" value={importe} onChange={(e) => setImporte(Number(e.target.value))} />
           </div>
         </div>
-        <div className="field">
-          <label>Tipo</label>
-          <select value={periodicidad} onChange={(e) => setPeriodicidad(e.target.value)}>
-            <option value="mensual">Cuota mensual</option>
-            <option value="bono">Bono / periodo</option>
-          </select>
+        <div className="row2">
+          <div className="field">
+            <label>Tipo</label>
+            <Desplegable
+              value={periodicidad}
+              onChange={setPeriodicidad}
+              opciones={[
+                { value: "mensual", label: "Cuota mensual" },
+                { value: "bono", label: "Bono de sesiones" },
+              ]}
+            />
+          </div>
+          {periodicidad === "bono" && (
+            <div className="field">
+              <label>Sesiones por bono *</label>
+              <input type="number" step="1" min="1" value={sesiones} onChange={(e) => setSesiones(Number(e.target.value))} />
+            </div>
+          )}
         </div>
       </div>
     </Modal>

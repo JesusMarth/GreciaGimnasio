@@ -1,4 +1,4 @@
-import type { ConfigEmail, CopiaInfo, DatosRecibo, Dashboard, Evento, Metricas, Pago, Socio, Tarifa } from "./types.ts";
+import type { Asistencia, ConfigEmail, CopiaInfo, DatosRecibo, Dashboard, Evento, Metricas, Pago, Socio, Suscripcion, Tarifa } from "./types.ts";
 
 async function req<T>(path: string, opts?: RequestInit): Promise<T> {
   const r = await fetch("/api" + path, {
@@ -51,6 +51,12 @@ export const api = {
   editarSuscripcion: (id: number, data: Record<string, unknown>) =>
     req(`/suscripciones/${id}`, { method: "PUT", body: body(data) }),
   borrarSuscripcion: (id: number) => req(`/suscripciones/${id}`, { method: "DELETE" }),
+
+  // Bonos por sesiones: picar / deshacer / listar sesiones.
+  asistenciasDe: (subId: number) => req<Asistencia[]>(`/suscripciones/${subId}/asistencias`),
+  picarSesion: (subId: number, data?: { fecha?: string }) =>
+    req<{ id: number; suscripcion: Suscripcion }>(`/suscripciones/${subId}/asistencias`, { method: "POST", body: body(data ?? {}) }),
+  deshacerSesion: (id: number) => req<{ ok: true; suscripcion: Suscripcion | null }>(`/asistencias/${id}`, { method: "DELETE" }),
 
   registrarPago: (data: Record<string, unknown>) =>
     req<{ id: number; total: number }>("/pagos", { method: "POST", body: body(data) }),

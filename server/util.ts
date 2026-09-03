@@ -49,6 +49,28 @@ export function estadoDe(pagadoHasta: string | null, hoy: string): Estado {
   return { estado: "aldia", dias };
 }
 
+/** Sesiones restantes (o menos) con las que un bono se considera "quedan pocas". */
+export const UMBRAL_SESIONES_PRONTO = 3;
+
+/**
+ * Estado de un bono por sesiones (el "papelito de 20 puntos"): no caduca por
+ * fecha, se agota por uso. Reutiliza los mismos cuatro estados para que Panel,
+ * filtros y colores funcionen igual:
+ *  - pendiente: nunca tuvo sesiones (ni compradas ni apuntadas a mano)
+ *  - atrasado : agotado (0 sesiones o menos — puede quedar en negativo si se le
+ *               dejó entrar a deber)
+ *  - pronto   : quedan UMBRAL_SESIONES_PRONTO o menos
+ *  - aldia    : quedan sesiones de sobra
+ */
+export function estadoBono(restantes: number, disponibles: number): Estado {
+  // Sin sesiones y sin haber picado ninguna = nunca tuvo bono. (Si se le picó
+  // alguna sin tener bono, está a deber → agotado.)
+  if (disponibles <= 0 && restantes >= 0) return { estado: "pendiente", dias: null };
+  if (restantes <= 0) return { estado: "atrasado", dias: null };
+  if (restantes <= UMBRAL_SESIONES_PRONTO) return { estado: "pronto", dias: null };
+  return { estado: "aldia", dias: null };
+}
+
 /** Primer dia del mes actual, "YYYY-MM-01". */
 export function inicioMes(hoy: string): string {
   return hoy.slice(0, 7) + "-01";

@@ -39,12 +39,19 @@ export function importesUltimoPago(socios: Socio[]): number[] {
  * Avisos del socio ("aquí pasa algo"). Lista ABIERTA y compartida: la exclamación
  * ámbar de la lista y el filtro "Con aviso" salen de aquí, así que cualquier aviso
  * nuevo que se añada aparece en los dos sitios sin tocar nada más.
- * Hoy detecta: cobertura apuntada a mano vigente (el criterio del ⚠ de Métricas).
+ * Hoy detecta: cobertura apuntada a mano vigente (el criterio del ⚠ de Métricas),
+ * también en bonos (sesiones del papelito), y bonos de antes de v1.8 a los que
+ * falta indicar sus sesiones.
  */
 export function avisosDe(s: Socio): string[] {
   const avisos: string[] = [];
-  if (s.suscripciones.some((x) => x.activa && x.coberturaSinCobro && (x.estado === "aldia" || x.estado === "pronto")))
+  const cubiertas = s.suscripciones.filter((x) => x.activa && x.coberturaSinCobro && (x.estado === "aldia" || x.estado === "pronto"));
+  if (cubiertas.some((x) => !x.esBono))
     avisos.push("Cubierto por una fecha apuntada a mano: no hay ningún cobro registrado detrás (no suma en Ingresos).");
+  if (cubiertas.some((x) => x.esBono))
+    avisos.push("Bono cubierto solo por sesiones apuntadas a mano (del papelito): no hay ningún cobro registrado detrás (no suma en Ingresos).");
+  if (s.suscripciones.some((x) => x.activa && x.bonoSinConfigurar))
+    avisos.push("Bono apuntado como si fuera una cuota mensual (antes de la versión 1.8): edítalo e indica cuántas sesiones trae para llevar la cuenta por sesiones.");
   return avisos;
 }
 

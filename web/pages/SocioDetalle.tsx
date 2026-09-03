@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { useNavigate, useParams, Link } from "react-router-dom";
 import { api } from "../api.ts";
-import { euros, fecha, estadoTexto, colorEstado, capitalizar, descargar } from "../format.ts";
+import { euros, fecha, estadoTexto, colorEstado, capitalizar, descargar, hoyISO } from "../format.ts";
 import { EstadoBadge } from "../components/Badges.tsx";
 import { Modal } from "../components/Modal.tsx";
 import { PagoModal } from "../components/PagoModal.tsx";
@@ -9,12 +9,14 @@ import { SocioFormModal } from "../components/SocioFormModal.tsx";
 import { SuscripcionFormModal } from "../components/SuscripcionFormModal.tsx";
 import { useConfirm } from "../components/Confirmar.tsx";
 import { AyudaSocioDetalle } from "../components/Ayuda.tsx";
-import type { Evento, Pago, Socio, Suscripcion } from "../types.ts";
+import type { Asistencia, Evento, Pago, Socio, Suscripcion } from "../types.ts";
 
 // Color del punto de cada tipo de movimiento del historial.
 const COLOR_EVENTO: Record<string, string> = {
   pago: "var(--verde)",
   pago_borrado: "var(--rojo)",
+  asistencia: "var(--azul-500)",
+  asistencia_deshecha: "var(--ambar)",
   actividad: "var(--azul-500)",
   alta: "var(--azul-500)",
   baja: "var(--rojo)",
@@ -45,8 +47,12 @@ export function SocioDetalle() {
   const [cobrar, setCobrar] = useState<{ pre?: number } | null>(null);
   const [subForm, setSubForm] = useState<{ sub?: Suscripcion } | null>(null);
   const [movimientos, setMovimientos] = useState<Evento[] | null>(null); // null = modal cerrado
-  const [avisoMsg, setAvisoMsg] = useState<{ ok: boolean; txt: string } | null>(null);
+  // Banner de resultado; `accion` es un botón opcional dentro del banner (p. ej. «Deshacer»).
+  const [avisoMsg, setAvisoMsg] = useState<{ ok: boolean; txt: string; accion?: { texto: string; onClick: () => void } } | null>(null);
   const [enviando, setEnviando] = useState(false);
+  // Modal «Sesiones» de un bono: lista de sesiones picadas + picar con otra fecha.
+  const [sesiones, setSesiones] = useState<{ sub: Suscripcion; lista: Asistencia[] } | null>(null);
+  const [fechaSesion, setFechaSesion] = useState(hoyISO());
 
   const recargar = useCallback(() => {
     Promise.all([api.socio(socioId), api.pagosDeSocio(socioId)])
@@ -78,8 +84,15 @@ export function SocioDetalle() {
 
   async function borrarSuscripcion(sub: Suscripcion) {
     const ok = await confirmar({
-      titulo: "Quitar actividad",
-      mensaje: `¿Quitar la actividad "${capitalizar(sub.actividad)}" de este socio?`,
+      titulo: sub.esBono ? "Quitar bono" : "Quitar actividad",
+      mensaje: sub.esBono ? (
+        <>
+          ¿Quitar el bono de <strong>{capitalizar(sub.actividad)}</strong> de este socio? Le quedan <strong>{sub.sesiones?.restantes ?? 0}</strong>{" "}
+          sesiones y se borrarán sus <strong>{sub.sesiones?.usadas ?? 0}</strong> sesiones picadas. Los cobros se conservan en el historial.
+        </>
+      ) : (
+        `¿Quitar la actividad "${capitalizar(sub.actividad)}" de este socio?`
+      ),
       confirmar: "Quitar",
       peligro: true,
     });
@@ -93,9 +106,17 @@ export function SocioDetalle() {
   }
 
   async function borrarPago(p: Pago) {
+    const sesiones = p.lineas.reduce((acc, l) => acc + (l.sesiones ?? 0), 0);
     const ok = await confirmar({
       titulo: "Borrar pago",
-      mensaje: `¿Borrar el pago de ${euros(p.total)} del ${fecha(p.fecha)}?`,
+      mensaje: sesiones > 0 ? (
+        <>
+          ¿Borrar el pago de <strong>{euros(p.total)}</strong> del {fecha(p.fecha)}? Se le quitarán las <strong>{sesiones} sesiones</strong> que
+          compró con él; si ya las ha usado, el bono quedará a deber.
+        </>
+      ) : (
+        `¿Borrar el pago de ${euros(p.total)} del ${fecha(p.fecha)}?`
+      ),
       confirmar: "Borrar",
       peligro: true,
     });
@@ -124,6 +145,94 @@ export function SocioDetalle() {
     try {
       await api.editarSuscripcion(sub.id, { activa: !sub.activa });
       recargar();
+    } catch (e: any) {
+      setAvisoMsg({ ok: false, txt: e.message });
+    }
+  }
+
+  // --- Bonos por sesiones: picar / deshacer / listar ---------------------------
+
+  /** "03/09/2026 · 18:35" de un creadoEn "2026-09-03 18:35". */
+  const cuando = (a: Asistencia) => (a.creadoEn.length > 10 ? `${fecha(a.fecha)} · ${a.creadoEn.slice(11)}` : fecha(a.fecha));
+
+  async function refrescarSesiones(sub: Suscripcion) {
+    const lista = await api.asistenciasDe(sub.id);
+    setSesiones((prev) => (prev ? { sub: prev.sub, lista } : prev));
+    return lista;
+  }
+
+  // Picar SIEMPRE pide confirmación (le quita una sesión al bono) y deja un
+  // «Deshacer» a mano en el banner verde.
+  async function picarSesion(sub: Suscripcion, fechaSes?: string) {
+    if (!socio || !sub.sesiones) return;
+    const r = sub.sesiones.restantes;
+    const act = capitalizar(sub.actividad);
+    const ok = await confirmar({
+      titulo: "Picar sesión",
+      mensaje: (
+        <>
+          Esta acción le quitará <strong>1 sesión</strong> al bono de <strong>{act}</strong> de <strong>{socio.nombreCompleto}</strong>
+          {fechaSes && fechaSes !== hoyISO() ? <> (con fecha {fecha(fechaSes)})</> : null}.
+          <br />
+          Ahora le quedan <strong>{r}</strong>; pasarán a quedar <strong>{r - 1}</strong>.
+          {r <= 0 && (
+            <>
+              <br />
+              <span style={{ color: "var(--rojo)", fontWeight: 700 }}>⚠ El bono ya está agotado: quedará a deber {1 - r} {1 - r === 1 ? "sesión" : "sesiones"}.</span>
+            </>
+          )}
+        </>
+      ),
+      confirmar: "Picar sesión",
+    });
+    if (!ok) return;
+    try {
+      const res = await api.picarSesion(sub.id, fechaSes ? { fecha: fechaSes } : undefined);
+      const quedan = res.suscripcion.sesiones?.restantes ?? r - 1;
+      setAvisoMsg({
+        ok: true,
+        txt: `Sesión picada del bono de ${act}: quedan ${quedan}.`,
+        accion: { texto: "Deshacer", onClick: () => deshacerSesion(res.suscripcion, { id: res.id, fecha: fechaSes ?? hoyISO(), creadoEn: "" }, true) },
+      });
+      recargar();
+      if (sesiones && sesiones.sub.id === sub.id) await refrescarSesiones(sub);
+    } catch (e: any) {
+      setAvisoMsg({ ok: false, txt: e.message });
+    }
+  }
+
+  // Deshacer una sesión picada. Desde el banner («acabo de picar mal») va directo;
+  // desde la tarjeta o el listado pide confirmación.
+  async function deshacerSesion(sub: Suscripcion, a: Asistencia, directo = false) {
+    if (!directo) {
+      const ok = await confirmar({
+        titulo: "Deshacer sesión",
+        mensaje: (
+          <>
+            ¿Deshacer la sesión picada el <strong>{cuando(a)}</strong> del bono de <strong>{capitalizar(sub.actividad)}</strong>? El bono
+            volverá a tener <strong>{(sub.sesiones?.restantes ?? 0) + 1}</strong> sesiones.
+          </>
+        ),
+        confirmar: "Deshacer",
+      });
+      if (!ok) return;
+    }
+    try {
+      const res = await api.deshacerSesion(a.id);
+      const quedan = res.suscripcion?.sesiones?.restantes;
+      setAvisoMsg({ ok: true, txt: `Sesión deshecha${quedan !== undefined ? `: vuelven a quedar ${quedan}` : ""}.` });
+      recargar();
+      if (sesiones && sesiones.sub.id === sub.id) await refrescarSesiones(sub);
+    } catch (e: any) {
+      setAvisoMsg({ ok: false, txt: e.message });
+    }
+  }
+
+  async function abrirSesiones(sub: Suscripcion) {
+    try {
+      const lista = await api.asistenciasDe(sub.id);
+      setFechaSesion(hoyISO());
+      setSesiones({ sub, lista });
     } catch (e: any) {
       setAvisoMsg({ ok: false, txt: e.message });
     }
@@ -175,7 +284,7 @@ export function SocioDetalle() {
         <div>
           <div className="eyebrow">Ficha de socio</div>
           <h1 style={{ display: "flex", alignItems: "center", gap: 12 }}>
-            {socio.nombreCompleto} <EstadoBadge estado={socio.estadoResumen} />
+            {socio.nombreCompleto} <EstadoBadge estado={socio.estadoResumen} bono={socio.estadoResumenEsBono} />
             {socio.estado === "baja" && <span className="badge gris">Baja</span>}
           </h1>
           <div className="sub">Alta: {fecha(socio.fechaAlta)}</div>
@@ -207,7 +316,16 @@ export function SocioDetalle() {
         </div>
       </div>
 
-      {avisoMsg && <div className={avisoMsg.ok ? "ok-banner" : "error-banner"}>{avisoMsg.txt}</div>}
+      {avisoMsg && (
+        <div className={avisoMsg.ok ? "ok-banner" : "error-banner"}>
+          {avisoMsg.txt}
+          {avisoMsg.accion && (
+            <button className="btn sm" onClick={avisoMsg.accion.onClick}>
+              {avisoMsg.accion.texto}
+            </button>
+          )}
+        </div>
+      )}
 
       <div className="grid-2">
         {/* Columna izquierda: actividades */}
@@ -227,7 +345,17 @@ export function SocioDetalle() {
           )}
 
           {activas.map((sub) => (
-            <SubCard key={sub.id} sub={sub} onCobrar={() => setCobrar({ pre: sub.id })} onEditar={() => setSubForm({ sub })} onBorrar={() => borrarSuscripcion(sub)} onToggleActiva={() => toggleSuscripcion(sub)} />
+            <SubCard
+              key={sub.id}
+              sub={sub}
+              onCobrar={() => setCobrar({ pre: sub.id })}
+              onEditar={() => setSubForm({ sub })}
+              onBorrar={() => borrarSuscripcion(sub)}
+              onToggleActiva={() => toggleSuscripcion(sub)}
+              onPicar={() => picarSesion(sub)}
+              onDeshacer={(a) => deshacerSesion(sub, a)}
+              onSesiones={() => abrirSesiones(sub)}
+            />
           ))}
 
           {inactivas.length > 0 && (
@@ -236,7 +364,15 @@ export function SocioDetalle() {
                 Inactivas
               </div>
               {inactivas.map((sub) => (
-                <SubCard key={sub.id} sub={sub} onCobrar={() => setCobrar({ pre: sub.id })} onEditar={() => setSubForm({ sub })} onBorrar={() => borrarSuscripcion(sub)} onToggleActiva={() => toggleSuscripcion(sub)} />
+                <SubCard
+                  key={sub.id}
+                  sub={sub}
+                  onCobrar={() => setCobrar({ pre: sub.id })}
+                  onEditar={() => setSubForm({ sub })}
+                  onBorrar={() => borrarSuscripcion(sub)}
+                  onToggleActiva={() => toggleSuscripcion(sub)}
+                  onSesiones={() => abrirSesiones(sub)}
+                />
               ))}
             </>
           )}
@@ -289,7 +425,7 @@ export function SocioDetalle() {
                     <div key={i}>
                       {capitalizar(l.actividad)}
                       {l.concepto ? ` · ${l.concepto}` : ""}: <span className="cifra">{euros(l.importe)}</span>
-                      {l.periodoHasta ? ` (hasta ${fecha(l.periodoHasta)})` : ""}
+                      {l.periodoHasta ? ` (hasta ${fecha(l.periodoHasta)})` : l.sesiones ? ` (${l.sesiones} sesiones)` : ""}
                     </div>
                   ))}
                   {p.notas && <div style={{ fontStyle: "italic", marginTop: 3 }}>{p.notas}</div>}
@@ -344,6 +480,77 @@ export function SocioDetalle() {
           </div>
         </Modal>
       )}
+      {sesiones && (
+        <Modal
+          titulo={`Sesiones · bono de ${capitalizar(sesiones.sub.actividad)}`}
+          onCerrar={() => setSesiones(null)}
+          pie={
+            <button className="btn primary" onClick={() => setSesiones(null)}>
+              Cerrar
+            </button>
+          }
+        >
+          <div className="modal-body">
+            {(() => {
+              // La tarjeta puede haberse recargado: usamos la cuenta más fresca del socio.
+              const s = socio.suscripciones.find((x) => x.id === sesiones.sub.id) ?? sesiones.sub;
+              return s.sesiones ? (
+                <div className="hint" style={{ marginBottom: 10 }}>
+                  Quedan <strong>{s.sesiones.restantes}</strong> · compradas {s.sesiones.compradas} · a mano {s.sesiones.manual} · usadas{" "}
+                  {s.sesiones.usadas}.
+                </div>
+              ) : null;
+            })()}
+            <div className="row2" style={{ alignItems: "end" }}>
+              <div className="field">
+                <label>Picar una sesión de otro día</label>
+                <input type="date" value={fechaSesion} max={hoyISO()} onChange={(e) => setFechaSesion(e.target.value)} />
+              </div>
+              <div className="field">
+                <button
+                  className="btn"
+                  disabled={(socio.suscripciones.find((x) => x.id === sesiones.sub.id) ?? sesiones.sub).estado === "pendiente"}
+                  title={
+                    (socio.suscripciones.find((x) => x.id === sesiones.sub.id) ?? sesiones.sub).estado === "pendiente"
+                      ? "Aún no tiene bono: cóbraselo primero"
+                      : "Descuenta 1 sesión con la fecha elegida (te pedirá confirmación)"
+                  }
+                  onClick={() => {
+                    const s = socio.suscripciones.find((x) => x.id === sesiones.sub.id) ?? sesiones.sub;
+                    picarSesion(s, fechaSesion);
+                  }}
+                >
+                  Picar con esa fecha
+                </button>
+              </div>
+            </div>
+            <div className="hint" style={{ marginBottom: 10 }}>
+              Útil para apuntar visitas que ya hizo antes de llevar el bono en la app. Para la de hoy, usa «Picar sesión» en la ficha.
+            </div>
+            {sesiones.lista.length === 0 ? (
+              <div className="center-box">Todavía no se ha picado ninguna sesión.</div>
+            ) : (
+              <div className="mov-lista">
+                {sesiones.lista.map((a, i) => (
+                  <div key={a.id} className="ses-fila">
+                    <span className="f">{cuando(a)}</span>
+                    <span className="sp">Sesión {sesiones.lista.length - i}</span>
+                    <button
+                      className="btn ghost sm danger"
+                      onClick={() => {
+                        const s = socio.suscripciones.find((x) => x.id === sesiones.sub.id) ?? sesiones.sub;
+                        deshacerSesion(s, a);
+                      }}
+                    >
+                      Deshacer
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </Modal>
+      )}
       {cobrar && (
         <PagoModal
           socioId={socioId}
@@ -387,40 +594,95 @@ function SubCard({
   onEditar,
   onBorrar,
   onToggleActiva,
+  onPicar,
+  onDeshacer,
+  onSesiones,
 }: {
   sub: Suscripcion;
   onCobrar: () => void;
   onEditar: () => void;
   onBorrar: () => void;
   onToggleActiva: () => void;
+  onPicar?: () => void;
+  onDeshacer?: (a: Asistencia) => void;
+  onSesiones?: () => void;
 }) {
+  const ses = sub.esBono ? sub.sesiones : null;
+  const ultima = sub.ultimaAsistencia;
   return (
     <div className={"sub-card " + (sub.activa ? colorEstado(sub.estado) : "gris")}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8 }}>
         <div>
           <span className="pill-act">{capitalizar(sub.actividad)}</span>
+          {sub.esBono && <span className="badge gris" style={{ marginLeft: 8 }}>Bono {sub.sesionesPorBono} ses.</span>}
           {sub.etiqueta && <span style={{ marginLeft: 8, fontWeight: 600 }}>{sub.etiqueta}</span>}
         </div>
         <strong className="cifra">{euros(sub.importe)}</strong>
       </div>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 8 }}>
-        <EstadoBadge estado={sub.activa ? sub.estado : null} />
+        <EstadoBadge estado={sub.activa ? sub.estado : null} bono={sub.esBono} />
         <span className="muted" style={{ fontSize: 12.5 }}>
-          {sub.activa ? estadoTexto(sub.estado, sub.dias) : "Inactiva"}
+          {sub.activa ? estadoTexto(sub.estado, sub.dias, ses ? ses.restantes : undefined) : "Inactiva"}
           {sub.pagadoHasta ? ` · hasta ${fecha(sub.pagadoHasta)}` : ""}
           {sub.coberturaSinCobro && (
-            <span title="La fecha de cobertura se apuntó a mano (alta o edición): no hay ningún cobro registrado que la respalde, así que ese dinero no aparece en Ingresos.">
+            <span
+              title={
+                sub.esBono
+                  ? "Las sesiones que le quedan se apuntaron a mano (del papelito): no hay ningún cobro registrado que las respalde, así que ese dinero no aparece en Ingresos."
+                  : "La fecha de cobertura se apuntó a mano (alta o edición): no hay ningún cobro registrado que la respalde, así que ese dinero no aparece en Ingresos."
+              }
+            >
               {" "}· apuntado a mano
             </span>
           )}
         </span>
       </div>
+      {ses && (
+        <div className="bono-contador" title={`Compradas ${ses.compradas} · a mano ${ses.manual} · usadas ${ses.usadas}`}>
+          <span className={"n" + (ses.restantes < 0 ? " neg" : "")}>{ses.restantes}</span>
+          <span className="de">
+            de {ses.compradas + ses.manual} sesiones · usadas {ses.usadas}
+            {ultima && (
+              <>
+                {" "}· última {fecha(ultima.fecha)}
+                {ultima.creadoEn.length > 10 ? ` ${ultima.creadoEn.slice(11)}` : ""}
+                {sub.activa && onDeshacer && (
+                  <button className="btn ghost sm" style={{ marginLeft: 6, padding: "2px 8px" }} onClick={() => onDeshacer(ultima)} title="Deshacer la última sesión picada">
+                    Deshacer
+                  </button>
+                )}
+              </>
+            )}
+          </span>
+        </div>
+      )}
+      {sub.bonoSinConfigurar && sub.activa && (
+        <div className="aviso-banner" style={{ marginTop: 10, marginBottom: 0 }}>
+          Este bono se apuntó como cuota mensual (con fecha). Pulsa <strong>Editar</strong> e indica sus sesiones para llevarlo como el
+          papelito: el cobro ya registrado contará como un bono completo.
+        </div>
+      )}
       <div className="acciones" style={{ marginTop: 10 }}>
         {sub.activa ? (
           <>
-            <button className="btn primary sm" onClick={onCobrar}>
-              Cobrar
+            {sub.esBono && onPicar && (
+              <button
+                className="btn primary sm"
+                onClick={onPicar}
+                disabled={sub.estado === "pendiente"}
+                title={sub.estado === "pendiente" ? "Aún no tiene bono: cóbraselo primero" : "Descuenta 1 sesión del bono (te pedirá confirmación)"}
+              >
+                Picar sesión
+              </button>
+            )}
+            <button className={"btn sm" + (sub.esBono ? "" : " primary")} onClick={onCobrar}>
+              {sub.esBono ? "Cobrar bono" : "Cobrar"}
             </button>
+            {sub.esBono && onSesiones && (
+              <button className="btn sm" onClick={onSesiones} title="Ver las sesiones picadas, deshacer alguna o picar una de otro día">
+                Sesiones
+              </button>
+            )}
             <button className="btn sm" onClick={onEditar}>
               Editar
             </button>
@@ -433,6 +695,11 @@ function SubCard({
             <button className="btn sm" onClick={onToggleActiva}>
               Reactivar
             </button>
+            {sub.esBono && onSesiones && (
+              <button className="btn sm" onClick={onSesiones} title="Ver las sesiones picadas o deshacer alguna (para picar, reactívalo)">
+                Sesiones
+              </button>
+            )}
             <button className="btn sm" onClick={onEditar}>
               Editar
             </button>

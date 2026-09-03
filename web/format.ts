@@ -34,8 +34,32 @@ export const EXPLICA_ESTADO: Record<EstadoCuota, string> = {
   aldia: "Cuota pagada y al corriente.",
 };
 
-/** Texto humano del estado segun dias restantes. */
-export function estadoTexto(estado: EstadoCuota, dias: number | null): string {
+/** Etiquetas del estado cuando la cuota es un bono por sesiones (no caduca: se agota). */
+export const ESTADO_LABEL_BONO: Record<EstadoCuota, string> = {
+  aldia: "Con sesiones",
+  pronto: "Quedan pocas",
+  atrasado: "Agotado",
+  pendiente: "Sin bono",
+};
+
+export const EXPLICA_ESTADO_BONO: Record<EstadoCuota, string> = {
+  pendiente: "Nunca ha comprado este bono (ni trae sesiones apuntadas).",
+  atrasado: "Se le acabaron las sesiones del bono. Toca cobrarle uno nuevo.",
+  pronto: "Le quedan 3 sesiones o menos.",
+  aldia: "Tiene sesiones de sobra en el bono.",
+};
+
+/**
+ * Texto humano del estado segun dias restantes. Si `sesiones` viene (bono por
+ * sesiones), el texto habla de sesiones en vez de días.
+ */
+export function estadoTexto(estado: EstadoCuota, dias: number | null, sesiones?: number | null): string {
+  if (sesiones !== undefined && sesiones !== null) {
+    if (estado === "pendiente") return "Sin bono todavía";
+    if (sesiones < 0) return `Agotado · debe ${-sesiones} ${-sesiones === 1 ? "sesión" : "sesiones"}`;
+    if (sesiones === 0) return "Bono agotado";
+    return `Quedan ${sesiones} ${sesiones === 1 ? "sesión" : "sesiones"}`;
+  }
   if (estado === "pendiente") return "Sin pagar todavía";
   if (estado === "atrasado") return `Atrasado ${Math.abs(dias ?? 0)} día${Math.abs(dias ?? 0) === 1 ? "" : "s"}`;
   if (estado === "pronto") {

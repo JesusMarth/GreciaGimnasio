@@ -316,6 +316,24 @@ input, select, textarea {
   border: 1.5px solid var(--linea-fuerte); padding: 10px 12px; background: #fff; width: 100%;
 }
 input:focus, select:focus, textarea:focus { outline: none; border-color: var(--azul-500); box-shadow: 0 0 0 2px var(--azul-soft); }
+/* Desplegables: ancho fijo al de su hueco (un nombre de tarifa largo NO lo ensancha:
+   el texto se corta con «…»), flecha propia y transición de borde/sombra/flecha. */
+input, select, textarea { transition: border-color 0.18s ease, box-shadow 0.18s ease, background-color 0.18s ease; }
+input:hover:not(:disabled), select:hover:not(:disabled), textarea:hover:not(:disabled) { border-color: var(--tinta-soft); }
+select {
+  appearance: none; -webkit-appearance: none; cursor: pointer;
+  min-width: 0; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  padding-right: 34px;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2346546c' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'><path d='M6 9l6 6 6-6'/></svg>");
+  background-repeat: no-repeat; background-position: right 12px center; background-size: 12px 12px;
+  transition: border-color 0.18s ease, box-shadow 0.18s ease, background-position 0.18s ease;
+}
+select:focus { background-position: right 12px top 60%; background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%231f5bb8' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'><path d='M6 9l6 6 6-6'/></svg>"); }
+select:disabled { cursor: not-allowed; color: var(--tinta-faint); background-color: var(--crema-2); }
+select option { white-space: normal; }
+/* Las columnas de una fila (.row2/.row3) no pueden crecer por contenido: el grid
+   da min-width:auto a sus hijos y un select con opciones largas lo rompería. */
+.row2 > *, .row3 > * { min-width: 0; }
 .row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
 .row3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 14px; }
 .hint { font-size: 12px; color: var(--tinta-faint); line-height: 1.5; }
@@ -898,3 +916,68 @@ td { padding: 9px 12px; font-size: 13px; }
 .mov-fila:last-child { border-bottom: none; }
 .mov-fecha { font-family: var(--mono); font-size: 11.5px; color: var(--tinta-faint); white-space: nowrap; min-width: 132px; padding-top: 1px; }
 .mov-texto { color: var(--text, var(--tinta)); }
+
+/* ===== BONOS POR SESIONES (v1.8) ===== */
+/* Aviso ámbar dentro de formularios/tarjetas (no es error ni éxito: "ojo con esto"). */
+.aviso-banner { background: var(--ambar-soft); color: var(--ambar); border: 1.5px solid var(--ambar); padding: 10px 14px; margin-bottom: 14px; font-weight: 600; font-size: 12.5px; line-height: 1.5; }
+/* Contador grande de sesiones en la tarjeta del bono ("12 de 20"). */
+.bono-contador { display: flex; align-items: baseline; gap: 6px; margin-top: 8px; }
+.bono-contador .n { font-family: var(--mono); font-size: 22px; font-weight: 700; line-height: 1; }
+.bono-contador .de { font-size: 12.5px; color: var(--tinta-faint); }
+.bono-contador .n.neg { color: var(--rojo); }
+/* Botón de deshacer dentro del banner verde. */
+.ok-banner .btn, .error-banner .btn { margin-left: 12px; vertical-align: middle; }
+.ses-fila { display: flex; align-items: center; gap: 10px; padding: 8px 2px; border-bottom: 1px solid var(--linea); font-size: 13px; }
+.ses-fila:last-child { border-bottom: none; }
+.ses-fila .f { font-family: var(--mono); font-size: 12px; color: var(--tinta-faint); min-width: 150px; }
+.ses-fila .sp { flex: 1; }
+/* Bloques que cambian de contenido (chips del primer pago, campos que aparecen)
+   van dentro de <Plegable>: el alto se anima en vez de saltar. */
+.plegable > div { padding-bottom: 2px; }
+
+/* ===== DESPLEGABLE PROPIO (Desplegable.tsx) ===== */
+/* La caja: misma piel que un input. El texto se corta con «…»; nunca ensancha. */
+.dd { position: relative; width: 100%; min-width: 0; }
+.dd-btn {
+  display: flex; align-items: center; gap: 8px; width: 100%; min-width: 0;
+  font-family: inherit; font-size: 13.5px; color: var(--tinta); text-align: left; cursor: pointer;
+  border: 1.5px solid var(--linea-fuerte); border-radius: var(--radio); padding: 10px 12px; background: #fff;
+  transition: border-color 0.18s ease, box-shadow 0.18s ease, background-color 0.18s ease;
+}
+.dd-btn:hover:not(:disabled) { border-color: var(--tinta-soft); }
+.dd-btn:focus-visible, .dd.abierto .dd-btn { outline: none; border-color: var(--azul-500); box-shadow: 0 0 0 2px var(--azul-soft); }
+.dd-btn:disabled { cursor: not-allowed; color: var(--tinta-faint); background: var(--crema-2); }
+.dd-btn .txt { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.dd-btn .txt.ph { color: var(--tinta-faint); }
+.dd-btn .extra, .dd-op .extra { flex-shrink: 0; font-family: var(--mono); font-size: 12px; color: var(--tinta-faint); }
+.dd-btn .chev { flex-shrink: 0; color: var(--tinta-soft); transition: transform 0.22s cubic-bezier(0.2, 0.9, 0.3, 1), color 0.18s ease; }
+.dd.abierto .dd-btn .chev { transform: rotate(180deg); color: var(--azul-500); }
+
+/* La lista (en un portal, position: fixed): nace desde la caja con un fundido +
+   deslizamiento corto; al cerrar hace el camino inverso. */
+.dd-lista {
+  position: fixed; z-index: 200; margin: 0; padding: 6px; list-style: none; box-sizing: border-box;
+  background: var(--marfil); border: 1.5px solid var(--tinta); border-radius: var(--radio);
+  box-shadow: 0 18px 44px rgba(20, 41, 74, 0.28); overflow-y: auto;
+  transform-origin: top center; animation: ddAbrir 0.16s cubic-bezier(0.2, 0.9, 0.3, 1) both;
+}
+.dd-lista.arriba { transform-origin: bottom center; animation-name: ddAbrirArriba; }
+.dd-lista.cerrando { animation: ddCerrar 0.16s ease-in both; }
+.dd-lista.arriba.cerrando { animation-name: ddCerrarArriba; }
+@keyframes ddAbrir { from { opacity: 0; transform: translateY(-6px) scaleY(0.96); } to { opacity: 1; transform: none; } }
+@keyframes ddCerrar { from { opacity: 1; transform: none; } to { opacity: 0; transform: translateY(-6px) scaleY(0.96); } }
+@keyframes ddAbrirArriba { from { opacity: 0; transform: translateY(6px) scaleY(0.96); } to { opacity: 1; transform: none; } }
+@keyframes ddCerrarArriba { from { opacity: 1; transform: none; } to { opacity: 0; transform: translateY(6px) scaleY(0.96); } }
+
+.dd-op {
+  display: flex; align-items: center; gap: 8px; padding: 8px 10px; border-radius: calc(var(--radio) - 3px);
+  font-size: 13.5px; color: var(--tinta); cursor: pointer; transition: background-color 0.12s ease, color 0.12s ease;
+}
+.dd-op .txt { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.dd-op.activa { background: var(--azul-soft); color: var(--azul-900); }
+.dd-op.sel { font-weight: 700; }
+.dd-op .check { flex-shrink: 0; color: var(--azul-500); }
+.dd-op.off { color: var(--tinta-faint); cursor: not-allowed; }
+.dd-op + .dd-op { margin-top: 2px; }
+/* Dentro de una línea de cobro (grid con columnas fijas) la caja va compacta. */
+.linea-pago .dd-btn { padding: 8px 10px; }

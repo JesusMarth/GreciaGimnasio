@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Modal } from "./Modal.tsx";
+import { Desplegable } from "./Desplegable.tsx";
 import { api } from "../api.ts";
 import { hoyISO } from "../format.ts";
 import type { Socio } from "../types.ts";
@@ -116,10 +117,14 @@ export function SocioFormModal({ socio, onCerrar, onHecho }: Props) {
         {socio && (
           <div className="field">
             <label>Estado</label>
-            <select value={estado} onChange={(e) => setEstado(e.target.value)}>
-              <option value="activo">Activo</option>
-              <option value="baja">Baja</option>
-            </select>
+            <Desplegable
+              value={estado}
+              onChange={setEstado}
+              opciones={[
+                { value: "activo", label: "Activo" },
+                { value: "baja", label: "Baja" },
+              ]}
+            />
           </div>
         )}
         <div className="field">

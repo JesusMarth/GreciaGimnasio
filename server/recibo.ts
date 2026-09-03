@@ -18,6 +18,7 @@ interface LineaPago {
   importe: number;
   periodo_desde: string | null;
   periodo_hasta: string | null;
+  sesiones: number | null; // bono por sesiones: sesiones que compró esta línea
 }
 
 export interface DatosReciboPago {
@@ -27,13 +28,9 @@ export interface DatosReciboPago {
   lineas: LineaPago[];
 }
 
-export function ddmmaaaa(iso: string | null): string {
-  if (!iso) return "—";
-  const [y, m, d] = iso.split("-");
-  return `${d}/${m}/${y}`;
-}
-export const eur = (n: number) => n.toFixed(2).replace(".", ",") + " €";
-const cap = (s: string) => (s ? s.charAt(0).toUpperCase() + s.slice(1) : s);
+import { cap, ddmmaaaa, eur } from "./texto.ts";
+// Re-export por compatibilidad: otros módulos ya los importaban de aquí.
+export { ddmmaaaa, eur };
 
 /** Reúne los datos de un pago para el recibo. null si el pago no existe. */
 export function datosDelRecibo(pagoId: number): DatosReciboPago | null {
@@ -109,7 +106,7 @@ export function generarReciboPDF(pagoId: number): Promise<Buffer> {
     let y = 205;
     doc.font(FB).fontSize(8).fillColor(SUAVE);
     doc.text("CONCEPTO", izq, y, { characterSpacing: 1, width: 250 });
-    doc.text("PERIODO", izq + 255, y, { characterSpacing: 1, width: 140 });
+    doc.text(datos.lineas.some((l) => l.sesiones) ? "PERIODO / SESIONES" : "PERIODO", izq + 255, y, { characterSpacing: 1, width: 140 });
     doc.text("IMPORTE", der - 100, y, { characterSpacing: 1, width: 100, align: "right" });
     y += 15;
     doc.moveTo(izq, y).lineTo(der, y).lineWidth(0.8).strokeColor(AZUL_OSC).stroke();
@@ -117,7 +114,12 @@ export function generarReciboPDF(pagoId: number): Promise<Buffer> {
 
     for (const l of datos.lineas) {
       const concepto = cap(l.actividad) + (l.concepto ? ` · ${l.concepto}` : "");
-      const periodo = l.periodo_desde || l.periodo_hasta ? `${ddmmaaaa(l.periodo_desde)} – ${ddmmaaaa(l.periodo_hasta)}` : "—";
+      const periodo =
+        l.periodo_desde || l.periodo_hasta
+          ? `${ddmmaaaa(l.periodo_desde)} – ${ddmmaaaa(l.periodo_hasta)}`
+          : l.sesiones
+            ? `${l.sesiones} sesiones`
+            : "—";
       const alto = doc.font(FB).fontSize(10).heightOfString(concepto, { width: 245 });
       doc.fillColor(TINTA).text(concepto, izq, y, { width: 245 });
       doc.font(FB).fontSize(9).fillColor(SUAVE).text(periodo, izq + 255, y + 1, { width: 140 });

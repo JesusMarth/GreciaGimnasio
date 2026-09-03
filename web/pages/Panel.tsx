@@ -109,7 +109,7 @@ export function Panel() {
       <div className="lienzo">
       {avisoErr && <div className="error-banner">{avisoErr}</div>}
       <div className="stat-grid">
-        <div className="stat rojo clic" onClick={() => nav("/socios?cuota=pendiente")} title="Ver estos socios">
+        <div className="stat rojo clic" onClick={() => nav("/socios?cuota=pendiente&estado=activo")} title="Ver estos socios">
           <div className="bar" />
           <div className="label">Por cobrar</div>
           <div className="value">{cPorCobrar}</div>
@@ -120,13 +120,13 @@ export function Panel() {
             </div>
           )}
         </div>
-        <div className="stat ambar clic" onClick={() => nav("/socios?cuota=pronto")} title="Ver estos socios">
+        <div className="stat ambar clic" onClick={() => nav("/socios?cuota=pronto&estado=activo")} title="Ver estos socios">
           <div className="bar" />
           <div className="label">Vencen pronto</div>
           <div className="value">{cPronto}</div>
-          <div className="nota">En 5 días o menos</div>
+          <div className="nota">En 5 días o menos · bonos con 3 sesiones o menos</div>
         </div>
-        <div className="stat verde clic" onClick={() => nav("/socios?cuota=aldia")} title="Ver estos socios">
+        <div className="stat verde clic" onClick={() => nav("/socios?cuota=aldia&estado=activo")} title="Ver estos socios">
           <div className="bar" />
           <div className="label">Al día</div>
           <div className="value">{cAldia}</div>
@@ -154,9 +154,9 @@ export function Panel() {
       </div>
 
       <div className="cols">
-        <Columna titulo="Por cobrar / atrasados" color="rojo" items={data.porCobrar} onCobrar={setCobrar} onAvisar={avisar} avisadoId={avisadoId} verMas="/socios?cuota=pendiente" vacio="Nadie pendiente. 🎉" />
-        <Columna titulo="Vencen pronto" color="ambar" items={data.pronto} onCobrar={setCobrar} onAvisar={avisar} avisadoId={avisadoId} verMas="/socios?cuota=pronto" vacio="Nada vence en los próximos días." />
-        <Columna titulo="Al día" color="verde" items={data.aldia} onCobrar={setCobrar} onAvisar={avisar} avisadoId={avisadoId} verMas="/socios?cuota=aldia" vacio="Sin cuotas al día todavía." />
+        <Columna titulo="Por cobrar / atrasados" color="rojo" items={data.porCobrar} onCobrar={setCobrar} onAvisar={avisar} avisadoId={avisadoId} verMas="/socios?cuota=pendiente&estado=activo" vacio="Nadie pendiente. 🎉" />
+        <Columna titulo="Vencen pronto" color="ambar" items={data.pronto} onCobrar={setCobrar} onAvisar={avisar} avisadoId={avisadoId} verMas="/socios?cuota=pronto&estado=activo" vacio="Nada vence en los próximos días." />
+        <Columna titulo="Al día" color="verde" items={data.aldia} onCobrar={setCobrar} onAvisar={avisar} avisadoId={avisadoId} verMas="/socios?cuota=aldia&estado=activo" vacio="Sin cuotas al día todavía." />
       </div>
 
       {ingresosMes.porActividad.length > 0 && (
@@ -239,7 +239,7 @@ function Columna({
             <span className="pill-act">{capitalizar(i.actividad)}</span>
             <span className={"badge " + colorEstado(i.estado)}>
               <i className="bdot" />
-              {estadoTexto(i.estado, i.dias)}
+              {estadoTexto(i.estado, i.dias, i.esBono ? i.sesionesRestantes : undefined)}
             </span>
             {i.etiqueta && <span className="muted">{i.etiqueta}</span>}
           </div>
@@ -252,7 +252,9 @@ function Columna({
                 {avisadoId === i.suscripcionId ? "✓ Enviado" : "Avisar"}
               </button>
             )}
-            <span className="item-fecha">{i.pagadoHasta ? `hasta ${fecha(i.pagadoHasta)}` : `alta ${fecha(i.fechaAlta)}`}</span>
+            <span className="item-fecha">
+              {i.esBono ? "bono de sesiones" : i.pagadoHasta ? `hasta ${fecha(i.pagadoHasta)}` : `alta ${fecha(i.fechaAlta)}`}
+            </span>
           </div>
         </div>
       ))}

@@ -1,8 +1,9 @@
 import { Router } from "express";
 import { db } from "../db.ts";
 import { addMeses, hoyISO } from "../util.ts";
-import type { SuscripcionRow } from "../queries.ts";
-import { generarReciboPDF, datosDelRecibo, eur, ddmmaaaa } from "../recibo.ts";
+import { esBonoPorSesiones, sesionesDe, type SuscripcionRow } from "../queries.ts";
+import { generarReciboPDF, datosDelRecibo } from "../recibo.ts";
+import { ddmmaaaa, eur, ISO, metodoValido } from "../texto.ts";
 import { enviarCorreo } from "../correo.ts";
 import { emailConfigurado, leerConfigEmail, leerDatosRecibo } from "../config.ts";
 import { registrarEvento } from "../eventos.ts";
@@ -15,12 +16,15 @@ interface LineaEntrada {
   concepto?: string;
   importe: number;
   meses?: number;
+  bonos?: number; // solo bonos por sesiones: cuántos bonos compra (1 = sesiones_por_bono sesiones)
   periodoDesde?: string;
   periodoHasta?: string;
 }
 
 // Registrar un pago. Puede llevar varias lineas (una por actividad) en un solo cobro.
 // Cada linea avanza el "pagado_hasta" de su suscripcion. Todo en una transaccion.
+// Si la suscripción es un bono por sesiones, la línea no lleva periodo: suma
+// `sesiones` (bonos × sesiones_por_bono) y el estado sale de las sesiones que quedan.
 pagosRouter.post("/", (req, res) => {
   const { socioId, fecha, metodo, notas, lineas } = req.body ?? {};
   if (!socioId) return res.status(400).json({ error: "Falta el socio" });
@@ -31,7 +35,6 @@ pagosRouter.post("/", (req, res) => {
 
   // Validar fechas: una fecha no-ISO corrompe el estado de cuota y el agrupado del
   // dashboard, y se colaría en la cabecera del recibo. Rechazamos de entrada.
-  const ISO = /^\d{4}-\d{2}-\d{2}$/;
   if (fecha != null && fecha !== "" && !ISO.test(String(fecha)))
     return res.status(400).json({ error: "Fecha no válida" });
   for (const l of lineas as LineaEntrada[]) {
@@ -40,9 +43,11 @@ pagosRouter.post("/", (req, res) => {
     if (l.periodoHasta != null && l.periodoHasta !== "" && !ISO.test(String(l.periodoHasta)))
       return res.status(400).json({ error: "Periodo (hasta) no válido" });
   }
-  const metodoOk = ["efectivo", "transferencia", "bizum", "tarjeta"].includes(String(metodo)) ? String(metodo) : "efectivo";
+  const metodoOk = metodoValido(metodo);
 
   const fechaPago = fecha || hoyISO();
+  // Un cobro con fecha futura no es un cobro (y sumaría en un mes que aún no existe).
+  if (fechaPago > hoyISO()) return res.status(400).json({ error: "La fecha del pago no puede ser futura" });
 
   // Normalizar lineas y resolver la suscripcion de cada una.
   const preparadas = (lineas as LineaEntrada[]).map((l) => {
@@ -53,17 +58,27 @@ pagosRouter.post("/", (req, res) => {
     let desde = l.periodoDesde ?? null;
     let hasta = l.periodoHasta ?? null;
     let sub: SuscripcionRow | undefined;
+    let sesiones: number | null = null;
     if (l.suscripcionId) {
       sub = db.prepare("SELECT * FROM suscripciones WHERE id = ?").get(l.suscripcionId) as SuscripcionRow | undefined;
       if (!sub) throw { code: 404, msg: "Suscripcion de la linea no encontrada" };
       actividad = sub.actividad;
-      if (!concepto) concepto = sub.etiqueta;
-      // Por defecto: extiende desde la cobertura vigente; si caduco, desde la fecha del pago.
-      const base = sub.pagado_hasta && sub.pagado_hasta > fechaPago ? sub.pagado_hasta : fechaPago;
-      if (!desde) desde = base;
-      if (!hasta) hasta = addMeses(base, l.meses && l.meses > 0 ? Math.min(l.meses, 120) : 1);
+      if (esBonoPorSesiones(sub)) {
+        // Bono por sesiones: sin periodo; la línea compra N bonos de X sesiones.
+        const nBonos = Math.min(Math.max(Math.round(Number(l.bonos)) || 1, 1), 50);
+        sesiones = nBonos * (sub.sesiones_por_bono as number);
+        if (!concepto) concepto = sub.etiqueta ?? `Bono ${sub.sesiones_por_bono} sesiones`;
+        desde = null;
+        hasta = null;
+      } else {
+        if (!concepto) concepto = sub.etiqueta;
+        // Por defecto: extiende desde la cobertura vigente; si caduco, desde la fecha del pago.
+        const base = sub.pagado_hasta && sub.pagado_hasta > fechaPago ? sub.pagado_hasta : fechaPago;
+        if (!desde) desde = base;
+        if (!hasta) hasta = addMeses(base, l.meses && l.meses > 0 ? Math.min(l.meses, 120) : 1);
+      }
     }
-    return { suscripcionId: l.suscripcionId ?? null, actividad, concepto, importe, desde, hasta, sub };
+    return { suscripcionId: l.suscripcionId ?? null, actividad, concepto, importe, desde, hasta, sesiones, sub };
   });
 
   const total = preparadas.reduce((acc, l) => acc + l.importe, 0);
@@ -74,12 +89,12 @@ pagosRouter.post("/", (req, res) => {
       .prepare("INSERT INTO pagos (socio_id, fecha, metodo, total, notas, creado_en) VALUES (?,?,?,?,?,?)")
       .run(socioId, fechaPago, metodoOk, total, notas || null, ahora);
     const insLinea = db.prepare(
-      `INSERT INTO pago_lineas (pago_id, suscripcion_id, actividad, concepto, importe, periodo_desde, periodo_hasta)
-       VALUES (?,?,?,?,?,?,?)`
+      `INSERT INTO pago_lineas (pago_id, suscripcion_id, actividad, concepto, importe, periodo_desde, periodo_hasta, sesiones)
+       VALUES (?,?,?,?,?,?,?,?)`
     );
     const updSub = db.prepare("UPDATE suscripciones SET pagado_hasta = ? WHERE id = ?");
     for (const l of preparadas) {
-      insLinea.run(pago.lastInsertRowid, l.suscripcionId, l.actividad, l.concepto, l.importe, l.desde, l.hasta);
+      insLinea.run(pago.lastInsertRowid, l.suscripcionId, l.actividad, l.concepto, l.importe, l.desde, l.hasta, l.sesiones);
       // Solo adelantamos la cobertura si la nueva fecha es posterior a la que ya tenia.
       if (l.suscripcionId && l.hasta && l.sub && (!l.sub.pagado_hasta || l.hasta > l.sub.pagado_hasta)) {
         updSub.run(l.hasta, l.suscripcionId);
@@ -94,7 +109,9 @@ pagosRouter.post("/", (req, res) => {
       socioId,
       "pago",
       `Cobro de ${eur(total)} en ${metodoOk} (${fechaPago === hoyISO() ? "hoy" : "con fecha " + ddmmaaaa(fechaPago)}): ` +
-        preparadas.map((l) => `${l.actividad} ${eur(l.importe)}${l.hasta ? ` hasta ${ddmmaaaa(l.hasta)}` : ""}`).join(" · ")
+        preparadas
+          .map((l) => `${l.actividad} ${eur(l.importe)}${l.hasta ? ` hasta ${ddmmaaaa(l.hasta)}` : l.sesiones ? ` (${l.sesiones} sesiones)` : ""}`)
+          .join(" · ")
     );
     res.status(201).json({ id, total });
   } catch (e: any) {
@@ -122,6 +139,7 @@ pagosRouter.get("/de-socio/:id", (req, res) => {
         importe: l.importe,
         periodoDesde: l.periodo_desde,
         periodoHasta: l.periodo_hasta,
+        sesiones: l.sesiones ?? null,
       })),
     }))
   );
@@ -134,9 +152,10 @@ pagosRouter.delete("/:id", (req, res) => {
   const pago = db.prepare("SELECT socio_id, fecha, metodo, total FROM pagos WHERE id = ?").get(id) as
     | { socio_id: number; fecha: string; metodo: string; total: number }
     | undefined;
-  const subs = db.prepare("SELECT DISTINCT suscripcion_id FROM pago_lineas WHERE pago_id = ?").all(id) as {
-    suscripcion_id: number | null;
-  }[];
+  const subs = db
+    .prepare("SELECT suscripcion_id, COALESCE(SUM(sesiones), 0) AS sesiones FROM pago_lineas WHERE pago_id = ? GROUP BY suscripcion_id")
+    .all(id) as { suscripcion_id: number | null; sesiones: number }[];
+  const sesionesQuitadas = subs.reduce((acc, s) => acc + (s.sesiones || 0), 0);
   const tx = db.transaction(() => {
     const info = db.prepare("DELETE FROM pagos WHERE id = ?").run(id);
     if (info.changes === 0) return 0;
@@ -145,25 +164,40 @@ pagosRouter.delete("/:id", (req, res) => {
     // (sin ella, borrar un pago dejaria al socio "Sin pagar" aunque viniera pagado
     // del archivador en papel).
     const maxStmt = db.prepare("SELECT MAX(periodo_hasta) AS m FROM pago_lineas WHERE suscripcion_id = ?");
-    const manualStmt = db.prepare("SELECT cobertura_manual AS cm FROM suscripciones WHERE id = ?");
+    const subStmt = db.prepare("SELECT * FROM suscripciones WHERE id = ?");
     const updStmt = db.prepare("UPDATE suscripciones SET pagado_hasta = ? WHERE id = ?");
     for (const { suscripcion_id } of subs) {
       if (!suscripcion_id) continue;
+      const sub = subStmt.get(suscripcion_id) as SuscripcionRow | undefined;
+      if (!sub) continue;
+      // Bono por sesiones: las sesiones se calculan de los pagos que queden, no
+      // hay fecha que recalcular (y no se toca la que pudiera tener de antes).
+      if (esBonoPorSesiones(sub)) continue;
       const r = maxStmt.get(suscripcion_id) as { m: string | null };
-      const cm = (manualStmt.get(suscripcion_id) as { cm: string | null } | undefined)?.cm ?? null;
+      const cm = sub.cobertura_manual ?? null;
       const candidatas = [r.m, cm].filter((x): x is string => !!x);
       updStmt.run(candidatas.length ? candidatas.reduce((a, b) => (a > b ? a : b)) : null, suscripcion_id);
     }
     return info.changes;
   });
   if (tx() === 0) return res.status(404).json({ error: "Pago no encontrado" });
-  if (pago)
+  if (pago) {
+    // Qué le queda al bono tras quitar el cobro (para que el historial lo diga claro).
+    const restantesBono = subs
+      .filter((x) => x.suscripcion_id && x.sesiones > 0)
+      .map((x) => db.prepare("SELECT * FROM suscripciones WHERE id = ?").get(x.suscripcion_id) as SuscripcionRow | undefined)
+      .filter((x): x is SuscripcionRow => !!x && esBonoPorSesiones(x))
+      .map((x) => `${x.actividad}: quedan ${sesionesDe(x).restantes}`);
     registrarEvento(
       pago.socio_id,
       "pago_borrado",
-      `Se borró el pago de ${eur(pago.total)} del ${ddmmaaaa(pago.fecha)} (${pago.metodo}); la cobertura de sus cuotas se recalculó`
+      `Se borró el pago de ${eur(pago.total)} del ${ddmmaaaa(pago.fecha)} (${pago.metodo}); ` +
+        (sesionesQuitadas > 0
+          ? `se le quitan las ${sesionesQuitadas} sesiones que había comprado (${restantesBono.join(" · ")})`
+          : "la cobertura de sus cuotas se recalculó")
     );
-  res.json({ ok: true });
+  }
+  res.json({ ok: true, sesionesQuitadas });
 });
 
 // --- Recibo en PDF ----------------------------------------------------------

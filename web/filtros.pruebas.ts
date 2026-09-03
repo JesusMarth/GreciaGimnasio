@@ -13,10 +13,10 @@ const igual = (a: number[], b: number[]) => a.length === b.length && a.every((x,
 
 // --- Factorías de datos mock ---
 function sub(over: Partial<Suscripcion>): Suscripcion {
-  return { id: 1, socioId: 1, actividad: "gimnasio", etiqueta: null, importe: 30, periodicidad: "mensual", pagadoHasta: null, coberturaSinCobro: false, activa: true, notas: null, estado: "aldia", dias: 30, ...over };
+  return { id: 1, socioId: 1, actividad: "gimnasio", etiqueta: null, importe: 30, periodicidad: "mensual", pagadoHasta: null, coberturaSinCobro: false, activa: true, notas: null, estado: "aldia", dias: 30, esBono: false, bonoSinConfigurar: false, sesionesPorBono: null, sesionesManual: 0, sesiones: null, ultimaAsistencia: null, ...over };
 }
 function soc(id: number, fechaAlta: string, estado: string, estadoResumen: EstadoCuota | null, subs: Suscripcion[], sexo: string | null = null, ultimoPago: { fecha: string; total: number } | null = null): Socio {
-  return { id, nombre: "Socio", apellidos: String(id), nombreCompleto: "Socio " + id, telefono: null, email: null, dni: null, sexo, fechaAlta, fechaNacimiento: null, estado, notas: null, suscripciones: subs, estadoResumen, proximaExpiracion: null, ultimoPago };
+  return { id, nombre: "Socio", apellidos: String(id), nombreCompleto: "Socio " + id, telefono: null, email: null, dni: null, sexo, fechaAlta, fechaNacimiento: null, estado, notas: null, suscripciones: subs, estadoResumen, estadoResumenEsBono: false, proximaExpiracion: null, ultimoPago };
 }
 
 const HOY = "2026-06-24"; // miércoles
@@ -98,6 +98,19 @@ check("avisos vacío → todos", igual(ids(filtrarSocios(sociosAviso, F({}))), [
 check("con aviso + al día se combinan", igual(ids(filtrarSocios(sociosAviso, F({ avisos: ["con"], cuota: ["aldia"] }))), [101]));
 check("avisosDe: con motivo", avisosDe(sociosAviso[0]).length === 1);
 check("avisosDe: sin motivo", avisosDe(sociosAviso[1]).length === 0);
+
+console.log("\n— avisosDe: bonos por sesiones —");
+const bonoBase: Partial<Suscripcion> = { periodicidad: "bono", esBono: true, sesionesPorBono: 20, pagadoHasta: null, dias: null };
+const sesionesDe = (restantes: number, compradas: number, manual: number) => ({ restantes, usadas: compradas + manual - restantes, compradas, manual, porBono: 20 });
+const socioBonoPapel = soc(20, "2026-06-01", "activo", "aldia", [sub({ ...bonoBase, estado: "aldia", coberturaSinCobro: true, sesionesManual: 5, sesiones: sesionesDe(5, 0, 5) })]);
+const socioBonoPagado = soc(21, "2026-06-01", "activo", "aldia", [sub({ ...bonoBase, estado: "aldia", coberturaSinCobro: false, sesiones: sesionesDe(12, 20, 0) })]);
+const socioBonoViejo = soc(22, "2026-06-01", "activo", "aldia", [sub({ periodicidad: "bono", esBono: false, bonoSinConfigurar: true, pagadoHasta: "2026-07-24", estado: "aldia" })]);
+const socioBonoViejoPausado = soc(23, "2026-06-01", "activo", null, [sub({ periodicidad: "bono", esBono: false, bonoSinConfigurar: true, activa: false, estado: "aldia" })]);
+check("bono del papelito (sin cobro) → aviso", avisosDe(socioBonoPapel).length === 1 && avisosDe(socioBonoPapel)[0].includes("papelito"));
+check("bono pagado → sin aviso", avisosDe(socioBonoPagado).length === 0);
+check("bono de antes de v1.8 sin sesiones → aviso de configurar", avisosDe(socioBonoViejo).length === 1 && avisosDe(socioBonoViejo)[0].includes("versión 1.8"));
+check("bono viejo pausado → sin aviso", avisosDe(socioBonoViejoPausado).length === 0);
+check("filtro avisos=con incluye los dos bonos con aviso", igual(ids(filtrarSocios([socioBonoPapel, socioBonoPagado, socioBonoViejo], F({ avisos: ["con"] }))), [20, 22]));
 
 console.log("\n— filtrarSocios: último pago —");
 const sociosPago: Socio[] = [

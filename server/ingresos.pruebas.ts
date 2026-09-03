@@ -148,6 +148,155 @@ async function main() {
   check("K) el alta 'ya estaba pagado' queda descrita", evB.some((e) => e.tipo === "actividad" && e.detalle.includes("ya estaba pagado")), true);
   const evA = (await GET(`/socios/${a.id}/eventos`)) as { tipo: string }[];
   check("K) baja y reactivación apuntadas", evA.some((e) => e.tipo === "baja") && evA.some((e) => e.tipo === "reactivado"), true);
+
+  // ---------------------------------------------------------------------------
+  // BONOS POR SESIONES (v1.8): el bono no caduca por fecha, se agota por uso.
+  // ---------------------------------------------------------------------------
+  const base = await ingresosMes();
+
+  // L) Alta de bono "cobrar ahora": 60 € reales, 20 sesiones, sin fecha.
+  const l = await POST("/socios", { nombre: "Lucía", apellidos: "Bono", fechaAlta: hoy });
+  const bono = await POST(`/socios/${l.id}/suscripciones`, {
+    actividad: "gimnasio",
+    importe: 60,
+    periodicidad: "bono",
+    sesionesPorBono: 20,
+    cobroInicial: { metodo: "efectivo" },
+  });
+  check("L) el bono se lleva por sesiones", bono.esBono, true);
+  check("L) 20 sesiones compradas, 20 restantes", [bono.sesiones.compradas, bono.sesiones.restantes], [20, 20]);
+  check("L) sin fecha de cobertura", bono.pagadoHasta, null);
+  check("L) estado al día", bono.estado, "aldia");
+  check("L) el cobro del bono cuenta en ingresos", await ingresosMes(), base + 60);
+  const pagosL = await GET(`/pagos/de-socio/${l.id}`);
+  check("L) la línea del pago lleva 20 sesiones y ningún periodo", [pagosL[0].lineas[0].sesiones, pagosL[0].lineas[0].periodoHasta], [20, null]);
+  const sinSesiones = await fetch(API + `/socios/${l.id}/suscripciones`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ actividad: "karate", importe: 60, periodicidad: "bono" }),
+  });
+  check("L) un bono sin sesiones se rechaza", sinSesiones.status, 400);
+
+  // M) Picar sesiones: 17 → quedan 3 (pronto) · 3 más → 0 (agotado) · 1 más → −1 (a deber).
+  for (let i = 0; i < 17; i++) await POST(`/suscripciones/${bono.id}/asistencias`, {});
+  s = await GET(`/socios/${l.id}`);
+  check("M) tras 17 picadas quedan 3 → 'quedan pocas'", [s.suscripciones[0].sesiones.restantes, s.suscripciones[0].estado], [3, "pronto"]);
+  for (let i = 0; i < 3; i++) await POST(`/suscripciones/${bono.id}/asistencias`, {});
+  s = await GET(`/socios/${l.id}`);
+  check("M) a 0 → agotado (atrasado)", [s.suscripciones[0].sesiones.restantes, s.suscripciones[0].estado], [0, "atrasado"]);
+  const aDeber = await POST(`/suscripciones/${bono.id}/asistencias`, {});
+  check("M) se puede picar a deber (−1) y sigue agotado", [aDeber.suscripcion.sesiones.restantes, aDeber.suscripcion.estado], [-1, "atrasado"]);
+  const futura = await fetch(API + `/suscripciones/${bono.id}/asistencias`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ fecha: addMeses(hoy, 1) }),
+  });
+  check("M) no se puede picar con fecha futura", futura.status, 400);
+  const dash = await GET("/dashboard");
+  const itemBono = [...dash.porCobrar, ...dash.pronto, ...dash.aldia].find((i: any) => i.suscripcionId === bono.id);
+  check("M) el Panel lo lista como bono agotado en 'por cobrar'", [itemBono?.esBono, itemBono?.sesionesRestantes, dash.porCobrar.some((i: any) => i.suscripcionId === bono.id)], [true, -1, true]);
+
+  // N) Deshacer: borrar la última sesión picada devuelve la cuenta; queda en el historial.
+  const lista = await GET(`/suscripciones/${bono.id}/asistencias`);
+  check("N) el listado tiene las 21 sesiones picadas", lista.length, 21);
+  await DEL(`/asistencias/${lista[0].id}`);
+  await DEL(`/asistencias/${lista[1].id}`);
+  s = await GET(`/socios/${l.id}`);
+  check("N) tras deshacer 2 → queda 1 (pronto)", [s.suscripciones[0].sesiones.restantes, s.suscripciones[0].estado], [1, "pronto"]);
+  const evL = (await GET(`/socios/${l.id}/eventos`)) as { tipo: string }[];
+  check("N) picar y deshacer quedan en Movimientos", [evL.filter((e) => e.tipo === "asistencia").length, evL.filter((e) => e.tipo === "asistencia_deshecha").length], [21, 2]);
+
+  // O) Cobrar 2 bonos de golpe suma 40 sesiones; borrar ese pago las quita solo.
+  const pagoO = await POST("/pagos", { socioId: l.id, lineas: [{ suscripcionId: bono.id, importe: 120, bonos: 2 }] });
+  s = await GET(`/socios/${l.id}`);
+  check("O) 2 bonos → +40 sesiones (quedan 41, al día)", [s.suscripciones[0].sesiones.restantes, s.suscripciones[0].estado], [41, "aldia"]);
+  check("O) ingresos = base + 60 + 120", await ingresosMes(), base + 180);
+  await DEL(`/pagos/${pagoO.id}`);
+  s = await GET(`/socios/${l.id}`);
+  check("O) borrar el pago devuelve la cuenta (queda 1)", s.suscripciones[0].sesiones.restantes, 1);
+  check("O) y descuenta los ingresos", await ingresosMes(), base + 60);
+
+  // P) "Ya estaba pagado" en bono = sesiones del papelito: sin ingresos, marcado a mano.
+  const p = await POST("/socios", { nombre: "Pepe", apellidos: "Papelito", fechaAlta: hoy });
+  const bonoP = await POST(`/socios/${p.id}/suscripciones`, { actividad: "gimnasio", importe: 60, periodicidad: "bono", sesionesPorBono: 20, sesionesManual: 5 });
+  check("P) 5 sesiones a mano → al día, sin cobro detrás", [bonoP.sesiones.restantes, bonoP.estado, bonoP.coberturaSinCobro], [5, "aldia", true]);
+  check("P) el papelito NO genera ingresos", await ingresosMes(), base + 60);
+  const metP = await GET(`/metricas?desde=${mes}&hasta=${mes}`);
+  check("P) métricas avisan del bono cubierto a mano (Berta + Pepe)", metP.socios.coberturaManual, 2);
+  await POST("/pagos", { socioId: p.id, lineas: [{ suscripcionId: bonoP.id, importe: 60, bonos: 1 }] });
+  s = await GET(`/socios/${p.id}`);
+  check("P) al cobrarle un bono deja de ser 'a mano' (25 restantes)", [s.suscripciones[0].sesiones.restantes, s.suscripciones[0].coberturaSinCobro], [25, false]);
+
+  // Q) EL CASO REAL: bono cobrado ANTES de v1.8 (apuntado como un mes, con fecha).
+  //    Se inserta tal cual lo dejó la versión anterior y se comprueba que (1) sigue
+  //    igual hasta que se configura, (2) al configurarlo cuenta el cobro como un
+  //    bono completo y (3) no se toca ni el pago ni la fecha guardada.
+  const { default: Database } = await import("better-sqlite3");
+  const q = await POST("/socios", { nombre: "Quique", apellidos: "Antiguo", fechaAlta: hoy });
+  const phQ = addMeses(hoy, 1);
+  {
+    const bd = new Database(join(DATA, "gymgrecia.db"));
+    const subQ = bd
+      .prepare("INSERT INTO suscripciones (socio_id, actividad, etiqueta, importe, periodicidad, pagado_hasta, cobertura_manual, activa, notas, creado_en) VALUES (?,?,?,?,'bono',?,NULL,1,NULL,?)")
+      .run(q.id, "gimnasio", null, 60, phQ, hoy).lastInsertRowid;
+    const pagoQ = bd.prepare("INSERT INTO pagos (socio_id, fecha, metodo, total, notas, creado_en) VALUES (?,?,?,?,NULL,?)").run(q.id, hoy, "efectivo", 60, hoy).lastInsertRowid;
+    bd.prepare("INSERT INTO pago_lineas (pago_id, suscripcion_id, actividad, concepto, importe, periodo_desde, periodo_hasta) VALUES (?,?,?,?,?,?,?)").run(pagoQ, subQ, "gimnasio", null, 60, hoy, phQ);
+    bd.close();
+  }
+  s = await GET(`/socios/${q.id}`);
+  const antiguo = s.suscripciones[0];
+  check("Q) antes de configurarlo sigue por fecha (como siempre)", [antiguo.esBono, antiguo.bonoSinConfigurar, antiguo.estado, antiguo.pagadoHasta], [false, true, "aldia", phQ]);
+  check("Q) su cobro ya contaba en ingresos", await ingresosMes(), base + 120 + 60);
+  await PUT(`/suscripciones/${antiguo.id}`, { periodicidad: "bono", sesionesPorBono: 20 });
+  s = await GET(`/socios/${q.id}`);
+  const config = s.suscripciones[0];
+  check("Q) configurado: el cobro de 60 € cuenta como un bono de 20", [config.esBono, config.sesiones.compradas, config.sesiones.restantes, config.estado], [true, 20, 20, "aldia"]);
+  check("Q) ya no muestra fecha", config.pagadoHasta, null);
+  check("Q) ingresos NO cambian", await ingresosMes(), base + 180);
+  {
+    const bd = new Database(join(DATA, "gymgrecia.db"), { readonly: true });
+    const fila = bd.prepare("SELECT pagado_hasta, sesiones_por_bono FROM suscripciones WHERE id = ?").get(antiguo.id) as any;
+    const linea = bd.prepare("SELECT importe, periodo_desde, periodo_hasta, sesiones FROM pago_lineas WHERE suscripcion_id = ?").get(antiguo.id) as any;
+    bd.close();
+    check("Q) la fecha guardada NO se ha tocado (solo se ignora)", fila.pagado_hasta, phQ);
+    check("Q) el pago antiguo está intacto (importe, periodo); sus sesiones quedan escritas (20)", [linea.importe, linea.periodo_desde, linea.periodo_hasta, linea.sesiones], [60, hoy, phQ, 20]);
+  }
+  await POST(`/suscripciones/${antiguo.id}/asistencias`, { fecha: addMeses(hoy, -1) > s.fechaAlta ? addMeses(hoy, -1) : hoy });
+  s = await GET(`/socios/${q.id}`);
+  check("Q) se pueden picar visitas anteriores con su fecha (quedan 19)", s.suscripciones[0].sesiones.restantes, 19);
+  // Q2) Cambiar el tamaño del bono NO revaloriza cobros antiguos (sus sesiones están congeladas).
+  await PUT(`/suscripciones/${antiguo.id}`, { periodicidad: "bono", sesionesPorBono: 10 });
+  s = await GET(`/socios/${q.id}`);
+  check("Q2) bono 20 → 10: el cobro antiguo sigue valiendo 20 (quedan 19)", [s.suscripciones[0].sesionesPorBono, s.suscripciones[0].sesiones.restantes], [10, 19]);
+  const malo = await fetch(API + `/suscripciones/${antiguo.id}`, { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ periodicidad: "bono", sesionesPorBono: 0 }) });
+  check("Q2) no se puede dejar un bono sin sesiones (400)", malo.status, 400);
+  const neg = await fetch(API + `/suscripciones/${antiguo.id}`, { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ sesionesManual: -5 }) });
+  check("Q2) sesiones a mano negativas → 400", neg.status, 400);
+
+  // Q3) Bono antiguo que venía «ya estaba pagado» del papelito (fecha a mano, SIN pago):
+  //     al configurarlo hereda un bono completo apuntado a mano (no queda «Sin bono»).
+  const q3 = await POST("/socios", { nombre: "Quima", apellidos: "Papel", fechaAlta: hoy });
+  {
+    const bd = new Database(join(DATA, "gymgrecia.db"));
+    bd.prepare("INSERT INTO suscripciones (socio_id, actividad, etiqueta, importe, periodicidad, pagado_hasta, cobertura_manual, activa, notas, creado_en) VALUES (?,?,?,?,'bono',?,?,1,NULL,?)").run(q3.id, "gimnasio", null, 60, phQ, phQ, hoy);
+    bd.close();
+  }
+  s = await GET(`/socios/${q3.id}`);
+  check("Q3) antes: al día por fecha a mano", [s.suscripciones[0].estado, s.suscripciones[0].coberturaSinCobro], ["aldia", true]);
+  await PUT(`/suscripciones/${s.suscripciones[0].id}`, { periodicidad: "bono", sesionesPorBono: 20 });
+  s = await GET(`/socios/${q3.id}`);
+  check("Q3) configurado: 20 sesiones a mano, sigue al día y marcado «a mano»", [s.suscripciones[0].sesiones.manual, s.suscripciones[0].sesiones.restantes, s.suscripciones[0].estado, s.suscripciones[0].coberturaSinCobro], [20, 20, "aldia", true]);
+  check("Q3) sin ingresos nuevos", await ingresosMes(), base + 180);
+
+  // R) Cuota MENSUAL que pasa a bono: sus meses cobrados NO cuentan como sesiones.
+  s = await GET(`/socios/${c.id}`); // Carlos: pilates mensual con 2 pagos
+  await PUT(`/suscripciones/${s.suscripciones[0].id}`, { periodicidad: "bono", sesionesPorBono: 10 });
+  s = await GET(`/socios/${c.id}`);
+  check("R) mensual → bono arranca a 0 sesiones (sin bono)", [s.suscripciones[0].sesiones.compradas, s.suscripciones[0].estado], [0, "pendiente"]);
+  check("R) sus pagos siguen contando en ingresos", await ingresosMes(), base + 180);
+  await PUT(`/suscripciones/${s.suscripciones[0].id}`, { periodicidad: "mensual" });
+  s = await GET(`/socios/${c.id}`);
+  check("R) y vuelta a mensual recupera su fecha", [s.suscripciones[0].esBono, s.suscripciones[0].pagadoHasta], [false, addMeses(hoy, 2)]);
 }
 
 main()

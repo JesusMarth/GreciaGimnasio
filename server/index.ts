@@ -11,6 +11,7 @@ import { metricasRouter } from "./routes/metricas.ts";
 import { backupsRouter } from "./routes/backups.ts";
 import { ajustesRouter } from "./routes/ajustes.ts";
 import { exportRouter } from "./routes/export.ts";
+import { asistenciasRouter } from "./routes/asistencias.ts";
 import { crearCopia, enCola } from "./copias.ts";
 
 const app = express();
@@ -25,6 +26,7 @@ app.use("/api", suscripcionesRouter); // /socios/:id/suscripciones y /suscripcio
 app.use("/api", backupsRouter); // /backups, /backup, /backup/restaurar
 app.use("/api", ajustesRouter); // /config/email, /avisos/email
 app.use("/api", exportRouter); // /export/socios, /export/socio/:id
+app.use("/api", asistenciasRouter); // /suscripciones/:id/asistencias, /asistencias/:id
 
 app.get("/api/salud", (_req, res) => res.json({ ok: true }));
 

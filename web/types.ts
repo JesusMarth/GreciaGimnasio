@@ -1,18 +1,42 @@
 export type EstadoCuota = "aldia" | "pronto" | "atrasado" | "pendiente";
 
+/** Cuenta de sesiones de un bono (calculada en el servidor, nunca guardada). */
+export interface Sesiones {
+  restantes: number; // negativo = se le dejó entrar a deber
+  usadas: number;
+  compradas: number; // respaldadas por cobros registrados
+  manual: number; // del papelito (sin cobro)
+  porBono: number;
+}
+
+/** Una sesión picada de un bono. */
+export interface Asistencia {
+  id: number;
+  fecha: string; // día de la sesión
+  creadoEn: string; // "YYYY-MM-DD HH:MM" (cuándo se picó)
+  notas?: string | null;
+}
+
 export interface Suscripcion {
   id: number;
   socioId: number;
   actividad: string;
   etiqueta: string | null;
   importe: number;
-  periodicidad: string;
-  pagadoHasta: string | null;
+  periodicidad: string; // mensual | bono
+  pagadoHasta: string | null; // null en bonos por sesiones (no caducan por fecha)
   coberturaSinCobro: boolean; // la cobertura vigente se apuntó a mano (ningún cobro la respalda)
   activa: boolean;
   notas: string | null;
   estado: EstadoCuota;
   dias: number | null;
+  // --- bonos por sesiones ---
+  esBono: boolean; // bono configurado: el estado sale de las sesiones que quedan
+  bonoSinConfigurar: boolean; // 'bono' de antes de v1.8 sin sesiones indicadas (sigue por fecha)
+  sesionesPorBono: number | null;
+  sesionesManual: number;
+  sesiones: Sesiones | null;
+  ultimaAsistencia: Asistencia | null;
 }
 
 export interface Socio {
@@ -30,6 +54,7 @@ export interface Socio {
   notas: string | null;
   suscripciones: Suscripcion[];
   estadoResumen: EstadoCuota | null;
+  estadoResumenEsBono: boolean; // el peor estado lo aporta un bono por sesiones (la chapa habla de sesiones)
   proximaExpiracion: string | null; // ISO; la cuota activa que vence antes (null si no hay)
   ultimoPago: { fecha: string; total: number } | null; // último cobro real (tabla pagos); null si nunca pagó
 }
@@ -40,6 +65,7 @@ export interface PagoLinea {
   importe: number;
   periodoDesde: string | null;
   periodoHasta: string | null;
+  sesiones: number | null; // bono por sesiones: sesiones que compró esta línea
 }
 
 export interface Evento {
@@ -64,6 +90,7 @@ export interface Tarifa {
   actividad: string;
   importe: number;
   periodicidad: string;
+  sesiones: number | null; // sesiones por bono (solo tarifas de tipo bono)
 }
 
 export interface DashItem {
@@ -79,6 +106,8 @@ export interface DashItem {
   fechaAlta: string;
   estado: EstadoCuota;
   dias: number | null;
+  esBono: boolean;
+  sesionesRestantes: number | null; // solo bonos por sesiones
 }
 
 export interface Dashboard {
@@ -131,6 +160,7 @@ export interface Metricas {
     bajas: number;
     sinCuota: number;
     coberturaManual: number; // al día/pronto solo por cobertura apuntada a mano (sin cobro)
+    bonosSinConfigurar: number; // bonos de antes de v1.8 sin sesiones indicadas (llevan aviso)
     aldia: number;
     pronto: number;
     atrasado: number;

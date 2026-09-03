@@ -426,11 +426,12 @@ export function Metricas() {
             { k: "sin", t: "Sin cuotas", n: socios.sinCuota, color: "var(--gris)" },
           ]}
         />
-        {socios.coberturaManual > 0 && (
+        {(socios.coberturaManual > 0 || socios.bonosSinConfigurar > 0) && (
           <div className="hint" style={{ marginTop: 10 }}>
-            ⚠ {socios.coberturaManual} {socios.coberturaManual === 1 ? "socio está al día" : "socios están al día"} por una
-            cobertura apuntada a mano (alta «ya estaba pagado»), sin ningún cobro registrado: ese dinero no aparece en
-            Ingresos.{" "}
+            {socios.coberturaManual > 0 &&
+              `⚠ ${socios.coberturaManual} ${socios.coberturaManual === 1 ? "socio está al día" : "socios están al día"} por una cobertura apuntada a mano (alta «ya estaba pagado» o sesiones del papelito en un bono), sin ningún cobro registrado: ese dinero no aparece en Ingresos.`}
+            {socios.bonosSinConfigurar > 0 &&
+              `${socios.coberturaManual > 0 ? " Además, " : "⚠ "}${socios.bonosSinConfigurar} ${socios.bonosSinConfigurar === 1 ? "socio tiene un bono" : "socios tienen bonos"} de antes de la versión 1.8 sin sesiones indicadas (edítalo desde su ficha).`}{" "}
             <Link className="hint-accion" to="/socios?avisos=con&estado=activo">
               Ver quiénes son →
             </Link>

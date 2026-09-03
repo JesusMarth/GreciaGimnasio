@@ -10,6 +10,34 @@ import { FiltroFecha } from "../components/FiltroFecha.tsx";
 import { avisosDe, claveImporte, filtrarSocios, hayFiltrosActivos, importesUltimoPago, type FiltrosSocios, type RangoFecha } from "../filtros.ts";
 import type { Socio } from "../types.ts";
 
+/** Sesiones que le quedan en sus bonos activos (la menor, si hay varios); null si no tiene bonos. */
+function sesionesMin(s: Socio): number | null {
+  const bonos = s.suscripciones.filter((x) => x.activa && x.esBono && x.sesiones);
+  return bonos.length ? Math.min(...bonos.map((x) => x.sesiones!.restantes)) : null;
+}
+
+/** Texto de la columna «Vence»: fecha de la cuota, sesiones del bono, o ambas. */
+function venceTexto(s: Socio): string {
+  const ses = sesionesMin(s);
+  const sesTxt = ses === null ? null : ses < 0 ? `debe ${-ses} ses.` : `${ses} ses.`;
+  const f = s.proximaExpiracion ? fecha(s.proximaExpiracion) : null;
+  return [f, sesTxt].filter(Boolean).join(" · ") || "—";
+}
+
+/**
+ * Clave de orden para «Vence»: la fecha ISO ordena sola; un bono sin fecha se
+ * coloca según su urgencia (agotado antes que cualquier fecha, "quedan pocas"
+ * cerca de hoy, con sesiones de sobra al final). Sin nada → al final del todo.
+ */
+function claveVence(s: Socio): string {
+  if (s.proximaExpiracion) return s.proximaExpiracion;
+  const ses = sesionesMin(s);
+  if (ses === null) return "~"; // después de cualquier fecha
+  if (ses <= 0) return "0000-" + String(1000 + ses).padStart(4, "0"); // agotados primero (más deuda antes)
+  if (ses <= 3) return "0001-" + String(ses).padStart(4, "0");
+  return "9999-" + String(ses).padStart(4, "0");
+}
+
 const INICIAL = 40; // filas que se pintan de entrada
 const CHUNK = 24; // filas que se añaden al acercarse al final (scroll infinito)
 
@@ -135,10 +163,9 @@ export function Socios() {
   const sociosOrdenados =
     orden === "vence"
       ? [...sociosFiltrados].sort((a, b) => {
-          if (a.proximaExpiracion === b.proximaExpiracion) return 0;
-          if (!a.proximaExpiracion) return 1;
-          if (!b.proximaExpiracion) return -1;
-          return a.proximaExpiracion < b.proximaExpiracion ? -1 : 1; // ISO asc = vence antes primero
+          const ka = claveVence(a);
+          const kb = claveVence(b);
+          return ka === kb ? 0 : ka < kb ? -1 : 1; // ISO asc = vence antes primero; bonos según urgencia
         })
       : (() => {
           const s = [...sociosFiltrados].sort((a, b) => {
@@ -423,9 +450,9 @@ export function Socios() {
                         {s.ultimoPago ? euros(s.ultimoPago.total) : <span className="muted">—</span>}
                       </td>
                       <td>
-                        <EstadoBadge estado={s.estadoResumen} />
+                        <EstadoBadge estado={s.estadoResumen} bono={s.estadoResumenEsBono} />
                       </td>
-                      <td className="td-vence">{fecha(s.proximaExpiracion)}</td>
+                      <td className="td-vence">{venceTexto(s)}</td>
                       <td style={{ textAlign: "right", color: "var(--text-faint)" }}>›</td>
                     </tr>
                   ))}

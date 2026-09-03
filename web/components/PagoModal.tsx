@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { Modal } from "./Modal.tsx";
+import { Desplegable } from "./Desplegable.tsx";
 import { api, METODOS } from "../api.ts";
 import { euros, hoyISO, capitalizar } from "../format.ts";
 import type { Suscripcion } from "../types.ts";
@@ -9,7 +10,11 @@ interface LineaUI {
   actividad: string;
   etiqueta: string | null;
   importe: number;
+  importeBase: number; // precio de 1 mes / 1 bono (para recalcular al cambiar la cantidad)
   meses: number;
+  bonos: number; // solo bonos por sesiones: cuántos bonos compra
+  esBono: boolean;
+  sesionesPorBono: number | null;
   incluir: boolean;
 }
 
@@ -42,7 +47,11 @@ export function PagoModal({ socioId, socioNombre, suscripcionIdPre, onCerrar, on
             actividad: x.actividad,
             etiqueta: x.etiqueta,
             importe: x.importe,
+            importeBase: x.importe,
             meses: 1,
+            bonos: 1,
+            esBono: x.esBono,
+            sesionesPorBono: x.sesionesPorBono,
             incluir: suscripcionIdPre ? x.id === suscripcionIdPre : true,
           }))
         );
@@ -71,7 +80,11 @@ export function PagoModal({ socioId, socioNombre, suscripcionIdPre, onCerrar, on
         fecha,
         metodo,
         notas: notas.trim() || null,
-        lineas: incluidas.map((l) => ({ suscripcionId: l.suscripcionId, importe: Number(l.importe), meses: l.meses })),
+        lineas: incluidas.map((l) =>
+          l.esBono
+            ? { suscripcionId: l.suscripcionId, importe: Number(l.importe), bonos: l.bonos }
+            : { suscripcionId: l.suscripcionId, importe: Number(l.importe), meses: l.meses }
+        ),
       });
       onHecho();
     } catch (e: any) {
@@ -107,17 +120,11 @@ export function PagoModal({ socioId, socioNombre, suscripcionIdPre, onCerrar, on
             <div className="row2">
               <div className="field">
                 <label>Fecha del pago</label>
-                <input type="date" value={fecha} onChange={(e) => setFecha(e.target.value)} />
+                <input type="date" value={fecha} max={hoyISO()} onChange={(e) => setFecha(e.target.value)} />
               </div>
               <div className="field">
                 <label>Método</label>
-                <select value={metodo} onChange={(e) => setMetodo(e.target.value)}>
-                  {METODOS.map((m) => (
-                    <option key={m} value={m}>
-                      {capitalizar(m)}
-                    </option>
-                  ))}
-                </select>
+                <Desplegable value={metodo} onChange={setMetodo} opciones={METODOS.map((m) => ({ value: m, label: capitalizar(m) }))} />
               </div>
             </div>
 
@@ -133,7 +140,14 @@ export function PagoModal({ socioId, socioNombre, suscripcionIdPre, onCerrar, on
                   />
                   <div>
                     <div className="lp-nombre">{capitalizar(l.actividad)}</div>
-                    {l.etiqueta && <div className="lp-sub">{l.etiqueta}</div>}
+                    {l.esBono ? (
+                      <div className="lp-sub">
+                        {l.bonos > 1 ? `${l.bonos} bonos · ${l.bonos * (l.sesionesPorBono ?? 0)} sesiones` : `Bono de ${l.sesionesPorBono} sesiones`}
+                        {l.etiqueta && l.etiqueta !== `Bono ${l.sesionesPorBono} sesiones` ? ` · ${l.etiqueta}` : ""}
+                      </div>
+                    ) : (
+                      l.etiqueta && <div className="lp-sub">{l.etiqueta}</div>
+                    )}
                   </div>
                   <div className="field" style={{ margin: 0 }}>
                     <input
@@ -146,13 +160,25 @@ export function PagoModal({ socioId, socioNombre, suscripcionIdPre, onCerrar, on
                     />
                   </div>
                   <div className="field" style={{ margin: 0 }}>
-                    <select value={l.meses} onChange={(e) => set(i, { meses: Number(e.target.value) })} title="Meses que cubre">
-                      {[1, 2, 3, 6, 12].map((m) => (
-                        <option key={m} value={m}>
-                          {m} mes{m === 1 ? "" : "es"}
-                        </option>
-                      ))}
-                    </select>
+                    {l.esBono ? (
+                      <Desplegable
+                        value={String(l.bonos)}
+                        onChange={(v) => {
+                          const n = Number(v);
+                          // Al cambiar la cantidad se precarga precio × bonos (editable).
+                          set(i, { bonos: n, importe: Math.round(l.importeBase * n * 100) / 100 });
+                        }}
+                        title="Bonos que compra"
+                        opciones={[1, 2, 3, 4, 5].map((n) => ({ value: String(n), label: `${n} bono${n === 1 ? "" : "s"}` }))}
+                      />
+                    ) : (
+                      <Desplegable
+                        value={String(l.meses)}
+                        onChange={(v) => set(i, { meses: Number(v) })}
+                        title="Meses que cubre"
+                        opciones={[1, 2, 3, 6, 12].map((m) => ({ value: String(m), label: `${m} mes${m === 1 ? "" : "es"}` }))}
+                      />
+                    )}
                   </div>
                 </div>
               ))}
@@ -169,6 +195,7 @@ export function PagoModal({ socioId, socioNombre, suscripcionIdPre, onCerrar, on
             </div>
             <div className="hint">
               Tú escribes el importe acordado de cada concepto. La app no calcula ofertas ni descuentos: guarda lo que cobras.
+              {incluidas.some((l) => l.esBono) && " Los bonos suman sus sesiones al contador del socio (no caducan por fecha)."}
             </div>
           </>
         )}

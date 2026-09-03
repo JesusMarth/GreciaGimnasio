@@ -12,6 +12,75 @@ y el proyecto usa [Versionado Semántico](https://semver.org/lang/es/) (SemVer):
 
 ## [Sin publicar]
 
+## [1.8.0] - 2026-09-03
+
+### Added
+- **Bonos de sesiones** (el papelito de 20 puntos): un bono ya no se trata como
+  un mes. Al dar de alta una actividad de tipo «Bono de sesiones» se indica
+  cuántas sesiones trae (p. ej. 20 por 60 €) y **no caduca por fecha**: se agota
+  al gastarlas. En la ficha del socio la tarjeta del bono muestra en grande las
+  sesiones que quedan y tiene:
+  - **Picar sesión**: descuenta una sesión. **Siempre pide confirmación**
+    («esta acción le quitará 1 sesión al bono de…») y después deja un botón
+    **Deshacer** a mano. Cada sesión picada (y cada deshecha) queda en
+    Movimientos con su hora.
+  - **Sesiones**: lista de todas las sesiones picadas (día y hora), para
+    deshacer cualquiera o apuntar una visita de otro día.
+  - **Cobrar bono**: vende un bono nuevo y suma sus sesiones (se pueden cobrar
+    2 o 3 de golpe). El dinero cuenta en Ingresos el día del cobro, como siempre.
+  - Estados propios en el mismo semáforo: **Con sesiones** · **Quedan pocas**
+    (3 o menos, ámbar) · **Agotado** (rojo; puede quedar «a deber» si se le
+    dejó entrar) · **Sin bono**. Panel, lista de Socios («12 ses.» en Vence),
+    filtros, avisos por email, Excel y recibo («20 sesiones (sin caducidad)»)
+    lo entienden.
+  - «Ya estaba pagado» en un bono = **sesiones que le quedan del papelito**
+    (sin cobro, marcadas «apuntado a mano» y contadas en el aviso ⚠ de Métricas).
+  - Las **Tarifas** de tipo bono guardan sus sesiones y las precargan.
+  - En «Añadir actividad» el **tipo se elige primero** y solo se ofrecen las
+    tarifas de ese tipo (cambiarlo descarta lo precargado). En edición el tipo
+    queda fijo: para pasar de cuota a bono (o al revés) se quita la actividad y
+    se añade otra. «Picar sesión» se desactiva si el socio aún no tiene bono.
+
+### Fixed (repaso QA de todos los flujos)
+- Un cobro **no puede tener fecha futura** (sumaba en un mes que aún no existía).
+- Borrar un pago de bono avisa de las sesiones que se quitan; quitar un bono avisa
+  de las sesiones picadas que se borran; y el historial lo cuenta con sesiones,
+  no con fechas.
+- Cambiar el tamaño de un bono (20 → 10) ya no revaloriza cobros anteriores: cada
+  cobro conserva las sesiones que valía. Un bono ya configurado no puede quedarse
+  sin sesiones, y las sesiones a mano no admiten negativos.
+- Un bono antiguo que venía «ya estaba pagado» del papelito (sin cobro) hereda al
+  configurarlo un bono completo apuntado a mano, en vez de quedar «Sin bono».
+- La chapa del socio habla de sesiones cuando el peor estado lo aporta un bono
+  (también con cuotas mensuales al lado); Excel usa las mismas etiquetas, separa
+  «Cuota mensual» de «Bono: sesiones» y titula «Cobertura / sesiones».
+- El ⚠ de Métricas cuenta aparte los bonos antiguos sin sesiones, para que «Ver
+  quiénes son» cuadre con la lista. Los marcadores del Panel enlazan a la lista de
+  socios **activos**, como cuenta el Panel.
+- Orden por «Vence» y urgencia del Panel colocan los bonos por sus sesiones
+  (agotados y con pocas entre los urgentes); la columna «Vence» muestra fecha y
+  sesiones cuando hay ambas, y «debe N ses.» si está a deber.
+- No se pueden picar sesiones a un socio de baja; un bono pausado deja ver y
+  deshacer sus sesiones; el aviso por email habla de «bono» cuando toca y no se
+  envía a socios de baja. Tarifas exige sesiones en los bonos.
+- **Desplegables propios** en toda la app (el del navegador no admite diseño ni
+  animación): lista con la misma anchura que su caja (los nombres largos se
+  recortan con «…», nunca ensanchan nada), se abre y cierra con animación, marca
+  la opción elegida, se maneja con teclado (flechas, Enter, Escape, escribir una
+  letra) y se recoloca si no cabe debajo. Las zonas del formulario que aparecen o
+  desaparecen se despliegan con animación en vez de saltar.
+
+### Changed
+- **Bonos apuntados antes de esta versión** (como cuota con fecha): no se tocan.
+  Siguen funcionando exactamente igual hasta que se editan; la tarjeta y la
+  exclamación de la lista avisan de que falta indicar sus sesiones. Al ponerlas,
+  el cobro que ya tenían registrado cuenta como un bono completo, la fecha
+  guardada se deja de usar (pero no se borra) y ningún pago cambia. Las visitas
+  que ya hubiera hecho se pican con su fecha desde «Sesiones».
+- Migración de datos **solo aditiva** (columnas y tabla nuevas); no se reescribe
+  ninguna fila existente. `test:ingresos` pasa de 35 a 69 comprobaciones e
+  incluye el caso real del bono antiguo.
+
 ## [1.7.1] - 2026-07-23
 
 ### Fixed

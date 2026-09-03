@@ -4,6 +4,7 @@ import { socioConResumen, type SocioRow } from "../queries.ts";
 import { leerConfigEmail, guardarConfigEmail, emailConfigurado, leerDatosRecibo, guardarDatosRecibo } from "../config.ts";
 import { enviarCorreo } from "../correo.ts";
 import { registrarEvento } from "../eventos.ts";
+import { cap, ddmmaaaa } from "../texto.ts";
 
 export const ajustesRouter = Router();
 
@@ -45,12 +46,6 @@ ajustesRouter.post("/config/email/probar", async (_req, res) => {
 
 // --- Avisos por correo -------------------------------------------------------
 
-function ddmmaaaa(iso: string | null): string {
-  if (!iso) return "";
-  const [y, m, d] = iso.split("-");
-  return `${d}/${m}/${y}`;
-}
-const cap = (s: string) => (s ? s.charAt(0).toUpperCase() + s.slice(1) : s);
 
 // Manda al socio un recordatorio con sus cuotas atrasadas/sin pagar.
 ajustesRouter.post("/avisos/email", async (req, res) => {
@@ -62,23 +57,31 @@ ajustesRouter.post("/avisos/email", async (req, res) => {
   if (!fila) return res.status(404).json({ error: "Socio no encontrado" });
   const socio = socioConResumen(fila);
   if (!socio.email) return res.status(400).json({ error: `${socio.nombreCompleto} no tiene email guardado.` });
+  if (socio.estado === "baja") return res.status(400).json({ error: `${socio.nombreCompleto} está de baja: reactívalo antes de avisarle.` });
 
   const pendientes = socio.suscripciones.filter((s) => s.activa && (s.estado === "atrasado" || s.estado === "pendiente"));
-  if (pendientes.length === 0) return res.status(400).json({ error: `${socio.nombreCompleto} no tiene cuotas atrasadas.` });
+  if (pendientes.length === 0) return res.status(400).json({ error: `${socio.nombreCompleto} no tiene cuotas atrasadas ni bonos agotados.` });
+  const soloBonos = pendientes.every((s) => s.esBono);
 
   const c = leerConfigEmail();
   const firma = c.remitente || "El gimnasio";
   const lineas = pendientes.map((s) => {
     const act = cap(s.actividad) + (s.etiqueta ? ` (${s.etiqueta})` : "");
-    const venc = s.estado === "pendiente" ? "sin pagar todavía" : `venció el ${ddmmaaaa(s.pagadoHasta)}`;
+    const venc = s.esBono
+      ? s.estado === "pendiente"
+        ? "bono sin pagar todavía"
+        : `bono agotado (${s.sesiones && s.sesiones.restantes < 0 ? `debe ${-s.sesiones.restantes} ${-s.sesiones.restantes === 1 ? "sesión" : "sesiones"}` : "sin sesiones"})`
+      : s.estado === "pendiente"
+        ? "sin pagar todavía"
+        : `venció el ${ddmmaaaa(s.pagadoHasta)}`;
     return `  • ${act}: ${s.importe} € · ${venc}`;
   });
-  const texto = `Hola ${socio.nombreCompleto}:\n\nTe recordamos que tienes cuotas pendientes en el gimnasio:\n\n${lineas.join(
+  const texto = `Hola ${socio.nombreCompleto}:\n\nTe recordamos que ${soloBonos ? "tienes el bono pendiente de renovar" : "tienes cuotas pendientes"} en el gimnasio:\n\n${lineas.join(
     "\n"
-  )}\n\nCuando puedas, pásate a ponerlas al día. ¡Gracias!\n\n${firma}`;
+  )}\n\nCuando puedas, pásate a ${soloBonos ? "renovarlo" : "ponerlas al día"}. ¡Gracias!\n\n${firma}`;
 
   try {
-    await enviarCorreo(socio.email, `Recordatorio de cuota · ${firma}`, texto);
+    await enviarCorreo(socio.email, `${soloBonos ? "Recordatorio de bono" : "Recordatorio de cuota"} · ${firma}`, texto);
     registrarEvento(socio.id, "aviso", `Aviso de cuotas pendientes enviado por email a ${socio.email} (${pendientes.length} cuota${pendientes.length === 1 ? "" : "s"})`);
     res.json({ ok: true, email: socio.email });
   } catch (e: any) {

@@ -2,15 +2,8 @@
 import { db } from "./db.ts";
 import { socioConResumen, type SocioRow } from "./queries.ts";
 import { diffDias, hoyISO } from "./util.ts";
-import { ddmmaaaa } from "./recibo.ts";
+import { cap, ddmmaaaa, estadoTxt } from "./texto.ts";
 
-const ESTADO_TXT: Record<string, string> = {
-  aldia: "Al día",
-  pronto: "Vence pronto",
-  atrasado: "Atrasado",
-  pendiente: "Sin pagar",
-};
-const cap = (s: string) => (s ? s.charAt(0).toUpperCase() + s.slice(1) : s);
 const sexoTxt = (s: string | null) => (s === "hombre" ? "Hombre" : s === "mujer" ? "Mujer" : "");
 const EUR = '#,##0.00" €"';
 
@@ -90,7 +83,8 @@ export async function libroSocios(ids?: number[]): Promise<Buffer> {
     { header: "Estado", key: "estado", width: 10 },
     { header: "Alta", key: "alta", width: 12 },
     { header: "Actividades activas", key: "acts", width: 26 },
-    { header: "Cuota activa", key: "cuota", width: 13, style: { numFmt: EUR } },
+    { header: "Cuota mensual", key: "cuota", width: 13, style: { numFmt: EUR } },
+    { header: "Bono: sesiones", key: "bono", width: 15 },
     { header: "Último pago", key: "ultimoPago", width: 13, style: { numFmt: EUR } },
     { header: "Detalle último pago", key: "ultimoPagoDetalle", width: 30 },
     { header: "Fecha último pago", key: "ultimoPagoFecha", width: 17 },
@@ -108,11 +102,12 @@ export async function libroSocios(ids?: number[]): Promise<Buffer> {
       estado: s.estado === "baja" ? "Baja" : "Activo",
       alta: ddmmaaaa(s.fechaAlta),
       acts: actividadesTxt(s),
-      cuota: activas.reduce((acc, x) => acc + x.importe, 0),
+      cuota: activas.filter((x) => !x.esBono).reduce((acc, x) => acc + x.importe, 0),
+      bono: activas.filter((x) => x.esBono && x.sesiones).map((x) => `${cap(x.actividad)}: quedan ${x.sesiones!.restantes} de ${x.sesionesPorBono}`).join("; "),
       ultimoPago: s.ultimoPago ? s.ultimoPago.total : "",
       ultimoPagoDetalle: detalleUltimoPago(s),
       ultimoPagoFecha: s.ultimoPago ? ddmmaaaa(s.ultimoPago.fecha) : "",
-      cuotaEstado: s.estadoResumen ? ESTADO_TXT[s.estadoResumen] : "Sin cuotas",
+      cuotaEstado: estadoTxt(s.estadoResumen, s.estadoResumenEsBono),
     });
     pintaEstadoCuota(row.getCell("cuotaEstado"), s.estadoResumen);
     if (i % 2 === 1) for (let c = 1; c <= ws.columns.length; c++) row.getCell(c).fill = FILL_ZEBRA;
@@ -178,7 +173,7 @@ export async function libroSocios(ids?: number[]): Promise<Buffer> {
         actividadesTxt(s),
         detalleUltimoPago(s),
         s.ultimoPago ? ddmmaaaa(s.ultimoPago.fecha) : "",
-        s.estadoResumen ? ESTADO_TXT[s.estadoResumen] : "Sin cuotas",
+        estadoTxt(s.estadoResumen, s.estadoResumenEsBono),
       ]);
       pintaEstadoCuota(r.getCell(NCOLS), s.estadoResumen);
     }
@@ -211,7 +206,7 @@ export async function libroSocio(id: number): Promise<Buffer> {
     ["Email", socio.email ?? ""],
     ["Estado", socio.estado === "baja" ? "Baja" : "Activo"],
     ["Alta", ddmmaaaa(socio.fechaAlta)],
-    ["Estado de cuota", socio.estadoResumen ? ESTADO_TXT[socio.estadoResumen] : "Sin cuotas"],
+    ["Estado de cuota", estadoTxt(socio.estadoResumen, socio.estadoResumenEsBono)],
   ];
   for (const [k, v] of datos) {
     const r = d.addRow({ k, v });
@@ -225,7 +220,7 @@ export async function libroSocio(id: number): Promise<Buffer> {
     { header: "Etiqueta", key: "etq", width: 22 },
     { header: "Importe", key: "imp", width: 12, style: { numFmt: EUR } },
     { header: "Periodicidad", key: "per", width: 14 },
-    { header: "Pagado hasta", key: "ph", width: 14 },
+    { header: "Cobertura / sesiones", key: "ph", width: 24 },
     { header: "Estado", key: "est", width: 14 },
     { header: "Activa", key: "activa", width: 10 },
   ];
@@ -234,9 +229,9 @@ export async function libroSocio(id: number): Promise<Buffer> {
       act: cap(s.actividad),
       etq: s.etiqueta ?? "",
       imp: s.importe,
-      per: s.periodicidad === "bono" ? "Bono" : "Mensual",
-      ph: s.pagadoHasta ? ddmmaaaa(s.pagadoHasta) : "—",
-      est: ESTADO_TXT[s.estado] ?? s.estado,
+      per: s.esBono ? `Bono ${s.sesionesPorBono} sesiones` : s.periodicidad === "bono" ? "Bono" : "Mensual",
+      ph: s.sesiones ? `Quedan ${s.sesiones.restantes} (usadas ${s.sesiones.usadas})` : s.pagadoHasta ? ddmmaaaa(s.pagadoHasta) : "—",
+      est: estadoTxt(s.estado, s.esBono),
       activa: s.activa ? "Sí" : "No",
     });
   }
@@ -263,8 +258,8 @@ export async function libroSocio(id: number): Promise<Buffer> {
         act: cap(l.actividad),
         concepto: l.concepto ?? "",
         imp: l.importe,
-        desde: l.periodo_desde ? ddmmaaaa(l.periodo_desde) : "—",
-        hasta: l.periodo_hasta ? ddmmaaaa(l.periodo_hasta) : "—",
+        desde: l.periodo_desde ? ddmmaaaa(l.periodo_desde) : l.sesiones ? "Bono" : "—",
+        hasta: l.periodo_hasta ? ddmmaaaa(l.periodo_hasta) : l.sesiones ? `${l.sesiones} sesiones` : "—",
         metodo: cap(pago.metodo),
         retraso: l.periodo_desde ? diffDias(pago.fecha, l.periodo_desde) : "",
       });

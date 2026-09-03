@@ -10,7 +10,7 @@ Bitácora para **retomar el proyecto en un chat nuevo sin tener que re-explicar 
 
 ## ✅ Estado actual (YA DESPLEGADO)
 - La app **ya está instalada y funcionando en el PC del gimnasio** (se abre con `GymGrecia.bat`). ZIP de distribución verificado en `C:\Users\JesusMartin\GreciaGimnasio.zip` (incluye mock; lock 100% público; probado con subagentes: instala en un PC con solo **Node 22 LTS**).
-- Funcionalidades completas: **Panel** (montones + ingresos del mes con ojo + tarjetas que llevan a Socios filtrado) · **Socios** (CRUD, búsqueda, filtros actividad/estado/cuota/fecha-de-alta, paginación que se ajusta a la pantalla, export Excel adaptado a la selección/filtro) · **Ficha de socio** (actividades, baja/reactivar, pausar actividad, historial de pagos con scroll interno, recibos) · **Tarifas** · **Copias** (auto + manual + restaurar) · **avisos por email** (SMTP) · **recibos PDF** · **export Excel** · **ayuda "?"** por pantalla · **entorno MOCK** (`GymGrecia-MOCK.bat`, ~60 socios en `data-mock`, puerto 4712).
+- Funcionalidades completas: **Panel** (montones + ingresos del mes con ojo + tarjetas que llevan a Socios filtrado) · **Socios** (CRUD, búsqueda, filtros actividad/estado/cuota/fecha-de-alta/sexo/último pago, scroll infinito, export Excel adaptado a la selección/filtro) · **Ficha de socio** (actividades, baja/reactivar, pausar actividad, historial de pagos con scroll interno, recibos, **Movimientos**, **bonos por sesiones** con picar/deshacer) · **Métricas** · **Tarifas** · **Copias** (auto + manual + restaurar) · **avisos por email** (SMTP) · **recibos PDF** · **export Excel** · **ayuda "?"** por pantalla · **entorno MOCK** (`GymGrecia-MOCK.bat`, ~60 socios en `data-mock`, puerto 4712).
 - Dependencias (todas JS puro): `better-sqlite3` 12.x, `nodemailer`, `pdfkit`, `exceljs`. Hay un **`.npmrc` de proyecto** que fuerza el npm público (mantiene el lock portable).
 - **Versionado SemVer en marcha** (arrancado en **`1.0.0`**): `npm version` sube+commitea+taggea+pushea en un comando; la versión se ve en el pie del sidebar; `Actualizar.bat` actualiza el PC del local en un clic. Ver el registro de hoy y `CLAUDE.md` → "Versionado y publicación".
 
@@ -22,23 +22,23 @@ con push automático, versión en el sidebar (Vite `define`), `npm run dist` (ZI
 respaldo) y **`Actualizar.bat`** (canal real de actualización del PC del local, con
 token de solo lectura en `update-token.txt`). `CHANGELOG.md` manual.
 
-### B) Sexo del socio (hombre/mujer) + nuevo filtro  ← SIGUIENTE
-Replica el patrón con el que se añadió `dni` y el de los filtros existentes. Checklist:
-1. **`server/db.ts`**: migración suave `ALTER TABLE socios ADD COLUMN sexo TEXT` (junto a la de `dni`). Valores: `hombre` | `mujer` | null.
-2. **`server/queries.ts`**: `SocioRow` y `socioConResumen` → añadir `sexo`.
-3. **`server/routes/socios.ts`**: POST y PUT → leer/guardar `sexo` (whitelist `hombre`|`mujer`; vacío = null).
-4. **`web/types.ts`**: `Socio` → `sexo: string | null`.
-5. **`web/components/SocioFormModal.tsx`**: selector Hombre/Mujer (opcional, al estilo del resto de campos).
-6. **`web/filtros.ts`**: añadir `sexo: string[]` a `FiltrosSocios` y a `filtrarSocios` (OR como los demás). **Actualizar `web/filtros.pruebas.ts`** (datos mock + casos) y correr `npm run test:filtros`.
-7. **`web/pages/Socios.tsx`**: nuevo grupo de chips "Sexo" (Hombre/Mujer), estado `filtroSexo`, init desde la URL (`?sexo=`), incluirlo en "Limpiar" y en el cálculo del export.
-8. **`server/export.ts`**: columna "Sexo" en el informe.
-9. (Opcional) mostrar el sexo en la ficha (tarjeta Datos).
-10. Cerrar: typecheck web + server, `npm run test:filtros`, `npm run build`.
-> Para probar con volumen, podrías hacer que `server/seed-mock.ts` asigne sexo aleatorio.
+### B) Sexo del socio + filtro ✅ HECHO (v1.6.0) · C) Historial de movimientos ✅ HECHO (v1.5.0) · D) Bonos por sesiones ✅ HECHO (2026-09-03, pendiente de publicar como 1.8.0)
+
+### E) Tras desplegar los bonos (v1.8.0) en el local  ← SIGUIENTE
+1. Con el jefe: abrir la ficha del socio del bono de 60 € (apuntado antes como un mes),
+   pulsar **Editar** → poner **20 sesiones** → Guardar. El cobro de 60 € ya registrado
+   cuenta como un bono completo; nada se borra.
+2. Picar las visitas que ya haya hecho (botón **Sesiones** → «Picar con esa fecha»), o
+   directamente «Picar sesión» N veces si no importa el día.
+3. Crear la **tarifa** «Bono 20 sesiones · 60 € · gimnasio» (tipo Bono de sesiones) para
+   que las altas nuevas se precarguen.
+4. Preguntar si quieren **picar desde la lista de Socios / Panel** (hoy solo desde la
+   ficha) y si el umbral «quedan pocas» (3) les vale.
 
 ### Backlog (otras ideas, sin prisa)
 - Enviar el recibo automáticamente al registrar el pago.
-- Log de eventos (altas/bajas/pausas) → histórico de "tiempo inactivo".
+- Botón «Picar» rápido en la lista de Socios (mostrador) y en el Panel.
+- Caducidad opcional para bonos (hoy no caducan, a propósito): sería una columna más.
 - Filtrar por importe de cuota o por fecha de último pago (requiere traer esa fecha al listado de socios).
 - Refactor de duplicados server↔web (`ddmmaaaa`/`fecha`, `cap`/`capitalizar`, mapas de estado) → carpeta `shared/`.
 
@@ -52,6 +52,74 @@ Replica el patrón con el que se añadió `dni` y el de los filtros existentes. 
 
 ## 📋 Registro (más reciente arriba)
 
+### 2026-09-03 (2) · QA de flujos + refactor + desplegables
+- **QA** (agente auditor + recorrido en navegador como gerente): 25 hallazgos,
+  corregidos los 22 relevantes (ver CHANGELOG «Fixed»). Los 3 descartados a
+  propósito: importe 0 permitido (regalos/becas, la app es agnóstica), sin
+  caducidad en bonos, y sin bloqueo de actividades duplicadas por socio.
+- **Refactor sin cambio de comportamiento**: `server/texto.ts` concentra `cap`,
+  `ddmmaaaa`, `eur`/`eurCorto`, `ISO`, `METODOS`/`metodoValido`, `ESTADO_TXT`
+  (+`_BONO`, `estadoTxt`). Antes había 4 copias de `cap` y 3 de `ddmmaaaa` con
+  divergencias. `recibo.ts` re-exporta `ddmmaaaa`/`eur` por compatibilidad. El
+  `rank` de Métricas usa `RANK_ESTADO` de `util.ts`. `socioConResumen` expone
+  `estadoResumenEsBono` (la chapa del socio decide por la sub que aporta el peor
+  estado) y desapareció el `soloBonos` duplicado en la web.
+- **UI**: `web/components/Plegable.tsx` (alto animado con ResizeObserver) para los
+  bloques que aparecen/desaparecen en «Añadir actividad». **`Desplegable.tsx`**
+  sustituye a TODOS los `<select>` nativos (13): el nativo no admite diseño ni
+  animación al abrirse. Lista en un portal (`position: fixed`, para que no la
+  recorte el `overflow` del modal) con la misma anchura que la caja, animación de
+  apertura/cierre, opción marcada, teclado completo, type-ahead y volteo hacia
+  arriba si no cabe. ⚠ Sus listeners globales (clic fuera y Escape) van en **fase
+  de captura**: el `.modal` corta la propagación de los `mousedown` de dentro (para
+  no cerrarse) y el Modal cierra con Escape en `window`; en fase normal el
+  desplegable no vería el clic fuera ni podría evitar que Escape cerrase el modal.
+  `min-width:0` en los hijos de `.row2/.row3`.
+- ⚠ El mock lo estuvo tocando el jefe en paralelo desde el panel (picadas, cobros,
+  deshacer): no era un bug. Verificado que cada picada pasó por confirmación.
+- Tests: filtros +5, **ingresos 75/75** (Q2/Q3: congelar sesiones al cambiar el
+  tamaño, 400 al desconfigurar, herencia del papelito).
+
+### 2026-09-03 · Bonos por sesiones (el papelito de 20 puntos) → 1.8.0
+- **Problema (jefe)**: un socio pagó un bono de 20 sesiones por 60 € y la app lo trató
+  como un mes con fecha de caducidad. Los bonos no caducan: se agotan por uso.
+- **Premisa del jefe**: la app está en uso con datos reales → NO tocar lo cobrado ni
+  las fechas. Migración **solo aditiva** (`sesiones_por_bono`, `sesiones_manual` en
+  `suscripciones`; `sesiones` en `pago_lineas`; `sesiones` en `tarifas`; tabla
+  `asistencias`). Ninguna fila existente se reescribe.
+- **Modelo**: sesiones restantes = compradas (SUM `pago_lineas.sesiones`) + a mano
+  (`sesiones_manual`, análogo de `cobertura_manual`) − picadas (COUNT `asistencias`).
+  Siempre calculado (`sesionesDe` en `queries.ts`). Estado por sesiones
+  (`estadoBono` en `util.ts`, umbral `UMBRAL_SESIONES_PRONTO = 3`) reutilizando los 4
+  estados → Panel, filtros, colores, Métricas y avisos funcionan sin cambios.
+  `pagadoHasta` viene `null` en la API para bonos configurados (en BD se conserva).
+- **Bonos antiguos** (`periodicidad='bono'` con `sesiones_por_bono NULL`): siguen
+  funcionando **por fecha, exactamente igual** (`bonoSinConfigurar`), con aviso en la
+  tarjeta y en la exclamación de la lista. Al editar y poner sesiones, sus líneas de
+  pago con `sesiones NULL` cuentan **un bono completo cada una** (regla COALESCE en
+  `sesionesDe`). Cuota mensual → bono: sus líneas se marcan `sesiones = 0` (no
+  cuentan). Hay test del caso real (Q) insertando el bono como lo dejó la v1.7.
+- **Rutas nuevas** `server/routes/asistencias.ts`: GET/POST
+  `/suscripciones/:id/asistencias` (fecha opcional ≤ hoy; se permite quedar en
+  negativo = "a deber"), DELETE `/asistencias/:id`. Eventos `asistencia` /
+  `asistencia_deshecha`. POST `/pagos` acepta `bonos` en la línea (N × sesiones).
+- **UI**: alta/edición con «Bono de sesiones (sin caducidad)» + «Sesiones por bono»;
+  «Ya estaba pagado» en bono = sesiones del papelito. Tarjeta del bono con contador
+  grande, **Picar sesión** (confirmación obligatoria con «le quitará 1 sesión…» y
+  aviso si queda a deber), **Deshacer** (en el banner verde tras picar y junto a la
+  última sesión) y modal **Sesiones** (lista, deshacer cualquiera, picar con otra
+  fecha). PagoModal: selector «1/2/3 bonos». Panel/Socios/Excel/recibo adaptados.
+  Chapas: Con sesiones / Quedan pocas / Agotado / Sin bono.
+- **Feedback del jefe sobre el modal de alta**: el tipo se elige PRIMERO y las tarifas
+  se filtran por tipo (cambiarlo descarta lo precargado); en edición el tipo queda
+  bloqueado; fuera «sin caducidad» y textos repetidos; «Picar sesión» desactivado
+  si no tiene bono. Y el modal **no cambia de alto** al cambiar chips/tipo: el hueco
+  de «Sesiones por bono» se reserva con `visibility: hidden`, la tarifa siempre se
+  pinta (deshabilitada si no hay del tipo) y `.arranque-panel` tiene `min-height`
+  (medido en vivo: 612–614 px en las 6 combinaciones).
+- **Verificado**: typecheck web+server · test:filtros (+5) · **test:ingresos 69/69**
+  (+34: L–R) · build · en vivo sobre el mock (5 bonos sembrados por `seed-mock`).
+  ⚠ `data-mock` regenerado.
 ### 2026-07-09 (3) · Feedback: exclamación SVG + filtros en ventana (v1.6.0)
 - **Exclamación**: el carácter «!» en Space Mono parecía un «1» y no centraba →
   ahora es un **SVG** (línea+punto) dentro del círculo ámbar, centrado al píxel

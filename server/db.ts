@@ -159,6 +159,50 @@ CREATE INDEX IF NOT EXISTS idx_lineas_suscripcion ON pago_lineas(suscripcion_id)
   } catch {
     /* la columna ya existe */
   }
+  // --- Bonos por sesiones (v1.8) -------------------------------------------
+  // Un bono NO caduca por fecha: son N sesiones (el "papelito de 20 puntos") que
+  // se van picando. Todo es ADITIVO: columnas nuevas y una tabla nueva; no se
+  // reescribe ninguna fila existente. Las suscripciones 'bono' anteriores a esta
+  // versión quedan con sesiones_por_bono NULL y siguen funcionando por fecha
+  // (exactamente como hasta ahora) hasta que el dueño las edite e indique sus
+  // sesiones; entonces pasan a contarse por sesiones y su cobro ya registrado
+  // cuenta como un bono completo (ver queries.ts → sesionesDe).
+  try {
+    conn.exec("ALTER TABLE suscripciones ADD COLUMN sesiones_por_bono INTEGER"); // null = cuota mensual (o bono antiguo sin configurar)
+  } catch {
+    /* la columna ya existe */
+  }
+  try {
+    // Sesiones que traía del papelito al pasar a la app (sin cobro registrado):
+    // el equivalente de cobertura_manual para bonos. Se marcan «apuntado a mano».
+    conn.exec("ALTER TABLE suscripciones ADD COLUMN sesiones_manual INTEGER NOT NULL DEFAULT 0");
+  } catch {
+    /* la columna ya existe */
+  }
+  try {
+    // Sesiones que compró esa línea de pago (20 por bono). NULL en líneas de cuota
+    // mensual y en las de bonos anteriores a v1.8; 0 = línea mensual de una
+    // actividad que después se convirtió en bono (no cuenta sesiones).
+    conn.exec("ALTER TABLE pago_lineas ADD COLUMN sesiones INTEGER");
+  } catch {
+    /* la columna ya existe */
+  }
+  try {
+    conn.exec("ALTER TABLE tarifas ADD COLUMN sesiones INTEGER"); // sesiones por bono de la plantilla
+  } catch {
+    /* la columna ya existe */
+  }
+  conn.exec(`
+CREATE TABLE IF NOT EXISTS asistencias (
+  id             INTEGER PRIMARY KEY AUTOINCREMENT,
+  suscripcion_id INTEGER NOT NULL REFERENCES suscripciones(id) ON DELETE CASCADE,
+  socio_id       INTEGER NOT NULL REFERENCES socios(id) ON DELETE CASCADE,
+  fecha          TEXT NOT NULL,                     -- día de la sesión (YYYY-MM-DD)
+  creado_en      TEXT NOT NULL,                     -- cuándo se picó ("YYYY-MM-DD HH:MM")
+  notas          TEXT
+);
+CREATE INDEX IF NOT EXISTS idx_asistencias_sub ON asistencias(suscripcion_id);
+`);
   sembrarTarifas(conn);
   if (!habiaEventos) reconstruirEventos(conn);
 }

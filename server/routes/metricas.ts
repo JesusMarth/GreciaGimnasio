@@ -1,6 +1,7 @@
 import { Router } from "express";
 import { db } from "../db.ts";
-import { addMeses, estadoDe, hoyISO, type EstadoCuota } from "../util.ts";
+import { addMeses, hoyISO, RANK_ESTADO, type EstadoCuota } from "../util.ts";
+import { suscripcionConEstado, type SuscripcionRow } from "../queries.ts";
 
 export const metricasRouter = Router();
 
@@ -203,30 +204,30 @@ metricasRouter.get("/metricas", (req, res) => {
   const totalSocios = (db.prepare("SELECT COUNT(*) AS n FROM socios").get() as any).n;
   const activos = (db.prepare("SELECT COUNT(*) AS n FROM socios WHERE estado='activo'").get() as any).n;
   const bajas = totalSocios - activos;
-  const subsActivas = db
-    .prepare(
-      "SELECT su.socio_id AS socioId, su.pagado_hasta AS pagadoHasta, su.cobertura_manual AS coberturaManual FROM suscripciones su " +
-        "JOIN socios so ON so.id = su.socio_id WHERE su.activa = 1 AND so.estado = 'activo'"
-    )
-    .all() as { socioId: number; pagadoHasta: string | null; coberturaManual: string | null }[];
-  const rank: Record<EstadoCuota, number> = { atrasado: 3, pendiente: 2, pronto: 1, aldia: 0 };
+  // Mismo cálculo de estado que la ficha (por fecha, o por sesiones en los bonos).
+  const subsActivas = (
+    db
+      .prepare("SELECT su.* FROM suscripciones su JOIN socios so ON so.id = su.socio_id WHERE su.activa = 1 AND so.estado = 'activo'")
+      .all() as SuscripcionRow[]
+  ).map((r) => suscripcionConEstado(r, hoy));
   const peorPorSocio = new Map<number, EstadoCuota>();
   for (const s of subsActivas) {
-    const { estado } = estadoDe(s.pagadoHasta, hoy);
     const prev = peorPorSocio.get(s.socioId);
-    if (!prev || rank[estado] > rank[prev]) peorPorSocio.set(s.socioId, estado);
+    if (!prev || RANK_ESTADO[s.estado] > RANK_ESTADO[prev]) peorPorSocio.set(s.socioId, s.estado);
   }
   const morosidad = { aldia: 0, pronto: 0, atrasado: 0, pendiente: 0 };
   for (const e of peorPorSocio.values()) morosidad[e]++;
   const sinCuota = activos - peorPorSocio.size;
-  // Socios cuya cobertura vigente está apuntada a mano (alta "ya estaba pagado"):
-  // aparecen al día/vence pronto pero NINGÚN cobro registrado respalda ese dinero,
-  // por eso no salen en Ingresos. Se muestra para que el descuadre no despiste.
+  // Socios cuya cobertura vigente está apuntada a mano (alta "ya estaba pagado", o
+  // sesiones del papelito en un bono): aparecen al día/vence pronto pero NINGÚN
+  // cobro registrado respalda ese dinero, por eso no salen en Ingresos. Se muestra
+  // para que el descuadre no despiste.
   const coberturaManual = new Set(
-    subsActivas
-      .filter((s) => s.pagadoHasta && s.pagadoHasta >= hoy && s.coberturaManual === s.pagadoHasta)
-      .map((s) => s.socioId)
+    subsActivas.filter((s) => s.coberturaSinCobro && (s.estado === "aldia" || s.estado === "pronto")).map((s) => s.socioId)
   ).size;
+  // Bonos de antes de v1.8 a los que falta indicar sus sesiones (llevan aviso en
+  // la lista; se cuentan aparte para que el enlace «Ver quiénes son» cuadre).
+  const bonosSinConfigurar = new Set(subsActivas.filter((s) => s.bonoSinConfigurar).map((s) => s.socioId)).size;
 
   res.json({
     hoy,
@@ -243,6 +244,6 @@ metricasRouter.get("/metricas", (req, res) => {
     mejorMes,
     proyeccion,
     retencionMedia,
-    socios: { total: totalSocios, activos, bajas, sinCuota, coberturaManual, ...morosidad },
+    socios: { total: totalSocios, activos, bajas, sinCuota, coberturaManual, bonosSinConfigurar, ...morosidad },
   });
 });

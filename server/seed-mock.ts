@@ -3,6 +3,7 @@
 // Solo siembra si la base está vacía; para empezar de cero, borra la carpeta data-mock.
 import { db, DATA_DIR, reconstruirEventos } from "./db.ts";
 import { addMeses, hoyISO } from "./util.ts";
+import { METODOS } from "./texto.ts";
 
 const NOMBRES = [
   "María", "Lucía", "Martina", "Paula", "Sofía", "Daniela", "Valeria", "Carmen", "Laura", "Sara",
@@ -15,7 +16,6 @@ const APELLIDOS = [
   "Molina", "Delgado", "Marín", "Suárez", "Ramos",
 ];
 const ACTS = ["gimnasio", "karate", "pilates"];
-const METODOS = ["efectivo", "transferencia", "bizum", "tarjeta"];
 const IMPORTES = [27, 30, 32, 35, 40, 45];
 
 const r = (n: number) => Math.floor(Math.random() * n);
@@ -47,6 +47,13 @@ const insPago = db.prepare("INSERT INTO pagos (socio_id, fecha, metodo, total, n
 const insLinea = db.prepare(
   "INSERT INTO pago_lineas (pago_id, suscripcion_id, actividad, concepto, importe, periodo_desde, periodo_hasta) VALUES (?,?,?,?,?,?,?)"
 );
+const insBono = db.prepare(
+  "INSERT INTO suscripciones (socio_id, actividad, etiqueta, importe, periodicidad, pagado_hasta, cobertura_manual, sesiones_por_bono, sesiones_manual, activa, notas, creado_en) VALUES (?,?,?,?,'bono',NULL,NULL,?,?,?,NULL,?)"
+);
+const insLineaBono = db.prepare(
+  "INSERT INTO pago_lineas (pago_id, suscripcion_id, actividad, concepto, importe, periodo_desde, periodo_hasta, sesiones) VALUES (?,?,?,?,?,NULL,NULL,?)"
+);
+const insAsistencia = db.prepare("INSERT INTO asistencias (suscripcion_id, socio_id, fecha, creado_en, notas) VALUES (?,?,?,?,NULL)");
 
 const sembrar = db.transaction(() => {
   for (let i = 0; i < 60; i++) {
@@ -102,6 +109,30 @@ const sembrar = db.transaction(() => {
           const pagoId = insPago.run(socioId, fecha, elige(METODOS), importe, null, hoy).lastInsertRowid as number;
           insLinea.run(pagoId, subId, act, null, importe, desde, hasta);
         }
+      }
+    }
+
+    // Bono por sesiones (~1 de cada 5 socios activos que no tienen gimnasio mensual):
+    // 20 sesiones por 60 €, sin caducidad. Reparte casuísticas: sin pagar todavía,
+    // del papelito (sesiones a mano, sin cobro), al día, quedan pocas y agotado.
+    if (estado === "activo" && !acts.includes("gimnasio") && r(5) === 0) {
+      const bucket = r(5); // 0 pendiente · 1 papelito · 2 al día · 3 quedan pocas · 4 agotado
+      const manual = bucket === 1 ? 3 + r(10) : 0;
+      const bonoId = insBono.run(socioId, "gimnasio", "Bono 20 sesiones", 60, 20, manual, 1, hoy).lastInsertRowid as number;
+      let disponibles = manual;
+      if (bucket >= 2) {
+        const nBonos = bucket === 4 ? 1 + r(2) : 1;
+        for (let b = 0; b < nBonos; b++) {
+          const fecha = addDias(hoy, -(10 + r(80)) - b * 45);
+          const pagoId = insPago.run(socioId, fecha < alta ? alta : fecha, elige(METODOS), 60, null, hoy).lastInsertRowid as number;
+          insLineaBono.run(pagoId, bonoId, "gimnasio", "Bono 20 sesiones", 60, 20);
+          disponibles += 20;
+        }
+      }
+      const usadas = bucket === 0 ? 0 : bucket === 1 ? r(manual) : bucket === 2 ? r(12) : bucket === 3 ? disponibles - 1 - r(3) : disponibles + r(2);
+      for (let k = 0; k < usadas; k++) {
+        const f = addDias(hoy, -r(70));
+        insAsistencia.run(bonoId, socioId, f, `${f} ${String(9 + r(12)).padStart(2, "0")}:${String(r(60)).padStart(2, "0")}`);
       }
     }
   }

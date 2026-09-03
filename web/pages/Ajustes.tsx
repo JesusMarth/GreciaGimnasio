@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { api } from "../api.ts";
 import { AyudaAjustes } from "../components/Ayuda.tsx";
+import { Desplegable } from "../components/Desplegable.tsx";
 
 // Valores por defecto pensados para Gmail (lo más común). Editables.
 const PRESET = { host: "smtp.gmail.com", port: 465, secure: true };
@@ -147,10 +148,14 @@ export function Ajustes() {
             </div>
             <div className="field">
               <label>Seguridad</label>
-              <select value={secure ? "ssl" : "starttls"} onChange={(e) => setSecure(e.target.value === "ssl")}>
-                <option value="ssl">SSL (465)</option>
-                <option value="starttls">STARTTLS (587)</option>
-              </select>
+              <Desplegable
+                value={secure ? "ssl" : "starttls"}
+                onChange={(v) => setSecure(v === "ssl")}
+                opciones={[
+                  { value: "ssl", label: "SSL (465)" },
+                  { value: "starttls", label: "STARTTLS (587)" },
+                ]}
+              />
             </div>
           </div>
 
@@ -200,18 +205,26 @@ export function Ajustes() {
         <div className="row3">
           <div className="field">
             <label>Tipo de documento</label>
-            <select value={tipoDoc} onChange={(e) => setTipoDoc(e.target.value)}>
-              <option value="Recibo">Recibo</option>
-              <option value="Factura">Factura</option>
-            </select>
+            <Desplegable
+              value={tipoDoc}
+              onChange={setTipoDoc}
+              opciones={[
+                { value: "Recibo", label: "Recibo" },
+                { value: "Factura", label: "Factura" },
+              ]}
+            />
           </div>
           <div className="field">
             <label>IVA</label>
-            <select value={iva} onChange={(e) => setIva(e.target.value)}>
-              <option value="no">No desglosar (recibo simple)</option>
-              <option value="incluido">Incluido en el precio</option>
-              <option value="exento">Exento</option>
-            </select>
+            <Desplegable
+              value={iva}
+              onChange={setIva}
+              opciones={[
+                { value: "no", label: "No desglosar (recibo simple)" },
+                { value: "incluido", label: "Incluido en el precio" },
+                { value: "exento", label: "Exento" },
+              ]}
+            />
           </div>
           <div className="field">
             <label>Tipo de IVA (%)</label>
