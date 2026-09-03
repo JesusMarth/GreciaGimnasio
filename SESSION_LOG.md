@@ -22,7 +22,15 @@ con push automático, versión en el sidebar (Vite `define`), `npm run dist` (ZI
 respaldo) y **`Actualizar.bat`** (canal real de actualización del PC del local, con
 token de solo lectura en `update-token.txt`). `CHANGELOG.md` manual.
 
-### B) Sexo del socio + filtro ✅ HECHO (v1.6.0) · C) Historial de movimientos ✅ HECHO (v1.5.0) · D) Bonos por sesiones ✅ HECHO (2026-09-03, pendiente de publicar como 1.8.0)
+### B) Sexo del socio + filtro ✅ HECHO (v1.6.0) · C) Historial de movimientos ✅ HECHO (v1.5.0) · D) Bonos por sesiones ✅ PUBLICADO como **v1.8.0** (2026-09-03)
+
+### F) Copia de seguridad fuera del PC (petición del jefe, 2026-09-03)  ← A DECIDIR
+Propuesta hecha al jefe (ver conversación): la app sigue local (SQLite), y las copias
+automáticas se llevan fuera: (1) carpeta extra de copias configurable en Ajustes
+apuntando a OneDrive/Google Drive del PC del local, y (2) copia periódica por email
+(ya hay SMTP) al correo del dueño. Opción más ambiciosa si algún día quieren la BD
+"de verdad" en la nube: Turso/libSQL con réplica embebida. NO mover el .db vivo a
+una carpeta sincronizada (WAL + sync = corrupción).
 
 ### E) Tras desplegar los bonos (v1.8.0) en el local  ← SIGUIENTE
 1. Con el jefe: abrir la ficha del socio del bono de 60 € (apuntado antes como un mes),
