@@ -66,7 +66,7 @@ Opción futura si quisieran la BD "de verdad" en la nube: Turso/libSQL (réplica
 
 ## 📋 Registro (más reciente arriba)
 
-### 2026-09-03 (4) · v1.9.0 publicada · cuotas con duración (anual/semestral) · desplegables anchos
+### 2026-09-03 (4) · v1.9.0 publicada · cuotas con duración (anual/semestral) · desplegables anchos → **v1.10.0**
 - **Publicada v1.9.0** (copia por email).
 - **Feedback del jefe**: "nos hemos cargado los bonos de 324 € (año) y 180 € (6
   meses): NO son bonos, son cuotas con duración". En la 1.8 esos `periodicidad='bono'`

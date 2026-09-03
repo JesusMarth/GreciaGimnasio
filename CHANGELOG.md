@@ -12,6 +12,8 @@ y el proyecto usa [Versionado Semántico](https://semver.org/lang/es/) (SemVer):
 
 ## [Sin publicar]
 
+## [1.10.0] - 2026-09-03
+
 ### Added
 - **Cuotas con duración**: una cuota por tiempo puede ser mensual, trimestral,
   semestral o anual (el importe es por ese periodo y cada cobro lo cubre entero:
@@ -28,6 +30,8 @@ y el proyecto usa [Versionado Semántico](https://semver.org/lang/es/) (SemVer):
   aviso.
 - Las opciones de los desplegables se leen enteras: la lista puede ser más ancha
   que su caja y el texto largo se envuelve, en vez de cortarse con «…».
+- Los modales de actividad y de tarifa ya no cambian de tamaño a saltos: cualquier
+  cambio de contenido (tipo, tarifa, duración, primer pago) se anima.
 
 ## [1.9.0] - 2026-09-03
 
