@@ -12,6 +12,7 @@ App web **local y offline** para gestionar socios y cuotas de un gimnasio peque�
 - `npm run typecheck` solo cubre el **web**. Para el servidor: `npx tsc -p tsconfig.json --noEmit`.
 - `npm run test:filtros` ejecuta las pruebas (datos mockeados) de la lógica de filtrado de socios (`web/filtros.ts` es **pura** y testeable; el patrón vale para añadir más lógica testeable).
 - `npm run test:ingresos` (`server/ingresos.pruebas.ts`) levanta un servidor REAL (puerto 4799, datos en carpeta temporal) y prueba por API las casuísticas de ingresos/cobertura (alta pendiente / cobrar-ahora / archivador, borrado de pagos, sin duplicidad) y de **bonos por sesiones** (picar/deshacer, cobrar N bonos, papelito, el bono antiguo apuntado como un mes, mensual→bono). No está en `preversion` porque levanta servidor; córrelo a mano tras tocar pagos/suscripciones/métricas.
+- `npm run test:copias` prueba la copia de seguridad por email con un SMTP local (ver sección «Copias de seguridad»).
 - **Entorno de pruebas**: `GymGrecia-MOCK.bat` abre la app con datos de mentira en `data-mock` (puerto 4712), sin tocar los reales. Por debajo: `GYM_DATA_DIR` cambia la carpeta de datos y `server/seed-mock.ts` (`npm run seed:mock`) genera ~60 socios. Para regenerar, borra `data-mock`.
 - **Instalación en el PC del local** (sin git/VSCode): guía paso a paso en `INSTALAR.md` (instalar Node.js LTS, copiar carpeta, doble clic en `GymGrecia.bat`).
 
@@ -57,6 +58,16 @@ El **estado de cuota se CALCULA** (no se guarda) desde `pagado_hasta` vs hoy (`u
     2. Crear el token: *fine-grained PAT* (acceso **solo** a `GreciaGimnasio`, **Contents: Read-only**) **o** *classic PAT* con scope `repo` (evita el paso de seleccionar el repo y puede ser **sin caducidad**). Pegar el token (solo el token, sin nada más) en `update-token.txt` junto a `Actualizar.bat`.
     3. El updater viejo (zipball) no puede entregarse a sí mismo el nuevo, así que la **primera vez** hay que copiar este `Actualizar.bat` git al PC del local a mano (USB). A partir de ahí, el dueño solo da doble clic.
   - Cuando el token caduque, repetir (un *classic PAT* sin caducidad evita repetir, a cambio de mayor alcance del secreto).
+
+## Copias de seguridad: reglas para versionar y actualizar (IMPORTANTE)
+La app está en producción con datos reales y **la copia de seguridad es parte del contrato**. Antes de publicar cualquier versión:
+- **Migraciones solo aditivas** (`ALTER TABLE ADD COLUMN`, `CREATE TABLE IF NOT EXISTS`, idempotentes). Nunca reescribir filas existentes ni borrar columnas: una copia antigua tiene que poder restaurarse en una versión nueva (las migraciones se aplican al abrirla) y una copia nueva debe abrirse en una versión anterior si hay que volver atrás.
+- **Copia fuera del PC (v1.9)**: `server/copia-email.ts` envía la BD entera (`db.serialize()`) adjunta por email al **cerrar** la app (`alCerrar` en `index.ts`, con tope de 8,5 s porque Windows mata el proceso ~10 s tras cerrar la ventana; también `SIGHUP`), al **arrancar** si hoy no se envió, y en una comprobación **horaria**. Destinatario y encendido en la tabla `config` (`copias.email`, `copias.activo`; por defecto `gimnasiogrecialospalacios@gmail.com`). El **estado** (último envío, huella SHA-256, error) va en `data/estado-copia-email.json`, **fuera de la BD** a propósito: si fuera dentro, cada envío cambiaría la base y "sin cambios" no existiría. Si la BD no cambió desde el último envío correcto no se reenvía (salvo a mano).
+- Requiere SMTP configurado en Ajustes (contraseña de aplicación de Gmail). Sin él, no revienta: queda el aviso en Ajustes/Copias.
+- **`npm run test:copias`** (`server/copias.pruebas.ts`): SMTP de mentira local + app real (puertos 4797/4798, `GYM_PRUEBAS=1` habilita `POST /api/_cerrar`); comprueba que el adjunto es una SQLite que se abre con los datos, el envío al cerrar, sin duplicados, y el apagado. **Córrelo antes de cada release** junto a `test:ingresos` (ninguno está en `preversion` porque levantan servidor).
+- `Actualizar.bat` copia toda la carpeta (incluida `data/`) al Escritorio antes de tocar nada y nunca pisa `data/`. Tras actualizar en el local: abrir Copias y comprobar que «Última copia enviada» es reciente.
+- Si se cambia el esquema, probar la **restauración** de una copia de la versión anterior (Copias → Restaurar) en el mock antes de publicar.
+- **Recuperación ante desastre** (PC roto): instalar con `INSTALAR.md`, descargar el adjunto del último correo de copia, ponerlo en `data/backups/` y Copias → Restaurar. Está explicado en el cuerpo de cada email de copia y en la ayuda de Copias.
 
 ## Funcionalidades implementadas
 Panel · Socios (CRUD + búsqueda) · SocioDetalle (actividades, pagos, baja/reactivar, recibos) · Tarifas · **Copias de seguridad** (auto + manual + restaurar; `db.backup()` consistente con WAL) · **Avisos por email** (SMTP en Ajustes) · **Recibos PDF** (descargar / enviar; datos fiscales configurables; recibo↔factura + IVA opcional).

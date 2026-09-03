@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { api } from "../api.ts";
 import { AyudaAjustes } from "../components/Ayuda.tsx";
 import { Desplegable } from "../components/Desplegable.tsx";
+import type { ConfigCopias } from "../types.ts";
 
 // Valores por defecto pensados para Gmail (lo más común). Editables.
 const PRESET = { host: "smtp.gmail.com", port: 465, secure: true };
@@ -25,11 +26,61 @@ export function Ajustes() {
   const [ivaTipo, setIvaTipo] = useState<number>(21);
   const [pie, setPie] = useState("");
 
+  // --- Copia de seguridad por email ---
+  const [copias, setCopias] = useState<ConfigCopias | null>(null);
+  const [copiasEmail, setCopiasEmail] = useState("");
+  const [copiasActivo, setCopiasActivo] = useState(true);
+  const [guardandoC, setGuardandoC] = useState(false);
+  const [enviandoC, setEnviandoC] = useState(false);
+
   const [error, setError] = useState("");
   const [aviso, setAviso] = useState("");
   const [guardando, setGuardando] = useState(false);
   const [probando, setProbando] = useState(false);
   const [guardandoD, setGuardandoD] = useState(false);
+
+  function cargarCopias() {
+    api
+      .configCopias()
+      .then((c) => {
+        setCopias(c);
+        setCopiasEmail(c.email);
+        setCopiasActivo(c.activo);
+      })
+      .catch(() => {});
+  }
+
+  async function guardarCopias() {
+    setGuardandoC(true);
+    setError("");
+    setAviso("");
+    try {
+      await api.guardarConfigCopias({ email: copiasEmail, activo: copiasActivo });
+      setAviso("Copia por email guardada.");
+      cargarCopias();
+    } catch (e: any) {
+      setError(e.message);
+    } finally {
+      setGuardandoC(false);
+    }
+  }
+
+  async function enviarCopiaAhora() {
+    setEnviandoC(true);
+    setError("");
+    setAviso("");
+    try {
+      await api.guardarConfigCopias({ email: copiasEmail, activo: copiasActivo });
+      const r = await api.enviarCopiaEmail();
+      setAviso(`Copia enviada a ${r.para} (${Math.round((r.bytes ?? 0) / 1024)} KB). Revisa el buzón.`);
+      cargarCopias();
+    } catch (e: any) {
+      setError(e.message);
+      cargarCopias();
+    } finally {
+      setEnviandoC(false);
+    }
+  }
 
   useEffect(() => {
     api
@@ -55,6 +106,7 @@ export function Ajustes() {
         setPie(d.pie);
       })
       .catch(() => {});
+    cargarCopias();
   }, []);
 
   async function guardarCorreo() {
@@ -246,6 +298,63 @@ export function Ajustes() {
           gestor y cambia aquí el tipo de documento y el IVA. El recibo incluye el DNI/NIF del socio si lo tienes guardado en su ficha.
         </div>
       </div>
+
+      <div className="card card-pad" style={{ marginTop: 18 }}>
+        <div className="section-title">Copia de seguridad por email (fuera del PC)</div>
+        <p style={{ marginTop: 0, lineHeight: 1.6 }}>
+          Cada día, <strong>al cerrar la app</strong>, se envía la base de datos entera adjunta a este correo (y si ese envío no
+          pudo hacerse, se reintenta al abrirla). Así, si el ordenador se rompe, los datos están a salvo en el buzón: se descarga
+          el adjunto más reciente y se restaura desde <strong>Copias</strong>. Necesita el correo de envío configurado arriba.
+        </p>
+        <div className="row2">
+          <div className="field">
+            <label>Correo que recibe las copias</label>
+            <input value={copiasEmail} onChange={(e) => setCopiasEmail(e.target.value)} placeholder="gimnasio@gmail.com" />
+          </div>
+          <div className="field">
+            <label>Envío automático</label>
+            <label style={{ textTransform: "none", fontSize: 13.5, fontWeight: 500, color: "var(--tinta)", display: "flex", alignItems: "center", gap: 8, paddingTop: 9 }}>
+              <input type="checkbox" checked={copiasActivo} onChange={(e) => setCopiasActivo(e.target.checked)} style={{ width: "auto" }} />
+              Enviar la copia al cerrar la app (cada día)
+            </label>
+          </div>
+        </div>
+        {copias && <EstadoCopiaEmail c={copias} />}
+        <div className="btn-row" style={{ marginTop: 6 }}>
+          <button className="btn primary" onClick={guardarCopias} disabled={guardandoC}>
+            {guardandoC ? "Guardando…" : "Guardar"}
+          </button>
+          <button className="btn" onClick={enviarCopiaAhora} disabled={enviandoC || !copias?.correoConfigurado} title={copias?.correoConfigurado ? "Envía ahora mismo una copia (sirve para comprobar que llega)" : "Configura y guarda primero el correo de envío"}>
+            {enviandoC ? "Enviando…" : "Enviar copia ahora"}
+          </button>
+        </div>
+      </div>
     </div>
+  );
+}
+
+/** Estado del último envío de la copia por email (compartido con la pantalla Copias). */
+export function EstadoCopiaEmail({ c }: { c: ConfigCopias }) {
+  const fecha = (s: string) => (s ? `${s.slice(8, 10)}/${s.slice(5, 7)}/${s.slice(0, 4)} a las ${s.slice(11)}` : "");
+  const MOTIVO: Record<string, string> = { cierre: "al cerrar la app", arranque: "al abrir la app", diario: "revisión diaria", manual: "a mano" };
+  if (!c.correoConfigurado)
+    return <div className="aviso-banner">Falta configurar el correo de envío (Ajustes → Correo de envío). Hasta entonces no se puede enviar ninguna copia.</div>;
+  if (!c.activo && !c.ultimoEnvio) return <div className="aviso-banner">El envío automático está apagado y nunca se ha enviado una copia.</div>;
+  return (
+    <>
+      {c.ultimoEnvio ? (
+        <div className="hint" style={{ marginBottom: 8 }}>
+          ✓ Última copia enviada el <strong>{fecha(c.ultimoEnvio)}</strong> ({MOTIVO[c.ultimoMotivo] ?? c.ultimoMotivo}) a {c.email}.
+        </div>
+      ) : (
+        <div className="hint" style={{ marginBottom: 8 }}>Todavía no se ha enviado ninguna copia. Se enviará al cerrar la app, o pulsa «Enviar copia ahora».</div>
+      )}
+      {c.ultimoError && (
+        <div className="aviso-banner">
+          ⚠ El último intento ({fecha(c.ultimoIntento)}) falló: {c.ultimoError}
+        </div>
+      )}
+      {!c.activo && c.ultimoEnvio && <div className="aviso-banner">El envío automático está apagado: solo se enviará cuando pulses «Enviar copia ahora».</div>}
+    </>
   );
 }

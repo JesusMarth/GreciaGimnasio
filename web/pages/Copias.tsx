@@ -2,7 +2,9 @@ import { useEffect, useState } from "react";
 import { api } from "../api.ts";
 import { useConfirm } from "../components/Confirmar.tsx";
 import { AyudaCopias } from "../components/Ayuda.tsx";
-import type { CopiaInfo } from "../types.ts";
+import type { ConfigCopias, CopiaInfo } from "../types.ts";
+import { Link } from "react-router-dom";
+import { EstadoCopiaEmail } from "./Ajustes.tsx";
 
 function tam(bytes: number): string {
   if (bytes < 1024) return `${bytes} B`;
@@ -26,6 +28,8 @@ export function Copias() {
   const [error, setError] = useState("");
   const [aviso, setAviso] = useState("");
   const [trabajando, setTrabajando] = useState(false);
+  const [emailCfg, setEmailCfg] = useState<ConfigCopias | null>(null);
+  const [enviando, setEnviando] = useState(false);
   const confirmar = useConfirm();
 
   function recargar() {
@@ -36,8 +40,24 @@ export function Copias() {
         setCopias(d.copias);
       })
       .catch((e) => setError(e.message));
+    api.configCopias().then(setEmailCfg).catch(() => {});
   }
   useEffect(recargar, []);
+
+  async function enviarPorEmail() {
+    setEnviando(true);
+    setError("");
+    setAviso("");
+    try {
+      const r = await api.enviarCopiaEmail();
+      setAviso(`Copia enviada por email a ${r.para}. Revisa el buzón.`);
+    } catch (e: any) {
+      setError(e.message);
+    } finally {
+      setEnviando(false);
+      recargar();
+    }
+  }
 
   async function hacer() {
     setTrabajando(true);
@@ -92,6 +112,21 @@ export function Copias() {
 
       {error && <div className="error-banner">{error}</div>}
       {aviso && <div className="ok-banner">{aviso}</div>}
+
+      <div className="card card-pad" style={{ marginBottom: 18 }}>
+        <div className="section-title">
+          Copia fuera del PC (por email)
+          <button className="btn sm" onClick={enviarPorEmail} disabled={enviando || !emailCfg?.correoConfigurado} title={emailCfg?.correoConfigurado ? "Envía ahora una copia al correo configurado" : "Configura primero el correo en Ajustes"}>
+            {enviando ? "Enviando…" : "Enviar ahora"}
+          </button>
+        </div>
+        <p style={{ marginTop: 0, lineHeight: 1.6 }}>
+          Cada día, al cerrar la app, la base de datos se envía adjunta al correo del gimnasio. Si este ordenador se rompe, se
+          descarga el adjunto más reciente, se copia en la carpeta de copias de la instalación nueva y se pulsa «Restaurar».
+          Se configura en <Link to="/ajustes">Ajustes</Link>.
+        </p>
+        {emailCfg && <EstadoCopiaEmail c={emailCfg} />}
+      </div>
 
       <div className="card card-pad" style={{ marginBottom: 18 }}>
         <div className="section-title">Llevar los datos a otro PC</div>

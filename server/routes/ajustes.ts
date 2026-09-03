@@ -1,7 +1,8 @@
 import { Router } from "express";
 import { db } from "../db.ts";
 import { socioConResumen, type SocioRow } from "../queries.ts";
-import { leerConfigEmail, guardarConfigEmail, emailConfigurado, leerDatosRecibo, guardarDatosRecibo } from "../config.ts";
+import { leerConfigEmail, guardarConfigEmail, emailConfigurado, leerDatosRecibo, guardarDatosRecibo, leerConfigCopias, guardarConfigCopias } from "../config.ts";
+import { enviarCopiaPorEmail, leerEstadoCopiaEmail } from "../copia-email.ts";
 import { enviarCorreo } from "../correo.ts";
 import { registrarEvento } from "../eventos.ts";
 import { cap, ddmmaaaa } from "../texto.ts";
@@ -87,6 +88,43 @@ ajustesRouter.post("/avisos/email", async (req, res) => {
   } catch (e: any) {
     res.status(500).json({ error: "No se pudo enviar: " + (e?.message ?? e) });
   }
+});
+
+// --- Copia de seguridad por email --------------------------------------------
+
+ajustesRouter.get("/config/copias", (_req, res) => {
+  const c = leerConfigCopias();
+  const e = leerEstadoCopiaEmail();
+  res.json({
+    email: c.email,
+    activo: c.activo,
+    ultimoEnvio: e.ultimoEnvio,
+    ultimoIntento: e.ultimoIntento,
+    ultimoError: e.ultimoError,
+    ultimoMotivo: e.ultimoMotivo,
+    correoConfigurado: emailConfigurado(),
+  });
+});
+
+ajustesRouter.post("/config/copias", (req, res) => {
+  const { email, activo } = req.body ?? {};
+  const dest = email !== undefined ? String(email).trim() : undefined;
+  if (dest !== undefined && dest && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(dest)) return res.status(400).json({ error: "Ese correo no parece válido" });
+  guardarConfigCopias({ email: dest, activo: activo !== undefined ? !!activo : undefined });
+  res.json({ ok: true });
+});
+
+// Envío manual (siempre envía, aunque no haya cambios): sirve de prueba real.
+ajustesRouter.post("/config/copias/enviar", async (_req, res) => {
+  const r = await enviarCopiaPorEmail("manual", { forzar: true });
+  if (r.enviado) return res.json(r);
+  const msg =
+    r.porQueNo === "correo-no-configurado"
+      ? "Configura primero el correo de envío (arriba) y guárdalo."
+      : r.porQueNo === "sin-destinatario"
+        ? "Indica el correo que recibirá las copias."
+        : r.error || "No se pudo enviar.";
+  res.status(400).json({ error: msg, ...r });
 });
 
 // --- Datos fiscales para el recibo ------------------------------------------

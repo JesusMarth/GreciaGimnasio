@@ -178,7 +178,10 @@ export const AyudaCopias = () => (
       <li><strong>Hacer copia ahora</strong>: guarda una copia con la fecha.</li>
       <li><strong>Restaurar</strong>: vuelve a un estado anterior. Antes guarda automáticamente una copia de lo actual, por si acaso.</li>
       <li>La app hace <strong>copias automáticas</strong> al abrir y al cerrar.</li>
+      <li><strong>Copia por email</strong>: cada día, al cerrar la app, la base de datos entera se envía adjunta al correo del gimnasio (si no pudo, se reintenta al abrirla). Arriba ves cuándo fue la última y si falló. Necesita el correo de envío configurado en Ajustes.</li>
     </ul>
+    <h4>Si el ordenador se rompe</h4>
+    <p>Instala GymGrecia en el nuevo (guía INSTALAR.md), descarga el adjunto del último correo de copia, cópialo en la carpeta <strong>data\backups</strong> de la instalación nueva y pulsa <strong>Restaurar</strong> aquí. Diez minutos y todo vuelve.</p>
     <h4>Llevar los datos a otro PC</h4>
     <p>Copia la carpeta <strong>data</strong> entera al otro ordenador (incluye la base y las copias) y tendrás <strong>todo</strong> allí.</p>
   </Ayuda>

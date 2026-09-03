@@ -13,6 +13,7 @@ import { ajustesRouter } from "./routes/ajustes.ts";
 import { exportRouter } from "./routes/export.ts";
 import { asistenciasRouter } from "./routes/asistencias.ts";
 import { crearCopia, enCola } from "./copias.ts";
+import { enviarCopiaConTope, enviarCopiaPorEmail, faltaEnvioDeHoy } from "./copia-email.ts";
 
 const app = express();
 app.use(express.json());
@@ -29,6 +30,16 @@ app.use("/api", exportRouter); // /export/socios, /export/socio/:id
 app.use("/api", asistenciasRouter); // /suscripciones/:id/asistencias, /asistencias/:id
 
 app.get("/api/salud", (_req, res) => res.json({ ok: true }));
+
+// Solo en pruebas (GYM_PRUEBAS=1): cierra la app como si se apagara, para poder
+// comprobar por API que el cierre envía la copia por email (en Windows no se puede
+// mandar una señal a un proceso hijo).
+if (process.env.GYM_PRUEBAS) {
+  app.post("/api/_cerrar", (_req, res) => {
+    res.json({ ok: true });
+    setTimeout(() => void alCerrar(), 50);
+  });
+}
 
 // En produccion (tras "npm run build") servimos la web compilada desde /dist.
 const distDir = resolve(import.meta.dirname, "..", "dist");
@@ -56,6 +67,15 @@ const servidor = app.listen(PORT, () => {
   // Red de seguridad fiable: una copia automática nada más arrancar (captura el
   // estado de la última sesión aunque el cierre anterior fuese brusco).
   void enCola(() => crearCopia("auto")).catch(() => {});
+  // Copia por EMAIL: red de seguridad al arrancar si hoy aún no se ha enviado (el
+  // cierre anterior pudo ser brusco o sin internet), y una comprobación cada hora
+  // por si la app se queda abierta varios días. El envío principal es al cerrar.
+  setTimeout(() => {
+    if (faltaEnvioDeHoy()) void enviarCopiaPorEmail("arranque");
+  }, 8000).unref();
+  setInterval(() => {
+    if (faltaEnvioDeHoy()) void enviarCopiaPorEmail("diario");
+  }, 60 * 60 * 1000).unref();
   // En modo "app de escritorio" (web ya compilada) abrimos el navegador solo.
   // GYM_NO_OPEN=1 lo desactiva (util en pruebas / cuando ya esta abierto).
   if (existsSync(distDir) && !process.env.GYM_NO_OPEN) {
@@ -78,7 +98,17 @@ async function alCerrar() {
   } catch {
     /* nada que hacer al salir */
   }
+  // Copia por email al apagar (cada día, cada vez que se cierra, si hay cambios).
+  // Con tope: al cerrar la ventana, Windows mata el proceso a los ~10 s.
+  try {
+    const r = await enviarCopiaConTope("cierre", 8500);
+    if (r.enviado) console.log(`  Copia de seguridad enviada por email a ${r.para}.`);
+    else if (r.porQueNo === "error") console.error(`  No se pudo enviar la copia por email: ${r.error}`);
+  } catch {
+    /* ya queda apuntado en la config; al arrancar se reintenta */
+  }
   process.exit(0);
 }
 process.on("SIGINT", alCerrar);
 process.on("SIGTERM", alCerrar);
+process.on("SIGHUP", alCerrar); // Windows: al cerrar la ventana de la consola

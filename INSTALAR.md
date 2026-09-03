@@ -4,6 +4,12 @@ Guía para dejar la aplicación funcionando en un ordenador con **Windows** que 
 
 > Tiempo: unos 10 minutos. Necesitas **internet** solo para la primera puesta en marcha; después funciona sin conexión.
 
+> **¿El ordenador anterior se ha roto y hay que recuperar los datos?** Sigue esta guía para
+> instalar, abre GymGrecia una vez, descarga el adjunto `.db` del correo más reciente
+> «Copia de seguridad GymGrecia» del buzón del gimnasio (`gimnasiogrecialospalacios@gmail.com`),
+> cópialo dentro de la carpeta `data\backups` de la instalación nueva y pulsa **Restaurar**
+> en la pantalla Copias. Diez minutos y todo vuelve.
+
 ---
 
 ## Paso 1 · Instalar Node.js (el "motor" de la app)

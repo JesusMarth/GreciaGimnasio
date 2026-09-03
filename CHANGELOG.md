@@ -12,6 +12,20 @@ y el proyecto usa [Versionado Semántico](https://semver.org/lang/es/) (SemVer):
 
 ## [Sin publicar]
 
+### Added
+- **Copia de seguridad fuera del PC, por email**: cada día, al cerrar la app, la
+  base de datos entera se envía adjunta al correo del gimnasio
+  (`gimnasiogrecialospalacios@gmail.com` por defecto, cambiable en Ajustes). Si
+  ese envío no pudo hacerse (cierre brusco, sin internet), se reintenta al abrir
+  la app y una vez al día si se queda abierta. No reenvía copias idénticas. En
+  Ajustes y en Copias se ve cuándo fue la última copia enviada y si falló, y hay
+  un botón «Enviar copia ahora» para comprobarlo. El propio correo explica cómo
+  recuperar los datos en un ordenador nuevo. Necesita el correo de envío
+  configurado (contraseña de aplicación de Gmail).
+- `npm run test:copias`: prueba automática con un servidor de correo local que
+  verifica que el adjunto llega, es una base de datos válida con los datos, y que
+  el cierre de la app la envía.
+
 ## [1.8.0] - 2026-09-03
 
 ### Added

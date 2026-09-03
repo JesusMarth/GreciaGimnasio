@@ -24,13 +24,19 @@ token de solo lectura en `update-token.txt`). `CHANGELOG.md` manual.
 
 ### B) Sexo del socio + filtro ✅ HECHO (v1.6.0) · C) Historial de movimientos ✅ HECHO (v1.5.0) · D) Bonos por sesiones ✅ PUBLICADO como **v1.8.0** (2026-09-03)
 
-### F) Copia de seguridad fuera del PC (petición del jefe, 2026-09-03)  ← A DECIDIR
-Propuesta hecha al jefe (ver conversación): la app sigue local (SQLite), y las copias
-automáticas se llevan fuera: (1) carpeta extra de copias configurable en Ajustes
-apuntando a OneDrive/Google Drive del PC del local, y (2) copia periódica por email
-(ya hay SMTP) al correo del dueño. Opción más ambiciosa si algún día quieren la BD
-"de verdad" en la nube: Turso/libSQL con réplica embebida. NO mover el .db vivo a
-una carpeta sincronizada (WAL + sync = corrupción).
+### F) Copia de seguridad por email ✅ HECHO (2026-09-03, sin publicar aún)  ← SIGUIENTE: publicar 1.9.0 y BOOTSTRAP en el local
+Implementado y probado (`npm run test:copias`, 28 checks). Para que funcione en el
+PC del gimnasio hay que hacer UNA VEZ (lo hace el dev con el jefe):
+1. En Gmail de `gimnasiogrecialospalacios@gmail.com`: verificación en dos pasos →
+   «Contraseñas de aplicaciones» → crear una para «Correo» (16 caracteres).
+2. Ajustes → Correo de envío: usuario = ese Gmail, contraseña de aplicación,
+   `smtp.gmail.com`, SSL 465 → Guardar → «Enviar correo de prueba».
+3. Ajustes → Copia de seguridad por email: destinatario ya viene puesto → «Enviar
+   copia ahora» → comprobar en el buzón que llega el adjunto `.db`.
+4. Cerrar la app y volver a abrirla: en Copias debe salir «Última copia enviada …
+   (al cerrar la app)».
+Descartado mover el `.db` vivo a OneDrive/Drive (WAL + sincronización = corrupción).
+Opción futura si quisieran la BD "de verdad" en la nube: Turso/libSQL (réplica local).
 
 ### E) Tras desplegar los bonos (v1.8.0) en el local  ← SIGUIENTE
 1. Con el jefe: abrir la ficha del socio del bono de 60 € (apuntado antes como un mes),
@@ -59,6 +65,34 @@ una carpeta sincronizada (WAL + sync = corrupción).
   `sed -i 's|https://inditex.jfrog.io/artifactory/api/npm/node-public/|https://registry.npmjs.org/|g' package-lock.json`
 
 ## 📋 Registro (más reciente arriba)
+
+### 2026-09-03 (3) · v1.8.0 publicada · copia de seguridad por email
+- **Publicada v1.8.0** (bonos por sesiones + QA + desplegables + refactor).
+- **Copia fuera del PC** (petición del jefe: "si el ordenador revienta se pierde
+  todo; coste 0, sencillo y fiable"): `server/copia-email.ts` manda la BD entera
+  (`db.serialize()`, incluye el WAL) adjunta al correo del gimnasio **al cerrar**
+  (`alCerrar` con tope 8,5 s; también `SIGHUP` para el cierre de la ventana en
+  Windows), **al arrancar** si hoy no se envió, y **cada hora** si sigue abierta.
+  Sin cambios (misma huella SHA-256) no reenvía; a mano siempre. Config en tabla
+  `config` (`copias.email` por defecto `gimnasiogrecialospalacios@gmail.com`,
+  `copias.activo`); **estado en `data/estado-copia-email.json`** (fuera de la BD:
+  primer intento con el estado en la BD hacía que cada envío cambiase la base y
+  el "sin cambios" nunca se cumplía → test lo cazó). Rutas `GET/POST /config/copias`,
+  `POST /config/copias/enviar`. UI: tarjeta en Ajustes (destinatario, interruptor,
+  estado, «Enviar copia ahora») y tarjeta arriba de Copias con el mismo estado.
+  El cuerpo del email lleva los pasos de recuperación.
+- **`npm run test:copias`** (`server/copias.pruebas.ts`): SMTP de mentira con `net`
+  (EHLO/AUTH/MAIL/RCPT/DATA) + app real con `GYM_PRUEBAS=1` (habilita
+  `POST /api/_cerrar` porque en Windows no se pueden mandar señales al hijo).
+  Verifica: adjunto `.db` que se abre con better-sqlite3 y contiene los socios y
+  el esquema; asunto (Q-encoding); envío al cerrar con los cambios de justo antes;
+  no reenvía sin cambios; apagado respetado; correo inválido → 400; sin SMTP no
+  revienta. 28/28.
+- **CLAUDE.md**: sección nueva «Copias de seguridad: reglas para versionar y
+  actualizar» (migraciones aditivas, correr test:copias antes de cada release,
+  probar restauración de copia antigua si cambia el esquema, recuperación).
+- No se ha podido probar contra el Gmail real: requiere la contraseña de
+  aplicación del gimnasio (paso de bootstrap, ver «Para la próxima sesión» F).
 
 ### 2026-09-03 (2) · QA de flujos + refactor + desplegables
 - **QA** (agente auditor + recorrido en navegador como gerente): 25 hallazgos,

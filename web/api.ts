@@ -1,4 +1,4 @@
-import type { Asistencia, ConfigEmail, CopiaInfo, DatosRecibo, Dashboard, Evento, Metricas, Pago, Socio, Suscripcion, Tarifa } from "./types.ts";
+import type { Asistencia, ConfigCopias, ConfigEmail, CopiaInfo, DatosRecibo, Dashboard, Evento, Metricas, Pago, ResultadoCopiaEmail, Socio, Suscripcion, Tarifa } from "./types.ts";
 
 async function req<T>(path: string, opts?: RequestInit): Promise<T> {
   const r = await fetch("/api" + path, {
@@ -77,6 +77,11 @@ export const api = {
   guardarConfigEmail: (data: Record<string, unknown>) => req("/config/email", { method: "POST", body: body(data) }),
   probarEmail: () => req<{ ok: true }>("/config/email/probar", { method: "POST" }),
   avisarEmail: (socioId: number) => req<{ ok: true; email: string }>("/avisos/email", { method: "POST", body: body({ socioId }) }),
+
+  // Copia de seguridad por email.
+  configCopias: () => req<ConfigCopias>("/config/copias"),
+  guardarConfigCopias: (data: { email?: string; activo?: boolean }) => req("/config/copias", { method: "POST", body: body(data) }),
+  enviarCopiaEmail: () => req<ResultadoCopiaEmail>("/config/copias/enviar", { method: "POST" }),
 
   datosRecibo: () => req<DatosRecibo>("/config/datos"),
   guardarDatosRecibo: (data: Record<string, unknown>) => req("/config/datos", { method: "POST", body: body(data) }),

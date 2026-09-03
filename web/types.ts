@@ -184,6 +184,25 @@ export interface ConfigEmail {
   tienePass: boolean; // si ya hay una contraseña guardada (nunca se devuelve la real)
 }
 
+export interface ConfigCopias {
+  email: string; // correo que recibe las copias
+  activo: boolean; // envío automático (al cerrar / arrancar / diario)
+  ultimoEnvio: string; // "YYYY-MM-DD HH:MM" del último envío correcto ("" si nunca)
+  ultimoIntento: string;
+  ultimoError: string; // "" si el último intento fue bien
+  ultimoMotivo: string; // cierre | arranque | diario | manual
+  correoConfigurado: boolean; // hay SMTP guardado (sin él no se puede enviar)
+}
+
+export interface ResultadoCopiaEmail {
+  enviado: boolean;
+  motivo: string;
+  porQueNo?: string;
+  error?: string;
+  para?: string;
+  bytes?: number;
+}
+
 export interface DatosRecibo {
   nombre: string;
   nif: string;

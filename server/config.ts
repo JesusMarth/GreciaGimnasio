@@ -48,6 +48,37 @@ export function emailConfigurado(): boolean {
   return !!(c.host && c.usuario && c.pass);
 }
 
+// Copia de seguridad por email (claves "copias.*"). La app envía la base de datos
+// adjunta al correo indicado al cerrar (y como red de seguridad al arrancar o una
+// vez al día si sigue abierta) para que, si el PC revienta, los datos estén fuera.
+export const EMAIL_COPIAS_POR_DEFECTO = "gimnasiogrecialospalacios@gmail.com";
+
+// (El ESTADO de los envíos —último envío, huella, error— NO va en la BD: si fuera
+// dentro, cada envío cambiaría la propia base y "sin cambios" no existiría. Vive en
+// data/estado-copia-email.json; ver copia-email.ts.)
+export interface ConfigCopias {
+  email: string; // destinatario de las copias
+  activo: boolean; // envío automático encendido
+}
+
+export function leerConfigCopias(): ConfigCopias {
+  const filas = db.prepare("SELECT clave, valor FROM config WHERE clave LIKE 'copias.%'").all() as { clave: string; valor: string }[];
+  const m = new Map(filas.map((f) => [f.clave, f.valor]));
+  return {
+    email: m.get("copias.email") ?? EMAIL_COPIAS_POR_DEFECTO,
+    activo: (m.get("copias.activo") ?? "1") === "1",
+  };
+}
+
+export function guardarConfigCopias(c: Partial<ConfigCopias>) {
+  const up = db.prepare("INSERT INTO config (clave, valor) VALUES (?, ?) ON CONFLICT(clave) DO UPDATE SET valor = excluded.valor");
+  const tx = db.transaction(() => {
+    if (c.email !== undefined) up.run("copias.email", c.email);
+    if (c.activo !== undefined) up.run("copias.activo", c.activo ? "1" : "0");
+  });
+  tx();
+}
+
 // Datos fiscales que aparecen en el recibo/factura. También en la tabla `config`
 // (claves "datos.*"), así que viajan con /data.
 export interface DatosRecibo {
